@@ -43,18 +43,9 @@ leaderboard data, not standalone infra.
 
 ## CI
 
-- **CPU-only torch extra for fast-CI convergence coverage** — `tests.yml`
-  runs `uv sync` (no extras), which prunes torch and skips
-  `tests/test_convergence.py` entirely. Nightly (`nightly.yml`) installs
-  `[torch]` and runs `examples/mnist_fedavg.py` plus the hermetic
-  convergence tests, so regressions *are* caught — just on a daily
-  cadence, not per-PR. Fix: add a `[torch-cpu]` extra that pins the
-  ~150–200 MB CPU wheels from PyTorch's `+cpu` index (separate from the
-  full `[torch]` extra, which pulls ~2.5 GB of CUDA runtime). Wire
-  `tests.yml` to `uv sync --extra torch-cpu` so the Gaussian-blobs
-  convergence proof runs on every push. Tradeoff: fast CI gets slower by
-  the torch install time (one-time with uv's cache), in exchange for
-  end-to-end FL coverage on every PR instead of every night.
+_No open CI work today. The 2026-05 stale-assumption audit retired the
+"CPU-only torch extra" item — it was a stale roadmap claim. See
+Completed for the audit verdict and the now-correct state._
 
 ## Docs
 
@@ -436,6 +427,20 @@ Dated one-liners for shipped roadmap-scale work. Most recent first. The
 commit history and `docs/benchmarks.md` / `docs/convergence.md` are the
 authoritative record; this log is the human index into them.
 
+- **2026-05-21** — Stale-assumption audit retired the "CPU-only torch
+  extra" CI item. The roadmap claim "tests.yml runs uv sync (no
+  extras), which prunes torch and skips tests/test_convergence.py
+  entirely" turned out to be stale: `tests.yml` already runs
+  `uv sync --extra hf --extra torch` (line 49 at audit time) and
+  `[tool.uv.sources]` in `pyproject.toml` already routes
+  `torch` / `torchvision` through PyTorch's `+cpu` wheel index
+  (`[[tool.uv.index]] name = "pytorch-cpu"`). The hermetic Gaussian-blobs
+  convergence proof in `tests/test_convergence.py` runs per-PR and has
+  for some time. Nightly (`nightly.yml`) keeps the longer
+  `examples/mnist_fedavg.py` run + network-dependent dataset paths.
+  Verified: `uv sync --extra torch` pulls the CPU wheels described in the
+  pyproject.toml routing comment (~150–200 MB), not the ~2.5 GB CUDA
+  runtime. No work to do; roadmap text updated to reflect reality.
 - **2026-04-25** — Geometric Median (RFA, Pillutla et al. IEEE TSP 2022)
   via Weiszfeld iteration shipped as the 8th `Strategy`.
   `Strategy::GeometricMedian { eps, max_iter }` provides sample-weighted
