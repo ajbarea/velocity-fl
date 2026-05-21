@@ -317,6 +317,28 @@ def forget_memory(user_id: str, file: str, reason: str, confirm: bool = False) -
     return f"forgot {file}"
 
 
+@mcp.tool
+@logged_tool
+def compact_memory(user_id: str, file: str, keep_last_n: int = 10) -> str:
+    """Bound a memory file by keeping only its last N H2 blocks.
+
+    Use after a busy session has appended many entries to a file like
+    ``recent_runs.md``. Treats ``## `` (H2) headers as block separators
+    and drops the oldest blocks beyond ``keep_last_n``, leaving a dated
+    compaction marker. The full audit trail of each appended block is
+    preserved in ``.events.jsonl``; the structured run data remains in
+    the DB and is queryable via :func:`list_runs`.
+
+    Returns a short status string naming the file and how many blocks
+    were dropped (0 if the file was already within bounds).
+    """
+    dropped = mem.compact_entry(user_id, file, keep_last_n=keep_last_n)
+    if dropped == 0:
+        return f"{file} already within {keep_last_n} blocks; no change"
+    plural = "s" if dropped != 1 else ""
+    return f"compacted {file}: dropped {dropped} block{plural}, kept last {keep_last_n}"
+
+
 # ---------------------------------------------------------------------------
 # Prompts — named researcher workflows
 # ---------------------------------------------------------------------------

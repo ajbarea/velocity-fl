@@ -10,20 +10,22 @@ execution lives here.
 
 ## Last shipped
 
-**`rand` 0.8 → 0.10 (and `rand_distr` 0.4 → 0.6) bump** (2026-05-21).
-Originally queued as 0.8 → 0.9 in the prior Trimmed Mean / Geometric
-Median PR notes; web-search at execution showed `rand` 0.10.1 is the
-current stable (`rand_distr` 0.6.0 pins rand ^0.10), so bumped through
-both major versions in one PR. API migration: `rand::thread_rng()` →
-`rand::rng()`; `Rng` trait renamed to `RngExt` (kept the import as
-`use rand::RngExt;`); `gen::<T>()` → `random::<T>()`; `gen_range(..)`
-→ `random_range(..)`. Only `vfl-core/src/security.rs` (gaussian noise
-+ sybil sampling + model poisoning) touched the API; the Dirichlet
-partitioner is Python-side (`random.Random`) and was untouched
-(stale IMPL claim). 48 Rust unit tests + 162 Python tests pass;
-clippy + cargo fmt green.
+**Memory compaction for `recent_runs.md`** (2026-05-21).
+`velocity.memory.compact_entry(user_id, file, keep_last_n=10)` bounds a
+memory file by keeping its last N H2 blocks and replacing the older
+ones with a dated compaction marker. Surfaced as the
+`compact_memory(user_id, file, keep_last_n)` MCP tool so the agent can
+call it after a busy session. Preserves the audit trail (every prior
+`append` recorded a `summary` in `.events.jsonl`) and the structured
+run snapshots (queryable via `list_runs` / `db.recent_runs`). 8 new
+unit tests; 170 total Python tests pass; lint + ty clean; MCP cache
+hash bumped to reflect the new tool in the surface.
 
-Commit refs: TBD.
+The trade-off vs LLM-summarized rollup: this approach keeps the
+implementation hermetic and dependency-free, at the cost of a less
+narrative-rich "older runs" view. If a narrative summary becomes
+desirable later, layer it on top of `.events.jsonl` rather than
+fighting the file format.
 
 ## Next up (queued, not active)
 
@@ -33,14 +35,12 @@ Per ROADMAP the natural next sessions are:
    noise-floor upgrade that makes single-digit-percent regression
    detection meaningful on the WSL2 box; see
    [ROADMAP → Performance](ROADMAP.md#performance).
-2. **Memory compaction for `recent_runs.md`** — currently
-   grows unbounded; needs bounded-retention strategy (last-N runs, or
-   size-capped with rollup into narrative summary). See
-   [ROADMAP → Agent stack](ROADMAP.md#agent-stack).
-3. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
+2. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
    siblings return plain dict/list[dict] today; migrate to typed
-   Prefab returns so Claude UI can render natively. Keep separate
-   from memory/caching work.
+   Prefab returns so Claude UI can render natively.
+3. **`run_demo` real-training sibling** — current `run_demo` calls the
+   mock `VelocityServer.run`; add a confirmation-gated tool that
+   triggers a real round.
 
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done) matching

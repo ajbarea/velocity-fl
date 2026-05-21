@@ -143,3 +143,98 @@ def test_users_are_isolated():
     memory.write_entry("bob", "profile.md", "bob content", summary="b")
     assert memory.read_entry("alice", "profile.md") == "alice content"
     assert memory.read_entry("bob", "profile.md") == "bob content"
+
+
+def test_compact_entry_rejects_non_writable_file():
+    with pytest.raises(ValueError, match="not in the writable memory set"):
+        memory.compact_entry("alice", ".events.jsonl")
+
+
+def test_compact_entry_rejects_negative_keep_last_n():
+    with pytest.raises(ValueError, match="keep_last_n must be non-negative"):
+        memory.compact_entry("alice", "recent_runs.md", keep_last_n=-1)
+
+
+def test_compact_entry_is_noop_on_missing_file():
+    dropped = memory.compact_entry("alice", "recent_runs.md", keep_last_n=3)
+    assert dropped == 0
+
+
+def test_compact_entry_is_noop_when_no_blocks():
+    memory.write_entry("alice", "recent_runs.md", "# Recent runs\n\n_empty_\n", summary="seed")
+    dropped = memory.compact_entry("alice", "recent_runs.md", keep_last_n=3)
+    assert dropped == 0
+    assert "_empty_" in memory.read_entry("alice", "recent_runs.md")
+
+
+def test_compact_entry_is_noop_when_within_bounds():
+    memory.write_entry(
+        "alice",
+        "recent_runs.md",
+        "# Recent runs\n\n## run-1\n\nfoo\n\n## run-2\n\nbar\n",
+        summary="seed",
+    )
+    dropped = memory.compact_entry("alice", "recent_runs.md", keep_last_n=3)
+    assert dropped == 0
+    body = memory.read_entry("alice", "recent_runs.md")
+    assert "## run-1" in body
+    assert "## run-2" in body
+
+
+def test_compact_entry_drops_oldest_blocks_and_records_event():
+    blocks = "\n\n".join(f"## run-{i}\n\nsummary text {i}" for i in range(1, 11))
+    memory.write_entry(
+        "alice",
+        "recent_runs.md",
+        f"# Recent runs\n\n{blocks}\n",
+        summary="seed",
+    )
+    dropped = memory.compact_entry("alice", "recent_runs.md", keep_last_n=3)
+    assert dropped == 7
+    body = memory.read_entry("alice", "recent_runs.md")
+    # Preamble preserved.
+    assert body.startswith("# Recent runs")
+    # Last 3 blocks kept verbatim.
+    for i in (8, 9, 10):
+        assert f"## run-{i}\n" in body
+        assert f"summary text {i}" in body
+    # Oldest 7 dropped.
+    for i in range(1, 8):
+        assert f"## run-{i}\n" not in body
+    # Compaction marker present and dated.
+    assert "compacted 7 earlier blocks" in body
+    # Ledger updated.
+    compact_events = [e for e in memory.events("alice") if e["action"] == "compact"]
+    assert len(compact_events) == 1
+    assert compact_events[-1]["file"] == "recent_runs.md"
+    assert "kept last 3" in compact_events[-1]["summary"]
+    assert "dropped 7" in compact_events[-1]["summary"]
+
+
+def test_compact_entry_keep_last_n_zero_compacts_everything():
+    blocks = "\n\n".join(f"## run-{i}\n\nbody" for i in range(1, 4))
+    memory.write_entry(
+        "alice",
+        "recent_runs.md",
+        f"# Recent runs\n\n{blocks}\n",
+        summary="seed",
+    )
+    dropped = memory.compact_entry("alice", "recent_runs.md", keep_last_n=0)
+    assert dropped == 3
+    body = memory.read_entry("alice", "recent_runs.md")
+    assert "compacted 3 earlier blocks" in body
+    for i in (1, 2, 3):
+        assert f"## run-{i}\n" not in body
+
+
+def test_compact_entry_singular_marker():
+    blocks = "## run-1\n\nbody\n\n## run-2\n\nbody"
+    memory.write_entry(
+        "alice",
+        "recent_runs.md",
+        f"# Recent runs\n\n{blocks}\n",
+        summary="seed",
+    )
+    memory.compact_entry("alice", "recent_runs.md", keep_last_n=1)
+    body = memory.read_entry("alice", "recent_runs.md")
+    assert "compacted 1 earlier block " in body  # singular, no plural 's'

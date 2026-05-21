@@ -125,6 +125,67 @@ def forget_entry(user_id: str, file: str, reason: str) -> None:
     _log_event(user_id, "delete", file, reason)
 
 
+def compact_entry(user_id: str, file: str, keep_last_n: int = 10) -> int:
+    """Bound a memory file by keeping only its last N H2 blocks.
+
+    Treats `## ` (H2) headers as block separators, mirroring how callers
+    append per-run summaries to `recent_runs.md`. The text before the first
+    H2 is preserved as the file preamble (the bootstrap title or any prose
+    the user added). The N most recent blocks are kept verbatim; the older
+    ones are replaced by a single compaction marker.
+
+    Returns the number of blocks dropped (0 if the file was already within
+    bounds or had no H2 blocks at all). No-op if the file does not exist or
+    if it has <= keep_last_n H2 blocks.
+
+    The compaction itself is auditable: writes a `compact` event to the
+    user's `.events.jsonl` ledger naming the file and the count dropped.
+    Each individual run's full text is NOT preserved post-compaction; if
+    you need that history, read `.events.jsonl` (every `append` to this
+    file recorded a `summary`) or query `db.recent_runs(user_id, limit=...)`
+    for the structured DB snapshot.
+
+    Raises:
+        ValueError: if ``file`` is not in :data:`WRITABLE_FILES`.
+    """
+    if file not in WRITABLE_FILES:
+        raise ValueError(f"{file!r} is not in the writable memory set")
+    if keep_last_n < 0:
+        raise ValueError(f"keep_last_n must be non-negative; got {keep_last_n!r}")
+    path = user_dir(user_id) / file
+    if not path.exists():
+        return 0
+
+    text = path.read_text(encoding="utf-8")
+    parts = text.split("\n## ")
+    if len(parts) <= 1:
+        return 0  # No H2 blocks to compact.
+
+    preamble = parts[0].rstrip()
+    blocks = ["## " + b for b in parts[1:]]
+    if len(blocks) <= keep_last_n:
+        return 0  # Already within bounds.
+
+    dropped = len(blocks) - keep_last_n
+    kept_blocks = blocks[-keep_last_n:] if keep_last_n > 0 else []
+    today = datetime.now(UTC).date().isoformat()
+    plural = "s" if dropped != 1 else ""
+    marker = (
+        f"## (compacted {dropped} earlier block{plural} on {today})\n\n"
+        "_Earlier per-block summaries remain in `.events.jsonl`; "
+        "full run snapshots remain queryable via `db.recent_runs`._"
+    )
+    new_text = preamble + "\n\n" + marker + "\n\n" + "\n".join(kept_blocks)
+    path.write_text(new_text, encoding="utf-8")
+    _log_event(
+        user_id,
+        "compact",
+        file,
+        f"kept last {keep_last_n} blocks; dropped {dropped}",
+    )
+    return dropped
+
+
 def events(user_id: str, limit: int = 50) -> list[dict[str, Any]]:
     p = _events_path(user_id)
     if not p.exists():

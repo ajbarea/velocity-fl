@@ -20,9 +20,11 @@ Session-by-session execution (the "what are we doing this PR") lives in
 - **Prefab `PrefabApp` return types** — MCP tools currently return plain
   `dict` / `list[dict]`. Migrate to typed Prefab returns so the Claude UI
   can render them natively. Keep separate from the memory/caching PR.
-- **Memory compaction** — `recent_runs.md` grows unbounded. Needs a
-  bounded-retention strategy (last-N runs, or size-capped with rollup into
-  a narrative summary).
+- ~~**Memory compaction**~~ — shipped 2026-05-21 (see Completed).
+  `velocity.memory.compact_entry()` + `compact_memory` MCP tool bound
+  `recent_runs.md` (or any writable memory file) by keeping the last N
+  H2 blocks and leaving a dated compaction marker. The audit ledger and
+  the structured run DB remain the queryable history.
 - **`_meta["anthropic/maxResultSizeChars"]` on high-volume MCP tools** —
   any FastMCP tool that returns large outputs (full round history,
   checkpoint listings, model card dumps) should annotate its decorator
@@ -429,6 +431,17 @@ Dated one-liners for shipped roadmap-scale work. Most recent first. The
 commit history and `docs/benchmarks.md` / `docs/convergence.md` are the
 authoritative record; this log is the human index into them.
 
+- **2026-05-21** — Memory compaction for `recent_runs.md` (and any
+  writable memory file). `velocity.memory.compact_entry(user_id, file,
+  keep_last_n)` walks H2 (`## `) block boundaries, drops the oldest
+  beyond `keep_last_n`, prepends a dated compaction marker, and writes
+  a `compact` event to `.events.jsonl`. Surfaced as the
+  `compact_memory` MCP tool so the agent can self-bound a fat file
+  mid-session. The audit trail (per-block `summary` strings in the
+  events ledger) and the structured run snapshots (via
+  `db.recent_runs`) remain the canonical history; compaction is a
+  display-bound, not a retention-bound. 8 new unit tests; MCP cache
+  hash bumped to reflect the new tool in the cacheable surface.
 - **2026-05-21** — Claude Desktop wiring guide added to
   `docs/configuration.md`. New "MCP server" section covers stdio
   transport (Claude Desktop / Claude Code) via both the automated
