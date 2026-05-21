@@ -49,10 +49,12 @@ Completed for the audit verdict and the now-correct state._
 
 ## Docs
 
-- **Claude Desktop wiring guide** — `docs/configuration.md` documents
-  `VFL_USER_ID` but not the full `mcpServers` JSON block or the `fastmcp
-  run` commands (stdio for Claude Desktop, `--transport http --port 8765`
-  for local inspection). Users can't wire the MCP server up without it.
+_No open Docs work today. The "Claude Desktop wiring guide" was
+shipped 2026-05-21 (see Completed) — `docs/configuration.md` now has
+a full "MCP server" section covering stdio + HTTP transports, the
+`fastmcp install claude-desktop` automated wiring path, and the
+manual `mcpServers` JSON block (web-search-verified May 2026 against
+gofastmcp.com)._
 
 ## Aggregation strategies
 
@@ -427,6 +429,16 @@ Dated one-liners for shipped roadmap-scale work. Most recent first. The
 commit history and `docs/benchmarks.md` / `docs/convergence.md` are the
 authoritative record; this log is the human index into them.
 
+- **2026-05-21** — Claude Desktop wiring guide added to
+  `docs/configuration.md`. New "MCP server" section covers stdio
+  transport (Claude Desktop / Claude Code) via both the automated
+  `fastmcp install claude-desktop` CLI and a manual `mcpServers` JSON
+  block; HTTP transport (`--transport http --port 8765`) for the MCP
+  Inspector and local debugging; the per-OS config-file path matrix;
+  the `VFL_USER_ID` env-var override. Web-search verified May 2026
+  against gofastmcp.com/integrations/claude-desktop. The roadmap item
+  was prior to the wiring; users can now wire up the MCP server
+  without reading the source.
 - **2026-05-21** — `rand` 0.8 → 0.10 + `rand_distr` 0.4 → 0.6 bump
   in `vfl-core`. Originally queued as 0.8 → 0.9; web-search at
   execution showed `rand` 0.10.1 is current stable (`rand_distr` 0.6.0
