@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 use rand_distr::{Distribution, Normal};
 
 /// Round-level attacks the orchestrator applies during a federated round.
@@ -33,14 +33,14 @@ pub fn simulate_model_poisoning(
     weights: &mut std::collections::HashMap<String, Vec<f32>>,
     intensity: f64,
 ) -> AttackResult {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut total_params = 0usize;
     let mut corrupted = 0usize;
 
     for vals in weights.values_mut() {
         total_params += vals.len();
         for v in vals.iter_mut() {
-            if rng.gen::<f64>() < intensity {
+            if rng.random::<f64>() < intensity {
                 *v = -*v; // sign flip
                 corrupted += 1;
             }
@@ -63,14 +63,14 @@ pub fn simulate_sybil_nodes(
     layer_shapes: &std::collections::HashMap<String, usize>,
     count: usize,
 ) -> (Vec<crate::strategy::ClientUpdate>, AttackResult) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let updates: Vec<crate::strategy::ClientUpdate> = (0..count)
         .map(|_| {
             let weights = layer_shapes
                 .iter()
                 .map(|(name, &len)| {
                     let random_weights: Vec<f32> =
-                        (0..len).map(|_| rng.gen_range(-10.0..10.0)).collect();
+                        (0..len).map(|_| rng.random_range(-10.0..10.0)).collect();
                     (name.clone(), random_weights)
                 })
                 .collect();
@@ -98,7 +98,7 @@ pub fn simulate_gaussian_noise(
     weights: &mut std::collections::HashMap<String, Vec<f32>>,
     std_dev: f64,
 ) -> AttackResult {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let normal = Normal::new(0.0f64, std_dev).expect("std_dev must be finite and non-negative");
     let mut total_params = 0usize;
 

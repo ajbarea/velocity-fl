@@ -427,6 +427,17 @@ Dated one-liners for shipped roadmap-scale work. Most recent first. The
 commit history and `docs/benchmarks.md` / `docs/convergence.md` are the
 authoritative record; this log is the human index into them.
 
+- **2026-05-21** — `rand` 0.8 → 0.10 + `rand_distr` 0.4 → 0.6 bump
+  in `vfl-core`. Originally queued as 0.8 → 0.9; web-search at
+  execution showed `rand` 0.10.1 is current stable (`rand_distr` 0.6.0
+  pins rand ^0.10), so bumped through both major versions in one PR.
+  API migration touched `vfl-core/src/security.rs` only:
+  `thread_rng()` → `rng()`, `Rng` trait → `RngExt`, `gen::<T>()` →
+  `random::<T>()`, `gen_range(..)` → `random_range(..)`. The Dirichlet
+  partitioner is Python-side (`random.Random`) and untouched; the prior
+  IMPL note that the bump "touches gaussian_noise and the Dirichlet
+  partitioner" was itself a stale assumption. 48 Rust unit tests + 162
+  Python tests pass; clippy + cargo fmt green.
 - **2026-05-21** — Stale-assumption audit retired the "CPU-only torch
   extra" CI item. The roadmap claim "tests.yml runs uv sync (no
   extras), which prunes torch and skips tests/test_convergence.py
