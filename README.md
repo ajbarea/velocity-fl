@@ -204,6 +204,30 @@ in [`docs/convergence.md`](docs/convergence.md). Reproduce with
 
 ---
 
+## Sister ecosystem 🤝
+
+Part of a family of repos exploring agentic AI and federated learning
+from complementary angles. vFL is the speed lane; the others occupy
+different roles.
+
+- **[kourai-khryseai](https://github.com/ajbarea/kourai-khryseai)** —
+  Innovation. Multi-agent software-development forge: maidens-as-specialists
+  over A2A, MCP sidecars, transparent human-on-the-loop.
+- **[phalanx-fl](https://github.com/ajbarea/phalanx-fl)** — Research.
+  Federated-learning reference platform on Flower + Ray. Eight
+  aggregation strategies with the attack vocabulary. vFL's strategies
+  are Rust ports of the algorithms first prototyped here.
+- **[ldqis](https://github.com/ajbarea/ldqis)** — Lab identity. Public
+  website for the Laboratory of Data Quality and Intelligent Security
+  at RIT.
+- **[techne](https://github.com/ajbarea/techne)** — Governance. Claude
+  Code skills plugin: audits, lint/test gates, cross-repo drift
+  detection.
+- **[ajbarea.github.io](https://github.com/ajbarea/ajbarea.github.io)** —
+  Visibility. Portfolio that tells the ecosystem story end-to-end.
+
+---
+
 ## Coverage 📈
 
 [![Codecov](https://codecov.io/gh/ajbarea/vFL/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/vFL)
