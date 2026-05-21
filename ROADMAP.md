@@ -341,6 +341,55 @@ below are wider than they are today.
   vision-classification only — extending to NLP / tabular is a
   separate slice once the store schema has earned its keep).
 
+## Compression
+
+> Source: 2026-05-21 audit-of-audits (2026-05-21 audit-of-audits review). Communication, not aggregation compute, is the actual FL bottleneck in bandwidth-constrained networks. vFL today assumes raw `f32` weight tensors round-trip; supporting compressed updates makes it practical for edge deployments without sacrificing the speed story.
+
+- **Pluggable client-side compression hook on aggregation strategies** —
+  add an optional `compression_fn` (Python-callable taking the client
+  update, returning a compressed payload) + `server_decompression_fn`
+  pair to the Python `Strategy` config. Built-in: uniform 8-bit
+  quantization (4-bit as a flag). The Rust kernel stays float-only;
+  compression/decompression is a Python boundary that wraps the kernel
+  call. Measure: communication bytes saved vs convergence delta per
+  strategy. Honest target: roughly halve bytes-on-the-wire on 8-bit
+  quantization with <2pp accuracy loss on MNIST+FedAvg as the smoke
+  bench.
+- **Heterogeneous client model support** — element-wise masking so
+  clients with differently-shaped tensors (edge variants vs server
+  variants) can participate in the same aggregation. Today's kernel
+  assumes identical shapes; relaxing this is a real-deployment unlock.
+  Tier 2 medium-lift; pairs with `velocity.checkpoint` (which already
+  needs shape metadata).
+
+## Privacy
+
+> Source: 2026-05-21 audit-of-audits. Byzantine robustness + DP is the 2026 gold-standard pairing per [Fed-BioMed Opacus reference](https://fedbiomed.gitlabpages.inria.fr/latest/tutorials/security/differential-privacy-with-opacus-on-fedbiomed/). Two distinct work-streams: client-side DP (Opacus, canonical) and server-side DP in the Rust kernel (novel, research).
+
+- **Client-side DP via Opacus in example clients** — wire `Opacus.PrivacyEngine` into `examples/mnist_fedavg.py` and any new example clients so the example surface demonstrates DP-aware training. This is the canonical 2026 pattern; not novel infrastructure work but visible adoption. Tier 1 low-lift. Pairs with phalanx-fl's parallel Privacy section (the simulation sandbox covers the same axis end-to-end).
+- **Server-side DP-FedAvg in Rust core (research)** — implement Gaussian-mechanism gradient clipping + noise injection inside `vfl-core/src/strategy.rs` with Renyi-DP accounting for tighter bounds. Expose via `velocity.strategy.FedAvg(differential_privacy=DifferentialPrivacy(epsilon=5.0, ...))`. Benchmark: Rust DP-aggregation vs pure-Python DP alternatives — if Rust isn't materially faster, the work doesn't ship as-is. Research-tier; only meaningful after client-side DP is shipped in examples so the comparison story is honest. Position as: "vFL is the only Rust-native FL aggregator with first-class DP support."
+
+## Streaming aggregation (research)
+
+> Source: 2026-05-21 audit-of-audits. Async batching is current research focus per HuggingFace May 2026 — incremental aggregation as updates arrive (vs barrier-on-all-clients) is a clear novel direction for vFL's "speed platform" angle.
+
+- **Incremental aggregation API** — `VelocityServer(streaming=True)` with `aggregate_partial(client_update)` returning a running estimate. Researchers can inspect convergence mid-round without waiting for stragglers. Measure: latency to "good enough" estimate (e.g., 80% of final accuracy) vs full barrier aggregation; this is the metric that determines whether the approach has legs. Research-tier; only worth picking up once the kernel suite is more complete and the perf story has the headroom.
+- **Federated attack detection layer** — orthogonal to robust aggregation: anomaly-detection (distance-based, statistical) over the client-update distribution before aggregation. Filter suspicious clients out and aggregate cleanly, or aggregate robustly without filtering — both options for practitioners. Measure: detection rate vs false-positive rate under each attack already in the security module. Sibling to `## Attacks`.
+
+## Audit-of-audit follow-ups (2026-05-21)
+
+> Source: 2026-05-21 audit-of-audits review (deleted after extraction). Items that survived verdict review but don't fit Compression / Privacy / Streaming cleanly.
+
+- **Reproducibility archive generator** — `velocity run --save-reproducible-archive` emits a single `.tar.gz` bundling config.yaml + python_version.txt + dependencies.lock + random_seeds.json + results.jsonl + how-to-reproduce README. Re-runnable via `velocity reproduce <archive>` on another box. Not transformative — the pieces already exist as artifacts — but stitching them into one bundle removes a real friction step for collaborators and reviewers. Tier 1 low-priority; lands after the items above.
+- **Cross-silo Pareto benchmark suite** — power-law (Pareto: 20% clients hold 80% data) realistic distribution as a benchmark axis alongside the existing IID + Dirichlet partitioners. Measure convergence + per-client accuracy variance + robustness-under-attack on the same skew. Real FL deployments are cross-silo, not equal-sized; benchmarks should reflect that. Fits under `## Performance`. Tier 3 research.
+
+## Cross-sister polish (2026-05-21)
+
+> Source: 2026-05-21 audit-of-audits review "Insights worth keeping". Mirror items live in the matching ROADMAP for the other active sisters.
+
+- **Add `## Sister ecosystem` block to README** — name Kourai Khryseai / Phalanx-FL / ajbarea.github.io / techne with one-line roles and links. The LDQIS lab page tells the ecosystem story coherently; the sisters themselves do not yet.
+- **Cite Project Glasswing posture in README security framing** — Anthropic's April 2026 trustworthy-software initiative ([anthropic.com/glasswing](https://www.anthropic.com/glasswing)) is the 2026 frame for Byzantine-robust + privacy-aware FL work. vFL's Rust core ("auditable aggregation, no token-stealing prompts or hallucinations") fits this narrative cleanly.
+
 ## Dependency hygiene
 
 Captured from the ECOSYSTEM.md audit (2026-04-22). The "obvious wins"
