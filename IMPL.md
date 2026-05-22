@@ -19,11 +19,6 @@ Per ROADMAP the natural next sessions are:
 2. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
    siblings return plain dict/list[dict] today; migrate to typed
    Prefab returns so Claude UI can render natively.
-3. **Strategy + partition kwargs on `run_real_training`** — today
-   hard-wired to FedAvg + IID. Add strategy + partition kwargs (parsed
-   via `velocity.strategy.parse_strategy` and `velocity.datasets`
-   partition_kwargs) so the agent can demo FedProx on a Dirichlet
-   split in one call.
 
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done) matching

@@ -134,7 +134,9 @@ learning framework. Your users are PhD researchers running FL experiments.
 - ``run_real_training`` triggers an actual federated round on MNIST and
   asks the user to confirm via elicitation before any download or training
   starts. Pass through the elicitation honestly — never auto-confirm on the
-  user's behalf.
+  user's behalf. To demo FedProx on non-IID data, pass
+  ``strategy={"type": "FedProx", "mu": 0.05}`` and
+  ``partition="dirichlet"`` with ``partition_kwargs={"alpha": 0.1}``.
 - Never call ``forget_memory`` without an explicit user request.
 - Always log hypotheses the user states aloud via ``update_hypothesis``.
 """
@@ -333,6 +335,9 @@ async def run_real_training(
     batch_size: int = 64,
     lr: float = 0.01,
     seed: int = 0,
+    strategy: dict[str, Any] | None = None,
+    partition: str = "iid",
+    partition_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Trigger a real federated round against MNIST (not mock).
 
@@ -346,6 +351,17 @@ async def run_real_training(
     FL inside a Claude conversation", not "run the nightly convergence
     sweep".
 
+    ``strategy`` defaults to FedAvg; pass a dict like
+    ``{"type": "FedProx", "mu": 0.05}`` for parameterized strategies (FedProx,
+    TrimmedMean, Krum, MultiKrum, Bulyan, GeometricMedian — see
+    ``velocity.strategy``). FedProx additionally threads ``mu`` into the
+    client-side proximal term during ``local_train``.
+
+    ``partition`` is one of ``"iid"`` (default), ``"dirichlet"``, or
+    ``"shard"``. ``partition_kwargs`` carries the per-partition params:
+    ``{"alpha": 0.1}`` for Dirichlet, ``{"shards_per_client": 2}`` for shard
+    (McMahan-style). IID takes no kwargs.
+
     Returns ``{"run_id", "summaries", "final_loss", "final_accuracy"}`` on
     success; ``{"status": "declined"|"cancelled", "reason": ...}`` if the
     user does not consent.
@@ -355,11 +371,28 @@ async def run_real_training(
     if num_clients > MAX_REAL_CLIENTS:
         raise ValueError(f"num_clients must be <= {MAX_REAL_CLIENTS}")
 
+    # Resolve + validate strategy + partition *before* elicitation so a
+    # malformed kwarg can't even prompt the user.
+    from velocity.strategy import parse_strategy, strategy_name
+
+    strat = parse_strategy(strategy) if strategy is not None else parse_strategy("FedAvg")
+    if partition not in ("iid", "dirichlet", "shard"):
+        raise ValueError(f"partition must be one of iid|dirichlet|shard, got {partition!r}")
+    p_kwargs = partition_kwargs or {}
+
+    strat_label = strategy_name(strat)
+    p_label = (
+        f"{partition}({', '.join(f'{k}={v}' for k, v in p_kwargs.items())})"
+        if p_kwargs
+        else partition
+    )
+
     result = await ctx.elicit(
         message=(
             f"About to start REAL federated training:\n"
-            f"  dataset={dataset}, clients={num_clients}, rounds={rounds},\n"
-            f"  local_epochs={local_epochs}, batch_size={batch_size}, lr={lr}.\n"
+            f"  dataset={dataset}, strategy={strat_label}, partition={p_label},\n"
+            f"  clients={num_clients}, rounds={rounds}, local_epochs={local_epochs},\n"
+            f"  batch_size={batch_size}, lr={lr}.\n"
             f"First run downloads MNIST (~13MB) via Hugging Face.\n"
             f"Set confirm=true to launch."
         ),
@@ -386,6 +419,9 @@ async def run_real_training(
         batch_size=batch_size,
         lr=lr,
         seed=seed,
+        strategy=strat,
+        partition=partition,
+        partition_kwargs=p_kwargs,
     )
 
 
@@ -399,6 +435,9 @@ async def _execute_real_training(
     batch_size: int,
     lr: float,
     seed: int,
+    strategy: Any,
+    partition: str,
+    partition_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
     """Run real federated training off the asyncio thread.
 
@@ -417,7 +456,48 @@ async def _execute_real_training(
         batch_size=batch_size,
         lr=lr,
         seed=seed,
+        strategy=strategy,
+        partition=partition,
+        partition_kwargs=partition_kwargs,
     )
+
+
+def _map_strategy_to_rust(strategy: Any) -> Any:
+    """Map a Python strategy dataclass to its Rust core constructor call.
+
+    Mirrors ``VelocityServer._map_strategy``; kept local to the MCP tool
+    path because the MCP tool builds the Rust Orchestrator directly rather
+    than going through ``VelocityServer``.
+    """
+    from velocity import _core
+    from velocity.strategy import (
+        Bulyan,
+        FedAvg,
+        FedMedian,
+        FedProx,
+        GeometricMedian,
+        Krum,
+        MultiKrum,
+        TrimmedMean,
+    )
+
+    if isinstance(strategy, FedAvg):
+        return _core.Strategy.fed_avg()
+    if isinstance(strategy, FedProx):
+        return _core.Strategy.fed_prox(strategy.mu)
+    if isinstance(strategy, FedMedian):
+        return _core.Strategy.fed_median()
+    if isinstance(strategy, TrimmedMean):
+        return _core.Strategy.trimmed_mean(strategy.k)
+    if isinstance(strategy, Krum):
+        return _core.Strategy.krum(strategy.f)
+    if isinstance(strategy, MultiKrum):
+        return _core.Strategy.multi_krum(strategy.f, strategy.m)
+    if isinstance(strategy, Bulyan):
+        return _core.Strategy.bulyan(strategy.f, strategy.m)
+    if isinstance(strategy, GeometricMedian):
+        return _core.Strategy.geometric_median(strategy.eps, strategy.max_iter)
+    raise ValueError(f"Unsupported strategy: {strategy!r}")
 
 
 def _run_real_training_sync(
@@ -430,6 +510,9 @@ def _run_real_training_sync(
     batch_size: int,
     lr: float,
     seed: int,
+    strategy: Any,
+    partition: str,
+    partition_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
     """Sync inner loop — mirrors examples/mnist_fedavg.py shape.
 
@@ -443,6 +526,7 @@ def _run_real_training_sync(
 
     from velocity import _core
     from velocity.datasets import load_federated
+    from velocity.strategy import FedProx, strategy_name
     from velocity.training import (
         evaluate,
         layer_shapes,
@@ -456,9 +540,10 @@ def _run_real_training_sync(
     split = load_federated(
         dataset,
         num_clients=num_clients,
-        partition="iid",
+        partition=partition,  # ty: ignore[invalid-argument-type]
         batch_size=batch_size,
         seed=seed,
+        **partition_kwargs,
     )
 
     # Tiny MLP — same shape as examples/mnist_fedavg.py
@@ -479,7 +564,7 @@ def _run_real_training_sync(
     orch = _core.Orchestrator(
         model_id=model_id,
         dataset=dataset,
-        strategy=_core.Strategy.fed_avg(),
+        strategy=_map_strategy_to_rust(strategy),
         storage="memory://",
         min_clients=num_clients,
         rounds=rounds,
@@ -487,8 +572,12 @@ def _run_real_training_sync(
     )
     orch.set_global_weights(state_dict_to_layers(template_state))
 
+    # FedProx threads its proximal coefficient into local SGD; every other
+    # strategy keeps the FedAvg-style 0.0 proximal term.
+    proximal_mu = strategy.mu if isinstance(strategy, FedProx) else 0.0
+
     config = {
-        "strategy": "FedAvg",
+        "strategy": strategy_name(strategy),
         "model_id": model_id,
         "dataset": dataset,
         "rounds": rounds,
@@ -497,6 +586,8 @@ def _run_real_training_sync(
         "batch_size": batch_size,
         "lr": lr,
         "seed": seed,
+        "partition": partition,
+        "partition_kwargs": partition_kwargs,
         "mode": "real",
     }
     run_id = db.start_run(user_id, config)
@@ -512,7 +603,13 @@ def _run_real_training_sync(
         for client in split.clients:
             local_model = make_model()
             local_model.load_state_dict(copy.deepcopy(global_state))
-            local_train(local_model, client.loader, epochs=local_epochs, lr=lr)
+            local_train(
+                local_model,
+                client.loader,
+                epochs=local_epochs,
+                lr=lr,
+                proximal_mu=proximal_mu,
+            )
             client_updates.append(
                 _core.ClientUpdate(
                     num_samples=client.num_samples,

@@ -30,13 +30,6 @@ Session-by-session execution (the "what are we doing this PR") lives in
 - ~~**`_meta["anthropic/maxResultSizeChars"]` on high-volume MCP tools**~~ —
   shipped 2026-05-22 as part of `run_real_training`. Pattern remains
   worth applying to future leaderboard-dump tools.
-- **Strategy + partition kwargs on `run_real_training`** — today the
-  real-training sibling is hard-wired to FedAvg + IID. Adding
-  `strategy: str = "FedAvg"` + `partition: str = "iid"` (parsed via
-  `velocity.strategy.parse_strategy` and `velocity.datasets`
-  partition_kwargs) lets the agent demo FedProx on a Dirichlet split
-  in one call. Deferred from the original PR to keep elicitation
-  scope surgical.
 
 A2A specialist agents (convergence auditor, robustness auditor, etc.)
 are scoped under [Live experiment leaderboard](#live-experiment-leaderboard)
@@ -403,6 +396,7 @@ ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and 
 
 Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
 
+- **2026-05-22** — `run_real_training` strategy + partition kwargs. Tool accepts `strategy: dict | None` (parsed via `velocity.strategy.parse_strategy` — e.g. `{"type": "FedProx", "mu": 0.05}`) and `partition: str = "iid"` + `partition_kwargs: dict | None` (Dirichlet `{"alpha": 0.1}`, shard `{"shards_per_client": 2}`). Both validated before elicitation; the elicitation message surfaces the resolved strategy + partition labels so the user knows what they're consenting to. FedProx threads `mu` into `local_train`'s proximal term; aggregator-side strategies (Krum/Bulyan/etc.) compose with the existing local SGD. Inline Python-to-Rust strategy mapping mirrors `VelocityServer._map_strategy`. Stale `_core.pyi` stub (missing `geometric_median` since 2026-04-25) fixed in passing.
 - **2026-05-22** — Confirmation-gated `run_real_training` MCP tool: MNIST FedAvg through the real training primitives, gated on MCP elicitation (June-2025 spec, FastMCP 3.2), scope-capped at 5 rounds × 10 clients, `meta={"anthropic/maxResultSizeChars": 500_000}` annotation. `@logged_tool` grew an async branch.
 - **2026-05-21** — Memory compaction: `velocity.memory.compact_entry(user_id, file, keep_last_n)` bounds H2-delimited memory files; surfaced as the `compact_memory` MCP tool. Audit trail in `.events.jsonl` and structured run snapshots in DB are the canonical history.
 - **2026-05-21** — Claude Desktop / MCP wiring guide in `docs/configuration.md` (stdio + HTTP transports, `fastmcp install claude-desktop`, manual `mcpServers` JSON, per-OS path matrix, `VFL_USER_ID` override).

@@ -198,3 +198,76 @@ def test_logged_tool_audits_async_errors(isolated_db: Path, stub_execute: AsyncM
     assert any(a["tool"] == "run_real_training" for a in actions)
     matching = [a for a in actions if a["tool"] == "run_real_training"]
     assert "ValueError" in (matching[0].get("result_summary") or "")
+
+
+def test_strategy_dict_threaded_to_executor(isolated_db: Path, stub_execute: AsyncMock) -> None:
+    """A FedProx strategy dict should reach the executor as a parsed FedProx instance."""
+    del isolated_db
+    from velocity.strategy import FedProx
+
+    ctx = _make_ctx(AcceptedElicitation(data=mcp_app.RealTrainingConfirm(confirm=True)))
+    asyncio.run(
+        mcp_app.run_real_training(
+            ctx=ctx,
+            user_id="testuser",
+            rounds=2,
+            num_clients=2,
+            strategy={"type": "FedProx", "mu": 0.05},
+        )
+    )
+    stub_execute.assert_awaited_once()
+    passed_strategy = stub_execute.call_args.kwargs["strategy"]
+    assert isinstance(passed_strategy, FedProx)
+    assert passed_strategy.mu == 0.05
+
+
+def test_partition_kwargs_threaded_to_executor(isolated_db: Path, stub_execute: AsyncMock) -> None:
+    """Dirichlet partition kwargs should reach the executor untouched."""
+    del isolated_db
+
+    ctx = _make_ctx(AcceptedElicitation(data=mcp_app.RealTrainingConfirm(confirm=True)))
+    asyncio.run(
+        mcp_app.run_real_training(
+            ctx=ctx,
+            user_id="testuser",
+            rounds=2,
+            num_clients=2,
+            partition="dirichlet",
+            partition_kwargs={"alpha": 0.1},
+        )
+    )
+    kwargs = stub_execute.call_args.kwargs
+    assert kwargs["partition"] == "dirichlet"
+    assert kwargs["partition_kwargs"] == {"alpha": 0.1}
+
+
+def test_unknown_partition_rejected_before_elicit(stub_execute: AsyncMock) -> None:
+    """Unknown partition value should raise before elicitation runs."""
+    ctx = _make_ctx(None)  # elicit wouldn't be reached
+    with pytest.raises(ValueError, match="partition must be"):
+        asyncio.run(
+            mcp_app.run_real_training(
+                ctx=ctx,
+                user_id="testuser",
+                rounds=2,
+                num_clients=2,
+                partition="not-a-real-partition",
+            )
+        )
+    stub_execute.assert_not_awaited()
+
+
+def test_unknown_strategy_rejected_before_elicit(stub_execute: AsyncMock) -> None:
+    """Unknown strategy name should propagate parse_strategy's ValueError."""
+    ctx = _make_ctx(None)
+    with pytest.raises(ValueError, match="unknown strategy"):
+        asyncio.run(
+            mcp_app.run_real_training(
+                ctx=ctx,
+                user_id="testuser",
+                rounds=2,
+                num_clients=2,
+                strategy={"type": "TotallyMadeUpStrategy"},
+            )
+        )
+    stub_execute.assert_not_awaited()

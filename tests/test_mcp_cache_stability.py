@@ -21,9 +21,9 @@ fastmcp = pytest.importorskip("fastmcp")
 
 from velocity import mcp_app  # noqa: E402
 
-EXPECTED_INSTRUCTIONS_HASH = "765a7068a9058ffdf81e7796261ca8a3dd5393792c3f2c923cf7f38df51f4f47"
+EXPECTED_INSTRUCTIONS_HASH = "929c48ae82830360f6c9022c1282ae18eef3eccb5fba42c6fe845f1e33d0d358"
 
-EXPECTED_SURFACE_HASH = "e028d620190ef01fc045a103db3986443df084221f93c1db2445368b80ac2f17"
+EXPECTED_SURFACE_HASH = "2caab552e9b1bbe132a41b94fb1e51cdd6602d90cec890dff8c07cbd84ec4794"
 
 
 def _sha256(data: bytes) -> str:
