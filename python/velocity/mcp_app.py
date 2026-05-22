@@ -35,6 +35,7 @@ from fastmcp.server.elicitation import (
     CancelledElicitation,
     DeclinedElicitation,
 )
+from fastmcp.tools import ToolResult
 from prefab_ui.components import (
     Badge,
     Card,
@@ -556,7 +557,7 @@ def _arena_worst_case_leaderboard() -> list[dict[str, Any]]:
 
 @mcp.tool
 @logged_tool
-def attack_arena_leaderboard() -> Column:
+def attack_arena_leaderboard() -> ToolResult:
     """Worst-case Byzantine-FL defender leaderboard.
 
     Composes the Prefab equivalent of the kind of widget a generative
@@ -569,12 +570,19 @@ def attack_arena_leaderboard() -> Column:
     version makes the same widget reachable as a single deterministic
     call instead of a chat round-trip through the LLM.
 
+    Returns a ToolResult that bundles a compact text summary (what the
+    model reads, ~100 tokens) with the Prefab tree (what the user sees,
+    rendered by the bundled React renderer). The text-and-UI split is
+    the May 2026 best-practice pattern documented at
+    gofastmcp.com/apps/prefab — keeps the model's context lean without
+    sacrificing the rich rendering.
+
     Data lineage: same `out/attack_arena/aggregated.csv` corpus the
     `attack_arena` tool reads — Strategy x Attack final-round means.
     """
     leaderboard = _arena_worst_case_leaderboard()
     if not leaderboard:
-        return Column(
+        empty = Column(
             children=[
                 Card(
                     children=[
@@ -590,6 +598,10 @@ def attack_arena_leaderboard() -> Column:
                     ]
                 )
             ]
+        )
+        return ToolResult(
+            content="Attack-arena corpus empty. Run scripts/dump_attack_arena.py first.",
+            structured_content=empty.to_json(),
         )
 
     def card_for(rank: int, row: dict[str, Any]) -> Card:
@@ -632,7 +644,7 @@ def attack_arena_leaderboard() -> Column:
             ]
         )
 
-    return Column(
+    tree = Column(
         gap=6,
         children=[
             Heading("Worst-case Byzantine-FL defender leaderboard", level=2),
@@ -650,11 +662,17 @@ def attack_arena_leaderboard() -> Column:
             ),
         ],
     )
+    summary_lines = [
+        f"#{i + 1} {r['strategy']}: {r['worst']:.1%} worst-case (under {r['worst_attack_label']})"
+        for i, r in enumerate(leaderboard)
+    ]
+    summary = "Worst-case Byzantine-FL ranking (real MNIST, 5 seeds):\n" + "\n".join(summary_lines)
+    return ToolResult(content=summary, structured_content=tree.to_json())
 
 
 @mcp.tool
 @logged_tool
-def attack_arena() -> Tabs:
+def attack_arena() -> ToolResult:
     """Render the Byzantine-FL attack-arena dashboard.
 
     Three tabbed panels (Gaussian / IPM / Label-flip) — each showing
@@ -663,6 +681,13 @@ def attack_arena() -> Tabs:
     convergence trajectories across the 5 seeds, and a detailed
     DataTable.
 
+    Returns a ToolResult bundling a per-attack text summary (model-
+    visible, ~150 tokens) with the rendered Prefab Tabs tree (user-
+    visible widget). May 2026 best practice per gofastmcp.com/apps/prefab
+    is to keep model context lean by surfacing a compact text alongside
+    rich UI rather than streaming the full component JSON tree into the
+    model's reasoning window.
+
     Data lineage: ``out/attack_arena/aggregated.csv`` produced by
     ``scripts/dump_attack_arena.py`` — 5 strategies x 3 attacks x 5
     seeds x 16 rounds on real Hugging Face MNIST, n=11 / f=2 /
@@ -670,13 +695,25 @@ def attack_arena() -> Tabs:
     ``out/attack_arena/README.md`` for the full provenance + caption-
     ready citation template.
     """
-    return Tabs(
+    tree = Tabs(
         value="gaussian",
         children=[
             Tab(_ARENA_LABELS[a], value=a, children=[_arena_attack_panel(a)])
             for a in _ARENA_ATTACKS
         ],
     )
+    if _ARENA is None:
+        summary = "Attack-arena corpus empty. Run scripts/dump_attack_arena.py first."
+    else:
+        lines = ["Byzantine-FL attack arena (real MNIST, 5 seeds, 16 rounds):"]
+        for attack in _ARENA_ATTACKS:
+            finals = _ARENA[attack][-1]
+            ranked = sorted(_ARENA_STRATEGIES, key=lambda s: finals[s], reverse=True)
+            lines.append(
+                f"  {_ARENA_LABELS[attack]}: " + ", ".join(f"{s}={finals[s]:.1%}" for s in ranked)
+            )
+        summary = "\n".join(lines)
+    return ToolResult(content=summary, structured_content=tree.to_json())
 
 
 @mcp.tool

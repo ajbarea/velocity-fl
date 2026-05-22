@@ -14,6 +14,11 @@ This page covers vFL's MCP Apps surface, how to run the dev UI locally,
 how to wire the live demo into Claude Desktop, and the generative path
 where the LLM writes Prefab Python on the fly.
 
+> MCP Apps is an official MCP extension formalized as
+> [SEP-1865](https://blog.modelcontextprotocol.io/posts/2026-01-26-mcp-apps/)
+> in early 2026. Hosts that support the spec (Claude Desktop, claude.ai,
+> ChatGPT, the FastMCP dev UI) all render the same wire format.
+
 > Set up the basic MCP server first. See [Configuration · MCP server](configuration.md#mcp-server-claude-desktop-claude-code-local-inspection)
 > for stdio + HTTP transports and the Claude Desktop wiring. This page
 > assumes you already have the server running and reachable from a host.
@@ -38,6 +43,59 @@ output shape, the picker form (or chat client) renders the result
 deterministically. The last two come from
 `mcp.add_provider(GenerativeUI())` and let the LLM compose UIs by
 writing Prefab Python at call time.
+
+### `ToolResult` dual content (May 2026 token-efficiency pattern)
+
+The two arena tools (`attack_arena` and `attack_arena_leaderboard`)
+return [`fastmcp.tools.ToolResult`](https://gofastmcp.com/apps/prefab)
+rather than a bare Prefab component:
+
+```python
+return ToolResult(
+    content="ArKrum tops the worst-case ranking at 96.0% ...",  # ~100 tokens for the model
+    structured_content=tree.to_json(),                          # full widget for the renderer
+)
+```
+
+The model reads a compact text summary; the user sees the full
+interactive widget rendered through the bundled React renderer. This
+is the explicitly-recommended pattern in the May 2026 FastMCP Apps
+docs — it keeps the model's reasoning context lean (the model does
+not need to parse ~5–10K tokens of nested component JSON to answer a
+question about the run) while preserving the rich rendering for the
+human. New tools that wrap large datasets should use `ToolResult`;
+single-card / single-metric returns can stay bare.
+
+### Choosing typed tools vs `FastMCPApp`
+
+vFL ships the **typed-tool** pattern (one `@mcp.tool` per widget,
+returning a Prefab component or `ToolResult`). This is the right
+choice for vFL because:
+
+- Each widget is a self-contained read of frozen state (no UI-internal
+  callbacks back into other server tools).
+- The server is not composed under namespaces (no `vfl_` prefix
+  munging that would invalidate string-based `CallTool` references).
+- The tool surface is small enough that visibility management is not
+  yet a problem.
+
+For more complex interactive apps where the UI invokes backend tools
+on user action (forms with submit handlers, dashboards with drill-down
+buttons, multi-step flows), the
+[`FastMCPApp`](https://gofastmcp.com/apps/fastmcp-app) class is the
+May 2026 canonical pattern. It splits the surface:
+
+- `@app.ui()` registers model-visible entry points returning a
+  `PrefabApp`.
+- `@app.tool()` registers backend operations that are hidden from
+  the model by default (`visibility=["app"]`) and only callable from
+  the UI via `CallTool` with function references that survive
+  server composition.
+
+If a future vFL UI needs the user to click into a run and trigger
+`run_real_training` from the rendered card, that's the moment to
+migrate from `@mcp.tool` to `FastMCPApp`. Today's read-only dashboards
+do not need it.
 
 ## Run the dev UI locally
 
@@ -151,6 +209,28 @@ the data, the chat client passes the resulting rows into
 code that consumes those rows. The model does not need to recompute
 anything; it composes.
 
+### Sandbox security model
+
+The Pyodide sandbox is for **trust**, not **isolation**. Quoting the
+Pyodide maintainers: *"Pyodide doesn't claim to be a security
+boundary."* What isolates the LLM-authored code from your host
+machine is the **iframe sandbox + CSP** that wraps the Pyodide
+runtime in the MCP host (Claude Desktop, the FastMCP dev UI). Three
+takeaways for production MCP servers:
+
+- The MCP server itself should be sandboxed at the OS layer (restricted
+  filesystem and network) per Anthropic's
+  [official MCP security guidance](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices).
+  The Pyodide sandbox protects the host's browser, not the MCP
+  server's process.
+- Tool inputs (including the `code` arg to `generate_prefab_ui`) are
+  untrusted; validate as you would any user-provided payload. The
+  FastMCP `GenerativeUI` provider does basic AST checks before
+  executing in Pyodide.
+- UI-initiated tool calls (the `@app.tool()` callbacks under
+  `FastMCPApp`) inherit the host's user-consent UX. Read the SEP-1865
+  spec for the exact semantics if you're shipping interactive forms.
+
 ## The attack-arena dataset
 
 Both `attack_arena()` and `attack_arena_leaderboard()` read
@@ -194,6 +274,12 @@ std bands across multiple seeds; single-seed traces are not the
   enforces whichever form is canonical; if the type-checker rejects
   a kwarg, try the other form. The vFL `mcp_app.py` shows working
   examples of each.
+- **Pin `prefab-ui` directly.** The `fastmcp[apps]>=3.2` constraint
+  pulls in `prefab-ui` transitively, but the May 2026 FastMCP docs
+  recommend pinning `prefab-ui` to a specific version in your own
+  dependencies. Prefab is pre-1.0 and ships breaking changes on the
+  patch axis. vFL's `pyproject.toml` carries the direct pin under the
+  `agent` extra alongside `fastmcp[apps]`.
 
 ## Adding a new Prefab-returning tool
 

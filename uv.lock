@@ -3088,6 +3088,7 @@ dependencies = [
 [package.optional-dependencies]
 agent = [
     { name = "fastmcp", extra = ["apps"] },
+    { name = "prefab-ui" },
 ]
 all = [
     { name = "datasets" },
@@ -3117,6 +3118,7 @@ dev = [
     { name = "fastmcp", extra = ["apps"] },
     { name = "hypothesis" },
     { name = "maturin" },
+    { name = "prefab-ui" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-benchmark" },
@@ -3132,6 +3134,7 @@ requires-dist = [
     { name = "fastmcp", extras = ["apps"], marker = "extra == 'agent'", specifier = ">=3.2" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "peft", marker = "extra == 'hf'", specifier = ">=0.10" },
+    { name = "prefab-ui", marker = "extra == 'agent'", specifier = ">=0.19,<0.20" },
     { name = "prefect", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "safetensors", marker = "extra == 'hf'", specifier = ">=0.4" },
@@ -3148,6 +3151,7 @@ dev = [
     { name = "fastmcp", extras = ["apps"], specifier = ">=3.2" },
     { name = "hypothesis", specifier = ">=6.100" },
     { name = "maturin", specifier = ">=1.5,<2.0" },
+    { name = "prefab-ui", specifier = ">=0.19,<0.20" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", specifier = ">=0.23" },
     { name = "pytest-benchmark", specifier = ">=4.0" },
