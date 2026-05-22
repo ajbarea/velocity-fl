@@ -25,15 +25,30 @@ import inspect
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
 
 from fastmcp import Context, FastMCP
+from fastmcp.apps.generative import GenerativeUI
 from fastmcp.server.elicitation import (
     AcceptedElicitation,
     CancelledElicitation,
     DeclinedElicitation,
 )
-from prefab_ui.components import Column, DataTable, DataTableColumn
+from prefab_ui.components import (
+    Badge,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    Column,
+    DataTable,
+    DataTableColumn,
+    Metric,
+    Row,
+    Tab,
+    Tabs,
+)
 from prefab_ui.components.charts import ChartSeries, LineChart
 
 from velocity import db
@@ -144,6 +159,15 @@ learning framework. Your users are PhD researchers running FL experiments.
 """
 
 mcp = FastMCP(name="velocityfl", instructions=INSTRUCTIONS)
+
+# research(2026-05): GenerativeUI provider lets the LLM write Prefab Python
+# on the fly inside a Pyodide sandbox + stream the rendered result through
+# the same `ui://` resource as hand-authored components. Registers three
+# capabilities: `generate_prefab_ui`, `search_prefab_components`, and the
+# streaming renderer. Pairs with `attack_arena` below — declarative
+# dashboards for the canonical view, generative for "ask the model to
+# compose a custom panel".
+mcp.add_provider(GenerativeUI())
 
 MAX_DEMO_ROUNDS = 5
 # Cap real-training scope so an MCP-driven session can't kick off a 30-minute
@@ -340,6 +364,182 @@ def compare_runs(run_id_a: str, run_id_b: str) -> Column:
                 ],
                 rows=rows,  # ty: ignore[invalid-argument-type]
             ),
+        ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Attack arena dashboard — Byzantine-FL convergence under three paper-cited
+# attacks. Reads the corpus that `scripts/dump_attack_arena.py` produced.
+# ---------------------------------------------------------------------------
+
+_ARENA_STRATEGIES = ("FedAvg", "Krum", "MultiKrum", "Bulyan", "ArKrum")
+_ARENA_ATTACKS = ("gaussian", "ipm", "label_flip")
+_ARENA_LABELS = {
+    "gaussian": "Gaussian (Krum-paper)",
+    "ipm": "IPM (Fall of Empires)",
+    "label_flip": "Label flip (Tolpegin 2020)",
+}
+
+
+def _load_arena_corpus() -> dict[str, list[dict[str, Any]]] | None:
+    """Load `out/attack_arena/aggregated.csv` reshaped per attack.
+
+    Returns ``None`` when the corpus is absent (the tool surface stays
+    cacheable; the tool itself raises a clear ``ValueError`` if invoked
+    against an empty corpus). The script that produces the file is
+    documented at ``out/attack_arena/README.md``.
+
+    Shape: ``{attack -> [{round, FedAvg, Krum, …, _FedAvg_std, …}, …]}``
+    where each round-row carries the per-strategy mean accuracy + std
+    keyed by ``_{strategy}_std`` (the underscore-prefix keeps the
+    LineChart's ``series=[ChartSeries(dataKey=strategy)]`` resolution
+    clean).
+    """
+    import csv
+
+    path = Path(__file__).resolve().parents[2] / "out" / "attack_arena" / "aggregated.csv"
+    if not path.exists():
+        return None
+    by_attack: dict[str, dict[int, dict[str, Any]]] = {}
+    with path.open() as fh:
+        for row in csv.DictReader(fh):
+            attack = row["attack"]
+            rnd = int(row["round"])
+            strategy = row["strategy"]
+            slot = by_attack.setdefault(attack, {}).setdefault(rnd, {"round": rnd})
+            slot[strategy] = float(row["mean_acc"])
+            slot[f"_{strategy}_std"] = float(row["std_acc"])
+    return {a: [d for _, d in sorted(by_round.items())] for a, by_round in by_attack.items()}
+
+
+_ARENA = _load_arena_corpus()
+
+
+def _arena_strategy_card(strategy: str, mean_acc: float, std_acc: float) -> Card:
+    if mean_acc >= 0.95:
+        variant, label = "success", "Strong defense"
+    elif mean_acc >= 0.90:
+        variant, label = "info", "Robust"
+    elif mean_acc >= 0.50:
+        variant, label = "warning", "Degraded"
+    else:
+        variant, label = "destructive", "Cratered"
+    return Card(
+        children=[
+            CardHeader(children=[CardTitle(strategy)]),
+            CardContent(
+                children=[
+                    Metric(
+                        label="Final accuracy",
+                        value=f"{mean_acc:.1%}",
+                        description=f"± {std_acc:.3f} over 5 seeds",
+                    ),
+                    Badge(label=label, variant=variant),
+                ]
+            ),
+        ]
+    )
+
+
+def _arena_attack_panel(attack: str) -> Column:
+    if _ARENA is None or attack not in _ARENA:
+        return Column(
+            children=[
+                Card(
+                    children=[
+                        CardHeader(children=[CardTitle(f"No data for attack {attack!r}")]),
+                        CardContent(
+                            children=[
+                                Metric(
+                                    label="status",
+                                    value="run scripts/dump_attack_arena.py to populate",
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+    rows = _ARENA[attack]
+    finals = rows[-1]
+    summary_row = Row(
+        gap=4,
+        children=[
+            _arena_strategy_card(s, finals[s], finals[f"_{s}_std"]) for s in _ARENA_STRATEGIES
+        ],
+    )
+    chart = Card(
+        children=[
+            CardHeader(
+                children=[
+                    CardTitle(
+                        f"{_ARENA_LABELS[attack]} · convergence over 16 rounds "
+                        f"(mean over 5 seeds · n=11 / f=2 / MNIST · Dirichlet alpha=1.0)"
+                    )
+                ]
+            ),
+            CardContent(
+                children=[
+                    LineChart(
+                        data=rows,
+                        x_axis="round",
+                        series=[ChartSeries(dataKey=s, label=s) for s in _ARENA_STRATEGIES],
+                        height=380,
+                        curve="smooth",
+                        show_dots=True,
+                    )
+                ]
+            ),
+        ]
+    )
+    table_rows: list[dict[str, Any]] = []
+    for r in rows:
+        for strategy in _ARENA_STRATEGIES:
+            table_rows.append(
+                {
+                    "round": r["round"],
+                    "strategy": strategy,
+                    "mean_acc": round(r[strategy], 4),
+                    "std_acc": round(r[f"_{strategy}_std"], 4),
+                }
+            )
+    detail = DataTable(
+        columns=[
+            DataTableColumn(key="round", header="Round", sortable=True),
+            DataTableColumn(key="strategy", header="Strategy", sortable=True),
+            DataTableColumn(key="mean_acc", header="Mean acc", sortable=True),
+            DataTableColumn(key="std_acc", header="Std acc", sortable=True),
+        ],
+        rows=table_rows,  # ty: ignore[invalid-argument-type]
+        search=True,
+    )
+    return Column(children=[summary_row, chart, detail])
+
+
+@mcp.tool
+@logged_tool
+def attack_arena() -> Tabs:
+    """Render the Byzantine-FL attack-arena dashboard.
+
+    Three tabbed panels (Gaussian / IPM / Label-flip) — each showing
+    a row of 5 strategy summary Cards (final accuracy + ± std + Badge
+    keyed by defense strength), a LineChart of the per-round mean
+    convergence trajectories across the 5 seeds, and a detailed
+    DataTable.
+
+    Data lineage: ``out/attack_arena/aggregated.csv`` produced by
+    ``scripts/dump_attack_arena.py`` — 5 strategies x 3 attacks x 5
+    seeds x 16 rounds on real Hugging Face MNIST, n=11 / f=2 /
+    Dirichlet alpha=1.0. Run the script to regenerate; see
+    ``out/attack_arena/README.md`` for the full provenance + caption-
+    ready citation template.
+    """
+    return Tabs(
+        value="gaussian",
+        children=[
+            Tab(_ARENA_LABELS[a], value=a, children=[_arena_attack_panel(a)])
+            for a in _ARENA_ATTACKS
         ],
     )
 
