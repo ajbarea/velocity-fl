@@ -33,6 +33,8 @@ from fastmcp.server.elicitation import (
     CancelledElicitation,
     DeclinedElicitation,
 )
+from prefab_ui.components import Column, DataTable, DataTableColumn
+from prefab_ui.components.charts import ChartSeries, LineChart
 
 from velocity import db
 from velocity import memory as mem
@@ -247,38 +249,99 @@ def memory_index(user_id: str) -> str:
 
 @mcp.tool
 @logged_tool
-def list_runs(user_id: str, limit: int = 10) -> list[dict[str, Any]]:
-    """Return the researcher's most recent runs (newest first)."""
-    return db.recent_runs(user_id, limit)
+def list_runs(user_id: str, limit: int = 10) -> DataTable:
+    """Return the researcher's most recent runs (newest first).
+
+    Renders as an interactive sortable DataTable in Claude's UI. The model
+    sees the same row records as structured content for downstream
+    reasoning (FastMCP serializes Prefab to `structuredContent` on the
+    tool result).
+    """
+    rows = db.recent_runs(user_id, limit)
+    return DataTable(
+        columns=[
+            DataTableColumn(key="run_id", header="Run", sortable=True),
+            DataTableColumn(key="strategy", header="Strategy", sortable=True),
+            DataTableColumn(key="model_id", header="Model", sortable=True),
+            DataTableColumn(key="status", header="Status", sortable=True),
+            DataTableColumn(key="started_at", header="Started", sortable=True),
+            DataTableColumn(key="completed_at", header="Completed", sortable=True),
+        ],
+        rows=rows,  # ty: ignore[invalid-argument-type]
+        search=True,
+    )
 
 
 @mcp.tool
 @logged_tool
-def run_rounds_history(run_id: str) -> list[dict[str, Any]]:
-    """Return per-round (round_num, global_loss, num_clients) for a run."""
-    return db.run_history(run_id)
+def run_rounds_history(run_id: str) -> Column:
+    """Return per-round (round_num, global_loss, num_clients) for a run.
+
+    Renders as a stacked Column: LineChart of the loss trajectory + raw
+    DataTable. The model still gets the row records as structured content
+    via FastMCP's Prefab serialization.
+    """
+    rows = db.run_history(run_id)
+    return Column(
+        children=[
+            LineChart(
+                data=rows,
+                x_axis="round_num",
+                series=[ChartSeries(dataKey="global_loss", label="Global loss")],
+            ),
+            DataTable(
+                columns=[
+                    DataTableColumn(key="round_num", header="Round", sortable=True),
+                    DataTableColumn(key="global_loss", header="Global loss", sortable=True),
+                    DataTableColumn(key="num_clients", header="Clients", sortable=True),
+                ],
+                rows=rows,  # ty: ignore[invalid-argument-type]
+            ),
+        ],
+    )
 
 
 @mcp.tool
 @logged_tool
-def compare_runs(run_id_a: str, run_id_b: str) -> dict[str, Any]:
-    """Paired-round comparison of global_loss between two runs."""
+def compare_runs(run_id_a: str, run_id_b: str) -> Column:
+    """Paired-round comparison of global_loss between two runs.
+
+    Renders as a stacked Column: LineChart overlaying the two loss curves
+    + per-round delta DataTable.
+    """
     a = {r["round_num"]: r for r in db.run_history(run_id_a)}
     b = {r["round_num"]: r for r in db.run_history(run_id_b)}
     shared = sorted(set(a) & set(b))
-    return {
-        "run_a": run_id_a,
-        "run_b": run_id_b,
-        "rounds": [
-            {
-                "round": n,
-                "loss_a": a[n]["global_loss"],
-                "loss_b": b[n]["global_loss"],
-                "delta": (b[n]["global_loss"] or 0) - (a[n]["global_loss"] or 0),
-            }
-            for n in shared
+    rows: list[dict[str, Any]] = [
+        {
+            "round": n,
+            "loss_a": a[n]["global_loss"],
+            "loss_b": b[n]["global_loss"],
+            "delta": (b[n]["global_loss"] or 0) - (a[n]["global_loss"] or 0),
+        }
+        for n in shared
+    ]
+    return Column(
+        children=[
+            LineChart(
+                data=rows,
+                x_axis="round",
+                series=[
+                    ChartSeries(dataKey="loss_a", label=run_id_a),
+                    ChartSeries(dataKey="loss_b", label=run_id_b),
+                ],
+            ),
+            DataTable(
+                columns=[
+                    DataTableColumn(key="round", header="Round", sortable=True),
+                    DataTableColumn(key="loss_a", header=f"Loss A ({run_id_a})", sortable=True),
+                    DataTableColumn(key="loss_b", header=f"Loss B ({run_id_b})", sortable=True),
+                    DataTableColumn(key="delta", header="Delta (B - A)", sortable=True),
+                ],
+                rows=rows,  # ty: ignore[invalid-argument-type]
+            ),
         ],
-    }
+    )
 
 
 @mcp.tool
@@ -684,9 +747,19 @@ def show_memory(user_id: str, file: str) -> str:
 
 @mcp.tool
 @logged_tool
-def memory_ledger(user_id: str, limit: int = 50) -> list[dict[str, Any]]:
+def memory_ledger(user_id: str, limit: int = 50) -> DataTable:
     """Return the last N memory write events for auditing."""
-    return mem.events(user_id, limit)
+    rows = mem.events(user_id, limit)
+    return DataTable(
+        columns=[
+            DataTableColumn(key="ts", header="Timestamp", sortable=True),
+            DataTableColumn(key="action", header="Action", sortable=True),
+            DataTableColumn(key="file", header="File", sortable=True),
+            DataTableColumn(key="summary", header="Summary"),
+        ],
+        rows=rows,  # ty: ignore[invalid-argument-type]
+        search=True,
+    )
 
 
 @mcp.tool
