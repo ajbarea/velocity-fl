@@ -28,6 +28,26 @@ Session-by-session execution (the "what are we doing this PR") lives in
   conversation. `run_demo` and `run_real_training` deliberately keep
   their `dict` return — their nested run summaries don't map to a
   single component; revisit if AJ wants Card+Metric blocks for them.
+- **Attack-arena dashboard (Prefab phase 2 — LinkedIn demo lane)** —
+  follow-up to the 2026-05-23 attack-arena data dump
+  (`scripts/dump_attack_arena.py` → `out/attack_arena/aggregated.csv`,
+  5 strategies × 3 paper-cited attacks × 5 seeds × 16 rounds on real
+  MNIST n=11/f=2/Dirichlet α=1.0). Reads the CSV at server startup,
+  exposes an `attack_arena(attack)` MCP tool returning a
+  `Column[Grid[Card+Metric+Sparkline], LineChart-with-mean+std-bands,
+  DataTable]` tree. The bands are the NeurIPS 2026 / MLRC-track norm
+  for FL convergence comparisons; single-seed traces are the prior
+  state of the art and look amateur in 2026. Headliner panel: FedAvg
+  vs four defenses under Gaussian (FedAvg craters to ~10%; defenses
+  hold ~92%). Pairs with the generative-UI provider for the live "ask
+  the LLM to compose a comparison panel" beat.
+- **Generative-UI provider** — `mcp.add_provider(GenerativeUI())`
+  registers `generate_prefab_ui` + `search_prefab_components` + a
+  streaming `ui://` resource. Three-line wiring; the demo flow is
+  *"ask the model to build a custom figure from the existing typed
+  tool returns"*, leveraging the Pyodide sandbox bundled with
+  `fastmcp[apps]`. Ships alongside the attack-arena dashboard so the
+  LinkedIn screencast can close on the generative beat.
 - ~~**Memory compaction**~~ — shipped 2026-05-21 (see Completed).
   `velocity.memory.compact_entry()` + `compact_memory` MCP tool bound
   `recent_runs.md` (or any writable memory file) by keeping the last N
