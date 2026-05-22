@@ -393,169 +393,27 @@ below are wider than they are today.
 
 ## Dependency hygiene
 
-Captured from the ECOSYSTEM.md audit (2026-04-22). The "obvious wins"
-(prefab-ui removal, safetensors Rust-dep removal, ty `<0.1` cap) shipped
-with that audit; the items below need a real decision before they move.
+ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and rand 0.8→0.10 all shipped — see Completed).
 
-- **`pyo3` 0.21 → 0.23 bump** — two minors behind current. API changes
-  between 0.21 and 0.23 touch `PyCell`, `PyTuple::new_bound`, and the
-  `Bound<'py, T>` lifetime pattern; mostly mechanical but ripples
-  through every `#[pyfunction]` and `#[pymethods]` site in
-  `vfl-core/src/lib.rs`. Batch with the numpy return-path work in
-  **Performance** (which also wants 0.21 → 0.23) to avoid doing the
-  migration twice.
-- **`rand` 0.8 → 0.9 bump** — one minor behind. 0.9 renames
-  `thread_rng` → `rng`, removes `SliceRandom::choose_multiple` in
-  favour of `IteratorRandom`, and tightens trait bounds on
-  `Distribution`. Touches the Dirichlet partitioner and the
-  `gaussian_noise` path in the kernel. Cheap when done with the pyo3
-  bump above; fiddly on its own.
-- **`[agent]` extra split — `[mcp]` + `[ui]`** — today `[agent]` holds
-  only `fastmcp`. When a UI surface (Prefab or successor) lands, it
-  goes in a separate `[ui]` extra rather than rejoining `[agent]` —
-  the two surfaces have different upgrade cadences and a user can
-  legitimately want one without the other. `[agent]` stays as a
-  meta-extra that pulls `[mcp,ui]` together, matching how `[all]`
-  works.
-- **Prefect as a hard runtime dep — revisit trigger** — today
-  `velocity.flows` imports `prefect` at module scope, making it a
-  hard baseline dep (~50 MB installed). Move to a `[prefect]` extra
-  with a conditional import in `velocity.flows` if (and only if) a
-  user asks for a non-Prefect orchestration path. Don't do it
-  pre-emptively — the extras-cascade adds real cognitive cost.
-- **Checkpoint I/O (unblocks re-adding `safetensors`)** — the Rust
-  `safetensors = "0.4"` dep was removed because nothing imports it.
-  When `velocity.checkpoint` lands (fast-secure weight serialisation
-  for warm-start and fine-tune resume), re-add the Rust dep with the
-  feature that actually uses it.
+- **`[agent]` extra split into `[mcp]` + `[ui]`** — today `[agent]` holds only `fastmcp`. When a UI surface (Prefab or successor) lands, give it a separate `[ui]` extra rather than rejoining `[agent]`; different upgrade cadences. `[agent]` becomes a meta-extra pulling `[mcp,ui]`, matching `[all]`.
+- **Prefect as hard runtime dep — revisit trigger** — `velocity.flows` imports `prefect` at module scope (~50 MB baseline). Move to a `[prefect]` extra with conditional import only if a user asks for a non-Prefect orchestration path; pre-emptive extras add real cognitive cost.
+- **Checkpoint I/O (unblocks re-adding `safetensors`)** — the Rust `safetensors = "0.4"` dep was removed because nothing imported it. When `velocity.checkpoint` lands (warm-start + fine-tune resume), re-add the Rust dep with the feature that actually uses it.
 
 ## Completed
 
-Dated one-liners for shipped roadmap-scale work. Most recent first. The
-commit history and `docs/benchmarks.md` / `docs/convergence.md` are the
-authoritative record; this log is the human index into them.
+Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
 
-- **2026-05-22** — Confirmation-gated `run_real_training` MCP tool. The
-  real-training sibling to `run_demo` shipped: same conversational
-  surface, but runs *actual* federated MNIST FedAvg through
-  `velocity.training` primitives instead of the mock Gaussian-noise
-  client weights. Gated on **MCP elicitation** (June-2025 spec, FastMCP
-  3.2 `ctx.elicit(response_type=RealTrainingConfirm)`) — the four-arm
-  match (`AcceptedElicitation` with `confirm=True`/`False`,
-  `DeclinedElicitation`, `CancelledElicitation`) routes accept-with-consent
-  to the trainer and short-circuits every other case. Scope is bounded
-  server-side at `MAX_REAL_ROUNDS=5` + `MAX_REAL_CLIENTS=10`, enforced
-  before elicitation so misuse can't even prompt the user. Decorator
-  carries `meta={"anthropic/maxResultSizeChars": 500_000}`. The
-  `@logged_tool` audit-wrapper grew an async branch
-  (`asyncio.iscoroutinefunction`) so the elicitation path still records
-  to `agent_actions`. INSTRUCTIONS gained one paragraph; both prompt-cache
-  hashes bumped. `velocity.training.layers_to_state_dict` had a stale
-  `list[float]` inner type that the convergence example skipped
-  (lives outside `ty.src.include`) — relaxed to `Any` to match the real
-  ndarray-or-list boundary. 8 new tests cover the four elicitation
-  arms, both scope caps, and the async audit-log path. 178 total tests
-  pass (up from 170). Lint + ty + clippy clean.
-- **2026-05-21** — Memory compaction for `recent_runs.md` (and any
-  writable memory file). `velocity.memory.compact_entry(user_id, file,
-  keep_last_n)` walks H2 (`## `) block boundaries, drops the oldest
-  beyond `keep_last_n`, prepends a dated compaction marker, and writes
-  a `compact` event to `.events.jsonl`. Surfaced as the
-  `compact_memory` MCP tool so the agent can self-bound a fat file
-  mid-session. The audit trail (per-block `summary` strings in the
-  events ledger) and the structured run snapshots (via
-  `db.recent_runs`) remain the canonical history; compaction is a
-  display-bound, not a retention-bound. 8 new unit tests; MCP cache
-  hash bumped to reflect the new tool in the cacheable surface.
-- **2026-05-21** — Claude Desktop wiring guide added to
-  `docs/configuration.md`. New "MCP server" section covers stdio
-  transport (Claude Desktop / Claude Code) via both the automated
-  `fastmcp install claude-desktop` CLI and a manual `mcpServers` JSON
-  block; HTTP transport (`--transport http --port 8765`) for the MCP
-  Inspector and local debugging; the per-OS config-file path matrix;
-  the `VFL_USER_ID` env-var override. Web-search verified May 2026
-  against gofastmcp.com/integrations/claude-desktop. The roadmap item
-  was prior to the wiring; users can now wire up the MCP server
-  without reading the source.
-- **2026-05-21** — `rand` 0.8 → 0.10 + `rand_distr` 0.4 → 0.6 bump
-  in `vfl-core`. Originally queued as 0.8 → 0.9; web-search at
-  execution showed `rand` 0.10.1 is current stable (`rand_distr` 0.6.0
-  pins rand ^0.10), so bumped through both major versions in one PR.
-  API migration touched `vfl-core/src/security.rs` only:
-  `thread_rng()` → `rng()`, `Rng` trait → `RngExt`, `gen::<T>()` →
-  `random::<T>()`, `gen_range(..)` → `random_range(..)`. The Dirichlet
-  partitioner is Python-side (`random.Random`) and untouched; the prior
-  IMPL note that the bump "touches gaussian_noise and the Dirichlet
-  partitioner" was itself a stale assumption. 48 Rust unit tests + 162
-  Python tests pass; clippy + cargo fmt green.
-- **2026-05-21** — Stale-assumption audit retired the "CPU-only torch
-  extra" CI item. The roadmap claim "tests.yml runs uv sync (no
-  extras), which prunes torch and skips tests/test_convergence.py
-  entirely" turned out to be stale: `tests.yml` already runs
-  `uv sync --extra hf --extra torch` (line 49 at audit time) and
-  `[tool.uv.sources]` in `pyproject.toml` already routes
-  `torch` / `torchvision` through PyTorch's `+cpu` wheel index
-  (`[[tool.uv.index]] name = "pytorch-cpu"`). The hermetic Gaussian-blobs
-  convergence proof in `tests/test_convergence.py` runs per-PR and has
-  for some time. Nightly (`nightly.yml`) keeps the longer
-  `examples/mnist_fedavg.py` run + network-dependent dataset paths.
-  Verified: `uv sync --extra torch` pulls the CPU wheels described in the
-  pyproject.toml routing comment (~150–200 MB), not the ~2.5 GB CUDA
-  runtime. No work to do; roadmap text updated to reflect reality.
-- **2026-04-25** — Geometric Median (RFA, Pillutla et al. IEEE TSP 2022)
-  via Weiszfeld iteration shipped as the 8th `Strategy`.
-  `Strategy::GeometricMedian { eps, max_iter }` provides sample-weighted
-  aggregation with ~50% Byzantine breakdown (tolerates up to ⌊(n-1)/2⌋
-  malicious clients) without explicit thresholding. Rust kernel in
-  `vfl-core`, PyO3 binding + Python dataclass in `velocity.strategy`,
-  Hypothesis oracle in `tests/strategy_reference.py`. Docs propagated
-  across `docs/cli.md`, `docs/api.md`, `docs/strategies.md`,
-  `docs/configuration.md` (PRs #14, #16).
-- **2026-04-23** — Bulyan Byzantine-robust aggregator
-  (`Strategy::Bulyan { f, m }`) shipped as thin orchestration over the
-  existing Multi-Krum and Trimmed Mean kernels: Phase 1 picks `m = n - 2f`
-  survivors by the Multi-Krum scoring rule (refactored `krum_select` to
-  expose `krum_select_indices` for reuse), Phase 2 runs coordinate-wise
-  trimmed mean with `k = f` over just the survivors. Validates Bulyan's
-  `n >= 4f + 3` breakdown bound. Bench rows at all three tiers in
-  `docs/benchmarks.md` (1.54 s at `large`, composes Multi-Krum + TrimmedMean
-  minus the `n → m` subset discount), Python dataclass + `Bulyan(f, m=None)`
-  wired through the Strategy sum type, numpy oracle in
-  `tests/strategy_reference.py` composes the existing references.
-- **2026-04-22** — Zero-copy numpy buffer-protocol return path across the
-  PyO3 boundary. `ClientUpdate.weights`, `Orchestrator.global_weights`,
-  free `aggregate`, and `apply_gaussian_noise` now return
-  `dict[str, numpy.ndarray[float32]]` sharing the Rust `Vec<f32>` buffer.
-  At `large` tier (10M params, 16 layers): getter dropped 425 ms → 6.6 ms
-  (64×); realistic round cost 459 ms → 56.3 ms (8×); realistic-round
-  speedup vs Python FedAvg 11× → 91× (now matches the advertised
-  `run_round`-only 97×). Bumped pyo3 + numpy 0.21 → 0.23 alongside.
-  Before/after tables in `docs/benchmarks.md`.
-- **2026-04-20** — Trimmed Mean coordinate-wise Byzantine-robust aggregator
-  (`Strategy::TrimmedMean { k }`) shipped with bench + Python-reference
-  rows in `docs/benchmarks.md`. Dimension-independent k-partial sort per
-  coordinate; cheaper than FedMedian, simpler than Bulyan. Unblocks Bulyan
-  (which composes Multi-Krum with coordinate-wise trimmed mean).
-- **2026-04-20** — Krum + Multi-Krum Byzantine-robust aggregators
-  (`Strategy::Krum { f }`, `Strategy::MultiKrum { f, m }`) shipped together
-  with shared `krum_select` Rust kernel, dataclass-strategy migration
-  (`FedAvg | FedProx | FedMedian | Krum | MultiKrum`), and
-  `RoundSummary.selected_client_ids`. Bench + Python-reference rows in
-  `docs/benchmarks.md`.
-- **2026-04-20** — Real Hugging Face dataset loader
-  (`velocity.datasets.load_federated`) with column aliasing, canonical
-  train/test/validation split preference, and partition dispatch.
-  MNIST + CIFAR-10 convergence demos measured in
-  `docs/convergence.md`. Rust `ExperimentConfig.dataset` kept as a
-  record-keeping string; Python is the real entry point.
-- **2026-04-18** — Dirichlet-α partitioner (`velocity.partition.dirichlet`)
-  shipped alongside IID and McMahan-shard, all framework-independent
-  under a single `velocity.partition` module. Convergence test
-  coverage under both shard and Dirichlet regimes.
-- **2026-04-18** — Pure-Python FedAvg baseline at the `large` tier of
-  `tests/bench/` so future Rust speedup claims have a same-workload
-  reference. Recorded in `docs/benchmarks.md`.
-- **2026-04-18** — Real end-to-end FedAvg training loop through the
-  PyO3 boundary: client-side PyTorch local training, Rust aggregation,
-  honest per-round eval. MNIST demo + hermetic Gaussian-blobs
-  convergence test, both gated on nightly CI.
+- **2026-05-22** — Confirmation-gated `run_real_training` MCP tool: MNIST FedAvg through the real training primitives, gated on MCP elicitation (June-2025 spec, FastMCP 3.2), scope-capped at 5 rounds × 10 clients, `meta={"anthropic/maxResultSizeChars": 500_000}` annotation. `@logged_tool` grew an async branch.
+- **2026-05-21** — Memory compaction: `velocity.memory.compact_entry(user_id, file, keep_last_n)` bounds H2-delimited memory files; surfaced as the `compact_memory` MCP tool. Audit trail in `.events.jsonl` and structured run snapshots in DB are the canonical history.
+- **2026-05-21** — Claude Desktop / MCP wiring guide in `docs/configuration.md` (stdio + HTTP transports, `fastmcp install claude-desktop`, manual `mcpServers` JSON, per-OS path matrix, `VFL_USER_ID` override).
+- **2026-05-21** — `rand` 0.8 → 0.10 + `rand_distr` 0.4 → 0.6 (web-search showed 0.10.1 as current stable, jumped both majors in one PR). Touched `vfl-core/src/security.rs` only (`thread_rng()` → `rng()`, `gen::<T>()` → `random::<T>()`, `gen_range` → `random_range`).
+- **2026-05-21** — Stale-assumption audit retired the "CPU-only torch extra" CI item. `tests.yml` already runs `uv sync --extra hf --extra torch`; `pyproject.toml` routes `torch` / `torchvision` through PyTorch's `+cpu` wheel index. Hermetic Gaussian-blobs convergence proof runs per-PR.
+- **2026-04-25** — Geometric Median (RFA, Pillutla et al. IEEE TSP 2022) via Weiszfeld iteration, 8th `Strategy`. ~50% Byzantine breakdown without explicit thresholding.
+- **2026-04-23** — Bulyan (`Strategy::Bulyan { f, m }`) as thin orchestration over Multi-Krum (Phase 1 survivor selection) + TrimmedMean (Phase 2 trimmed mean over survivors). Refactored `krum_select` to expose `krum_select_indices` for reuse. Validates `n ≥ 4f + 3` breakdown bound.
+- **2026-04-22** — Zero-copy numpy buffer-protocol across the PyO3 boundary. `Orchestrator.global_weights` getter 425 ms → 6.6 ms (64×) at `large` tier (10M params); realistic round cost 459 → 56.3 ms (8×); FedAvg speedup vs Python 11× → 91×. Bumped pyo3 + numpy 0.21 → 0.23.
+- **2026-04-20** — TrimmedMean (`Strategy::TrimmedMean { k }`) — dimension-independent k-partial sort per coordinate. Cheaper than FedMedian, simpler than Bulyan.
+- **2026-04-20** — Krum + Multi-Krum + shared `krum_select` Rust kernel, dataclass-strategy migration, `RoundSummary.selected_client_ids`.
+- **2026-04-20** — Real HF dataset loader (`velocity.datasets.load_federated`) with column aliasing, canonical split preference, partition dispatch. MNIST + CIFAR-10 convergence demos in `docs/convergence.md`.
+- **2026-04-18** — Dirichlet-α partitioner alongside IID and McMahan-shard, all under a framework-independent `velocity.partition` module.
+- **2026-04-18** — Pure-Python FedAvg baseline at `large` tier so future Rust speedup claims have a same-workload reference.
+- **2026-04-18** — Real end-to-end FedAvg through PyO3: client-side PyTorch local training, Rust aggregation, honest per-round eval. MNIST demo + hermetic Gaussian-blobs convergence test gated on nightly CI.
