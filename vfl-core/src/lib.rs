@@ -103,6 +103,16 @@ impl PyStrategy {
         PyStrategy(strategy::Strategy::GeometricMedian { eps, max_iter })
     }
 
+    /// ArKrum (Yang, Imam, et al. 2025) — parameter-free Krum. Estimates
+    /// the Byzantine count ``f`` per round via median outlier filtering +
+    /// SSE change-point detection on sorted distances, then averages the
+    /// ``n - f̂`` updates closest to the minimum-score client. Removes the
+    /// "you must know f" constraint of standard Krum. Requires ``n >= 5``.
+    #[staticmethod]
+    fn ar_krum() -> Self {
+        PyStrategy(strategy::Strategy::ArKrum)
+    }
+
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }

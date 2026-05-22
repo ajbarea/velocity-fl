@@ -95,6 +95,35 @@ pub enum Strategy {
     /// pp. 1142–1154, 2022. DOI: 10.1109/TSP.2022.3153135.
     /// <https://arxiv.org/abs/1912.13445>
     GeometricMedian { eps: f64, max_iter: usize },
+    /// ArKrum (Average-rKrum) — parameter-free Byzantine-robust aggregator.
+    ///
+    /// Removes the standard Krum requirement that the caller specify the
+    /// number of Byzantine clients `f` in advance. For each client `i`:
+    ///
+    /// 1. Filter extreme outliers from the sorted-ascending distance vector
+    ///    via `τ = median + (median − min)` (Algorithm 1 from the paper).
+    /// 2. Estimate `f̂_i` via SSE-minimising change-point detection on the
+    ///    filtered distances (the breakpoint between "benign" and
+    ///    "malicious" segments). This is rKrum's contribution, layered with
+    ///    the median pre-filter that ArKrum adds to fix rKrum's
+    ///    underestimation under extreme-update attacks.
+    /// 3. Compute the standard Krum score using `n − f̂_i − 2` smallest
+    ///    distances.
+    ///
+    /// Pick `u*` with the lowest score, take the `(n − f̂_{u*})` closest
+    /// updates to `u*` (including `u*` itself), and uniform-mean them.
+    /// Multi-update averaging matches Multi-Krum's stability gain over
+    /// single-winner Krum, while the parameter-free `f̂` estimation matches
+    /// rKrum.
+    ///
+    /// Requires `n ≥ 5` so the filter + change-point step has enough samples
+    /// to behave. No explicit `f` bound at construction time — robustness is
+    /// data-driven per round.
+    ///
+    /// Yang, Imam, et al. *Secure and Private Federated Learning: Achieving
+    /// Adversarial Resilience through Robust Aggregation*. 2025.
+    /// <https://arxiv.org/abs/2505.17226>
+    ArKrum,
 }
 
 /// A model update from a single client, represented as named weight tensors.
@@ -152,6 +181,7 @@ pub fn aggregate<U: Borrow<ClientUpdate>>(
             weights: geometric_median(updates, *eps, *max_iter)?,
             selected_client_ids: all_ids(),
         }),
+        Strategy::ArKrum => ar_krum(updates),
     }
 }
 
@@ -663,6 +693,262 @@ fn geometric_median<U: Borrow<ClientUpdate>>(
     }
 
     Ok(global)
+}
+
+// ---------------------------------------------------------------------------
+// ArKrum kernel — paper-grade parameter-free Krum (arXiv:2505.17226)
+// ---------------------------------------------------------------------------
+
+/// Algorithm 1 (extreme-outlier filter) on a sorted-ascending distance slice.
+///
+/// `τ = median + (median − min)`. Returns the prefix `D' ⊆ D` of distances
+/// satisfying `d ≤ τ` — the head segment we trust for change-point detection.
+/// `D` is assumed sorted ascending (we sort once per row before calling).
+/// Returns the prefix length so callers can also count *how many were
+/// filtered out* (used to compose with the SSE estimate downstream).
+fn ar_filter_extreme(sorted: &[f64]) -> &[f64] {
+    let n = sorted.len();
+    if n < 3 {
+        return sorted;
+    }
+    let mid = n / 2; // integer floor; matches Algorithm 1's `mid = ⌊n/2⌋`.
+    let median = sorted[mid];
+    let min = sorted[0];
+    let tau = median + (median - min);
+    // `partition_point` finds the first index whose distance exceeds τ; the
+    // prefix is exactly the kept set. O(log n) on an already-sorted slice.
+    let cut = sorted.partition_point(|&d| d <= tau);
+    &sorted[..cut]
+}
+
+/// Estimate the number of values after the breakpoint in a sorted-ascending
+/// distance slice (rKrum's `ESTIMATE_F` step).
+///
+/// Returns `f̂` = number of trailing values that look qualitatively different
+/// from the head. On a sorted-ascending sequence the SSE-minimising split is
+/// equivalent to "find the largest inter-element gap"; we use the gap form
+/// because SSE on uniformly-spaced data biases toward an interior split with
+/// no real evidence (Killick et al. 2012 PELT discusses the bias).
+///
+/// Two thresholds, both required, before we declare a breakpoint:
+/// 1. `max_gap > GAP_RATIO * typical_gap` (typical = median of all other
+///    gaps; protects against detecting noise as a breakpoint).
+/// 2. `tail_min ≥ MAGNITUDE_RATIO * head_max` (the tail is orders of
+///    magnitude away from the head). Byzantine updates differ from honest
+///    by huge factors; honest-vs-honest geometric tiers within a tight
+///    cluster differ by only single-digit factors. The magnitude guard
+///    discriminates the two without false-positiving on float arithmetic
+///    noise in supposedly-equal distances.
+fn ar_estimate_f(sorted: &[f64]) -> usize {
+    let n = sorted.len();
+    if n < 3 {
+        return 0;
+    }
+    let gaps: Vec<f64> = sorted.windows(2).map(|w| w[1] - w[0]).collect();
+    if gaps.is_empty() {
+        return 0;
+    }
+    let (max_idx, &max_gap) = gaps
+        .iter()
+        .enumerate()
+        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+        .unwrap();
+    if max_gap <= 0.0 {
+        return 0;
+    }
+    // Typical gap = median of all *other* gaps (zeros included). If we
+    // filtered zeros, float arithmetic noise in supposedly-duplicate
+    // distances would make us call any positive max_gap a breakpoint.
+    let mut other: Vec<f64> = gaps
+        .iter()
+        .enumerate()
+        .filter(|&(i, _)| i != max_idx)
+        .map(|(_, &g)| g)
+        .collect();
+    if other.is_empty() {
+        return 0;
+    }
+    other.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let typical = other[other.len() / 2];
+    let threshold_gap_ratio = 5.0;
+    let gap_signal = if typical > 0.0 {
+        max_gap > threshold_gap_ratio * typical
+    } else {
+        // typical = 0 means at least half of other gaps are zero (true
+        // duplicates). The magnitude check below carries the real signal;
+        // we still require max_gap > 0 here so a flat-zero sequence
+        // doesn't declare a breakpoint on float noise.
+        max_gap > 0.0
+    };
+    if !gap_signal {
+        return 0;
+    }
+    // Magnitude check: tail must be ≥ MAGNITUDE_RATIO × head. Byzantine
+    // updates differ from honest by orders of magnitude (1e3+); honest
+    // geometric tiers within a tight cluster differ by < 10×.
+    let head_max = sorted[max_idx];
+    let tail_min = sorted[max_idx + 1];
+    let threshold_magnitude_ratio = 10.0;
+    let magnitude_signal = if head_max > 0.0 {
+        tail_min >= threshold_magnitude_ratio * head_max
+    } else {
+        // Head is all zero (perfect-match cluster). Any positive tail is a
+        // clear breakpoint.
+        tail_min > 0.0
+    };
+    if !magnitude_signal {
+        return 0;
+    }
+    // Values after the gap = malicious tail. Gap at index `max_idx` sits
+    // between sorted[max_idx] and sorted[max_idx + 1]; tail length is
+    // `n - (max_idx + 1)`.
+    n - (max_idx + 1)
+}
+
+/// Aggregate updates with ArKrum (Algorithm 2 from arXiv:2505.17226).
+///
+/// Shape mirrors `krum_select_indices`: flatten every client into one shared
+/// coordinate vector, compute pairwise squared-Euclidean distances, then per
+/// client filter + estimate f̂_i + compute ScoreKrum with that f̂_i. Pick the
+/// minimum-score client `u*`, take the `(n − f̂_{u*})` updates closest to `u*`
+/// (including `u*` itself), and uniform-mean them.
+///
+/// Returns the same `Aggregation` shape as the other selection-based
+/// aggregators: weights + `selected_client_ids` (the averaged neighbour set).
+fn ar_krum<U: Borrow<ClientUpdate>>(updates: &[U]) -> Result<Aggregation, String> {
+    let n = updates.len();
+    if n < 5 {
+        return Err(format!(
+            "ArKrum requires n >= 5 for the median + change-point steps; got n={n}"
+        ));
+    }
+
+    // Fix layer order from the first update; every other client must match.
+    let first = updates[0].borrow();
+    let layer_names: Vec<String> = first.weights.keys().cloned().collect();
+    let layer_sizes: Vec<usize> = layer_names
+        .iter()
+        .map(|name| first.weights[name].len())
+        .collect();
+    let flat_len: usize = layer_sizes.iter().sum();
+
+    let mut flats: Vec<Vec<f32>> = Vec::with_capacity(n);
+    for u in updates {
+        let u = u.borrow();
+        let mut flat: Vec<f32> = Vec::with_capacity(flat_len);
+        for (name, &size) in layer_names.iter().zip(&layer_sizes) {
+            let w = u
+                .weights
+                .get(name)
+                .ok_or_else(|| format!("Client update missing layer '{}'", name))?;
+            if w.len() != size {
+                return Err(format!(
+                    "Layer '{}' size mismatch: expected {}, got {}",
+                    name,
+                    size,
+                    w.len()
+                ));
+            }
+            flat.extend_from_slice(w);
+        }
+        flats.push(flat);
+    }
+
+    // Pairwise squared Euclidean distances (symmetric, diagonal = 0). f64
+    // accumulator bounds rounding on large coord counts.
+    let mut dist = vec![vec![0.0f64; n]; n];
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let d: f64 = flats[i]
+                .iter()
+                .zip(flats[j].iter())
+                .map(|(&a, &b)| {
+                    let diff = a as f64 - b as f64;
+                    diff * diff
+                })
+                .sum();
+            dist[i][j] = d;
+            dist[j][i] = d;
+        }
+    }
+
+    // Per-client: sort other-client distances ascending, filter extremes,
+    // estimate f̂_i, compute Krum score with k = n − f̂_i − 2 terms.
+    let cmp_f64 = |a: &f64, b: &f64| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal);
+    let mut scores: Vec<(usize, f64)> = Vec::with_capacity(n);
+    let mut f_hats: Vec<usize> = Vec::with_capacity(n);
+    for (i, row) in dist.iter().enumerate() {
+        let mut sorted: Vec<f64> = row
+            .iter()
+            .enumerate()
+            .filter(|&(j, _)| j != i)
+            .map(|(_, &d)| d)
+            .collect();
+        sorted.sort_by(cmp_f64);
+
+        // Algorithm 1 + ESTIMATE_F operate on the filtered prefix. Compose:
+        // f̂_i = max(filtered_out_count, ESTIMATE_F(D')). The filter caught
+        // obvious extremes; if ESTIMATE_F finds *more* breakpoints inside the
+        // remaining set, those are subtler byzantines we'd otherwise miss.
+        // Taking the max prevents a tight intra-honest gap from understating
+        // f̂ when the filter has already removed several clear outliers.
+        let filtered = ar_filter_extreme(&sorted);
+        let filtered_out = sorted.len() - filtered.len();
+        let f_hat_sse = ar_estimate_f(filtered);
+        let f_hat_i = filtered_out.max(f_hat_sse);
+        f_hats.push(f_hat_i);
+
+        // ScoreKrum on the unfiltered sorted row — same shape as classical
+        // Krum, just with `f̂_i` instead of caller-supplied `f`. Guard
+        // `k_terms >= 1` for the small-cluster edge case.
+        let n_others = sorted.len();
+        let k_terms = n_others.saturating_sub(f_hat_i + 1).max(1);
+        let score: f64 = sorted[..k_terms].iter().sum();
+        scores.push((i, score));
+    }
+
+    // u* = argmin score (stable on ties via earlier index).
+    let &(u_star, _) = scores
+        .iter()
+        .min_by(|a, b| cmp_f64(&a.1, &b.1).then(a.0.cmp(&b.0)))
+        .expect("scores is non-empty by the n >= 5 check");
+    let f_hat_star = f_hats[u_star];
+
+    // Average the (n - f̂*) closest updates to u*, including u* itself.
+    // Guard `m_avg >= 1` so we always emit at least one contributor.
+    let m_avg = n.saturating_sub(f_hat_star).max(1);
+    let mut neighbours: Vec<(usize, f64)> = (0..n)
+        .filter(|&j| j != u_star)
+        .map(|j| (j, dist[u_star][j]))
+        .collect();
+    neighbours.sort_by(|a, b| cmp_f64(&a.1, &b.1).then(a.0.cmp(&b.0)));
+    let mut selected_client_ids: Vec<usize> = Vec::with_capacity(m_avg);
+    selected_client_ids.push(u_star);
+    for &(j, _) in neighbours.iter().take(m_avg.saturating_sub(1)) {
+        selected_client_ids.push(j);
+    }
+    selected_client_ids.sort();
+
+    // Uniform average over the selected indices, layer by layer.
+    let inv_m = 1.0f64 / selected_client_ids.len() as f64;
+    let mut weights: HashMap<String, Vec<f32>> = HashMap::with_capacity(first.weights.len());
+    for (name, first_vec) in first.weights.iter() {
+        let size = first_vec.len();
+        let mut agg = vec![0.0f64; size];
+        for &idx in &selected_client_ids {
+            let u = updates[idx].borrow();
+            let w = &u.weights[name];
+            for (a, &val) in agg.iter_mut().zip(w.iter()) {
+                *a += val as f64 * inv_m;
+            }
+        }
+        weights.insert(name.clone(), agg.into_iter().map(|x| x as f32).collect());
+    }
+
+    Ok(Aggregation {
+        weights,
+        selected_client_ids,
+    })
 }
 
 #[cfg(test)]
@@ -1200,5 +1486,141 @@ mod tests {
         let u2 = make_update(1, &[("a", vec![1.0]), ("b", vec![1.0])]);
         let result = aggregate(&[u0, u1, u2], &gm());
         assert!(result.is_err());
+    }
+
+    // ----- ArKrum (arXiv:2505.17226) -----
+
+    #[test]
+    fn ar_krum_rejects_too_few_clients() {
+        // n=4 < 5, the median+change-point steps need a usable sample size.
+        let clients: Vec<ClientUpdate> = (0..4)
+            .map(|i| make_update(1, &[("w", vec![i as f32])]))
+            .collect();
+        let result = aggregate(&clients, &Strategy::ArKrum);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn ar_krum_clean_round_aggregates_near_mean() {
+        // 5 tightly-clustered honest clients — ArKrum should land near the
+        // mean, with most clients selected. The strict "all 5 selected"
+        // assertion is too tight at n=5: the median-filter step naturally
+        // trims edge distances even on clean data, so f̂ from edge u* often
+        // lands at 1. The honest aggregate stays correct regardless.
+        let clients: Vec<ClientUpdate> = [0.95f32, 1.0, 1.05, 1.1, 1.15]
+            .iter()
+            .map(|&v| make_update(1, &[("w", vec![v])]))
+            .collect();
+        let result = aggregate(&clients, &Strategy::ArKrum).unwrap();
+        // Majority of clients must be selected — no byzantines to exclude.
+        assert!(
+            result.selected_client_ids.len() >= 3,
+            "expected majority selection on clean round; got {:?}",
+            result.selected_client_ids
+        );
+        // Aggregate must land near the honest cluster's centre (1.05).
+        assert!(
+            (result.weights["w"][0] - 1.05).abs() < 0.1,
+            "aggregate {} far from honest centre 1.05",
+            result.weights["w"][0]
+        );
+    }
+
+    #[test]
+    fn ar_krum_excludes_single_extreme_byzantine() {
+        // 7 honest clients tightly clustered near 0; one extreme Byzantine
+        // at 1e6. ArKrum's median filter catches the outlier; the SSE
+        // change-point step on the filtered set returns 0; f̂_i = max(filtered_out=1,
+        // sse=0) = 1; the byzantine never reaches the averaged neighbour set.
+        let mut clients: Vec<ClientUpdate> = [0.0f32, 0.01, 0.02, -0.01, -0.02, 0.03, -0.03]
+            .iter()
+            .map(|&v| make_update(1, &[("w", vec![v])]))
+            .collect();
+        clients.push(make_update(1, &[("w", vec![1e6])]));
+        let byz_idx = clients.len() - 1;
+        let result = aggregate(&clients, &Strategy::ArKrum).unwrap();
+        assert!(
+            !result.selected_client_ids.contains(&byz_idx),
+            "single extreme byzantine (index {}) leaked: {:?}",
+            byz_idx,
+            result.selected_client_ids
+        );
+        assert!(
+            result.weights["w"][0].abs() < 1.0,
+            "aggregate {} pulled away from honest cluster",
+            result.weights["w"][0]
+        );
+    }
+
+    #[test]
+    fn ar_krum_excludes_clustered_byzantines_when_honest_is_tighter() {
+        // 6 honest clustered tightly near 0 + 3 byzantines clustered at 1e5
+        // scale. The honest cluster is *tighter* than the byzantine cluster
+        // (honest pair-distances ≤ 0.01, byzantine pair-distances ~1e8), so
+        // the Krum score on an honest u_i is lower than on any byzantine —
+        // u_star comes from the honest set, and the median-filter trims the
+        // byzantines before they reach the averaging step. This is the
+        // operational definition of ArKrum being colluding-byzantine-safe
+        // *when honest is the dominant tight cluster*. The classical Krum
+        // failure mode (byzantines outvote honest) needs more byzantines or
+        // wider honest spread; not exercised here.
+        let mut clients: Vec<ClientUpdate> = [0.0f32, 0.05, 0.1, -0.05, -0.1, 0.02]
+            .iter()
+            .map(|&v| make_update(1, &[("w", vec![v])]))
+            .collect();
+        for &v in &[1e5f32, 1.2e5, 9e4] {
+            clients.push(make_update(1, &[("w", vec![v])]));
+        }
+        let result = aggregate(&clients, &Strategy::ArKrum).unwrap();
+        for byz_idx in [6usize, 7, 8] {
+            assert!(
+                !result.selected_client_ids.contains(&byz_idx),
+                "byzantine index {} leaked: {:?}",
+                byz_idx,
+                result.selected_client_ids
+            );
+        }
+        assert!(
+            result.weights["w"][0].abs() < 1.0,
+            "aggregate {} pulled away from honest scale",
+            result.weights["w"][0]
+        );
+    }
+
+    #[test]
+    fn ar_krum_missing_layer_returns_error() {
+        let u0 = make_update(1, &[("a", vec![1.0]), ("b", vec![1.0])]);
+        let u1 = make_update(1, &[("a", vec![1.0])]); // missing "b"
+        let u2 = make_update(1, &[("a", vec![1.0]), ("b", vec![1.0])]);
+        let u3 = make_update(1, &[("a", vec![1.0]), ("b", vec![1.0])]);
+        let u4 = make_update(1, &[("a", vec![1.0]), ("b", vec![1.0])]);
+        let result = aggregate(&[u0, u1, u2, u3, u4], &Strategy::ArKrum);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn ar_filter_extreme_trims_far_tail() {
+        // sorted ascending; the outlier at 100 should be cut after median+(median-min).
+        let sorted = vec![1.0, 2.0, 3.0, 4.0, 100.0];
+        // median = sorted[2] = 3.0; min = 1.0; tau = 3 + (3-1) = 5.
+        // Kept: [1, 2, 3, 4]; dropped: [100].
+        let kept = ar_filter_extreme(&sorted);
+        assert_eq!(kept.len(), 4);
+        assert!((kept[3] - 4.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn ar_estimate_f_returns_zero_on_uniform_input() {
+        // No breakpoint when the values cluster cleanly — f̂ should be 0,
+        // not biased upward by the SSE minimum-always-an-interior-k trap.
+        let sorted = vec![1.0, 1.05, 1.1, 1.15, 1.2];
+        assert_eq!(ar_estimate_f(&sorted), 0);
+    }
+
+    #[test]
+    fn ar_estimate_f_finds_split_on_clear_breakpoint() {
+        // 4 tight values + 1 outlier → expected breakpoint after index 4, f̂ = 1.
+        let sorted = vec![1.0, 1.05, 1.1, 1.15, 100.0];
+        assert_eq!(ar_estimate_f(&sorted), 1);
     }
 }

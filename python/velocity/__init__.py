@@ -5,6 +5,7 @@ High-performance federated learning orchestration backed by a Rust engine.
 
 from velocity.server import VelocityServer
 from velocity.strategy import (
+    ArKrum,
     Bulyan,
     FedAvg,
     FedMedian,
@@ -18,6 +19,7 @@ from velocity.strategy import (
 )
 
 __all__ = [
+    "ArKrum",
     "Bulyan",
     "FedAvg",
     "FedMedian",

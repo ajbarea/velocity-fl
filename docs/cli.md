@@ -53,7 +53,7 @@ uv run velocity run \
 |---|---|---|---|
 | `--model-id` | `str` | *required* | Hugging Face model identifier. |
 | `--dataset` | `str` | *required* | Dataset name or path (HF Hub or local). |
-| `--strategy` | `str` | `FedAvg` | `FedAvg`, `FedProx[:mu=…]`, `FedMedian`, `TrimmedMean:k=…`, `Krum:f=…`, `MultiKrum:f=…[,m=…]`, `Bulyan:f=…[,m=…]`, or `GeometricMedian[:eps=…,max_iter=…]` (case-insensitive). See [Strategies](strategies.md). |
+| `--strategy` | `str` | `FedAvg` | `FedAvg`, `FedProx[:mu=…]`, `FedMedian`, `TrimmedMean:k=…`, `Krum:f=…`, `MultiKrum:f=…[,m=…]`, `Bulyan:f=…[,m=…]`, `GeometricMedian[:eps=…,max_iter=…]`, or `ArKrum` (case-insensitive). See [Strategies](strategies.md). |
 | `--storage` | `str` | `local://checkpoints` | Checkpoint storage URI. |
 | `--min-clients` | `int ≥ 1` | `1` | Minimum clients required per round. |
 | `--rounds` | `int ≥ 1` | `1` | Number of federated rounds. |

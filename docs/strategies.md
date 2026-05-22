@@ -14,13 +14,14 @@ VelocityFL ships eight aggregation strategies. All eight are implemented in Rust
 | Untrusted clients, up to `f` compromised, want to average `m` survivors | **`MultiKrum(f=…, m=…)`** |
 | Untrusted clients, up to `f` compromised, want the strongest distance-based defense | **`Bulyan(f=…, m=…)`** |
 | Untrusted clients, up to ⌊(n−1)/2⌋ compromised, want geometric (not coordinate-wise) robustness | **`GeometricMedian()`** |
+| Untrusted clients, unknown / per-round Byzantine count, want parameter-free Krum | **`ArKrum()`** |
 
-All eight are value objects: compare with `==`, safe to hash, safe to share between threads.
+All nine are value objects: compare with `==`, safe to hash, safe to share between threads.
 
 ```python
 from velocity import (
     FedAvg, FedProx, FedMedian, TrimmedMean,
-    Krum, MultiKrum, Bulyan, GeometricMedian,
+    Krum, MultiKrum, Bulyan, GeometricMedian, ArKrum,
 )
 
 FedAvg() == FedAvg()                  # True
@@ -228,6 +229,31 @@ server = VelocityServer(model_id=..., dataset=..., strategy=GeometricMedian())
 
 ---
 
+## `ArKrum`
+
+Parameter-free Krum variant. From Yang, Imam, et al. (2025, arXiv:2505.17226 — *Secure and Private Federated Learning: Achieving Adversarial Resilience through Robust Aggregation*). Removes Krum's requirement that the caller specify `f` (the Byzantine count) in advance — `f̂` is estimated per round from the data.
+
+```text
+For each client i, with D_i = sorted ascending distances to other clients:
+  1. D'_i ← filter τ = median + (median − min)        # Algorithm 1
+  2. f̂_i ← change-point on D'_i                      # rKrum ESTIMATE_F
+              (gap-based, with 5× gap-ratio AND 10× magnitude-ratio thresholds)
+  3. ScoreKrum_i = sum of (n − f̂_i − 2) smallest distances in D_i
+Pick u* with the lowest ScoreKrum.
+ū = uniform mean of the (n − f̂_{u*}) updates closest to u* (including u*).
+```
+
+**Use when** you don't know the Byzantine count and don't want to over-estimate to be safe. Standard Krum/Multi-Krum/Bulyan need a tight `f` to behave; overestimating wastes honest clients, underestimating lets malicious updates through. ArKrum auto-tunes per round. No parameters. Requires `n ≥ 5` so the median + change-point steps have enough samples.
+
+```python
+from velocity import VelocityServer, ArKrum
+server = VelocityServer(model_id=..., dataset=..., strategy=ArKrum())
+```
+
+> **Known limitation** — Krum-family algorithms break when byzantines outvote honest. ArKrum inherits this from rKrum/Krum: if the malicious cluster is denser (lower intra-cluster distance) than the honest cluster, the Krum score on a byzantine `u_i` becomes lower than on an honest one and `u*` lands on the byzantine side. The paper's evaluation assumes honest is the dominant tight cluster. For an explicitly colluding-safe defense, look at trust-history-based methods (PID/Trust removal — queued under ROADMAP "Client-removal defenses").
+
+---
+
 ## CLI shorthand
 
 The CLI accepts `Name` for parameter-free strategies and `Name:key=value[,key=value]` for the parameterised ones:
@@ -240,6 +266,7 @@ velocity run  --strategy Krum:f=2            --model-id demo/m --dataset demo/d 
 velocity run  --strategy MultiKrum:f=2,m=5   --model-id demo/m --dataset demo/d --min-clients 7
 velocity run  --strategy Bulyan:f=1           --model-id demo/m --dataset demo/d --min-clients 7
 velocity run  --strategy GeometricMedian      --model-id demo/m --dataset demo/d
+velocity run  --strategy ArKrum               --model-id demo/m --dataset demo/d --min-clients 5
 velocity sweep --strategies FedAvg,Krum:f=1  --rounds 5
 ```
 

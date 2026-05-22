@@ -5,6 +5,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 from velocity.strategy import (
     ALL_STRATEGIES,
+    ArKrum,
     Bulyan,
     FedAvg,
     FedMedian,
@@ -29,6 +30,7 @@ def test_all_strategies_tuple_covers_sum_type():
         "MultiKrum",
         "Bulyan",
         "GeometricMedian",
+        "ArKrum",
     }
 
 
@@ -71,6 +73,7 @@ def test_parse_strategy_string_forms():
     assert parse_strategy("FedAvg") == FedAvg()
     assert parse_strategy("FedMedian") == FedMedian()
     assert parse_strategy("FedProx") == FedProx()
+    assert parse_strategy("ArKrum") == ArKrum()
     # Case-insensitive + whitespace tolerant
     assert parse_strategy("  fedavg  ") == FedAvg()
 
@@ -98,6 +101,7 @@ def test_parse_strategy_passthrough():
         Bulyan(f=1, m=5),
         GeometricMedian(),
         GeometricMedian(eps=1e-8, max_iter=8),
+        ArKrum(),
     ):
         assert parse_strategy(s) == s
 
