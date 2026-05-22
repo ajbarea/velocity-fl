@@ -11,6 +11,7 @@ import numpy.typing as npt
 
 from velocity.attacks import VALID_ATTACKS
 from velocity.strategy import (
+    ArKrum,
     Bulyan,
     FedAvg,
     FedMedian,
@@ -277,6 +278,8 @@ class VelocityServer:
             return _rust.Strategy.bulyan(s.f, s.m)
         if isinstance(s, GeometricMedian):
             return _rust.Strategy.geometric_median(s.eps, s.max_iter)
+        if isinstance(s, ArKrum):
+            return _rust.Strategy.ar_krum()
         raise ValueError(f"Unsupported strategy: {s!r}")
 
     def _run_single_round(self) -> dict[str, Any]:

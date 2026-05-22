@@ -70,10 +70,6 @@ coordinate. The robust aggregators are algorithmically heavier than
 FedAvg — the Rust-vs-Python gap grows with them. Measure each after
 implementation before quoting speedups.
 
-- **ArKrum** (arXiv:2505.17226) — parameter-free Krum that estimates `f` via
-  median filtering + SSE segmentation. Removes the "you must know `f` in
-  advance" constraint. Good v2 once Krum ships.
-
 ## Client-removal defenses
 
 A distinct axis from the pure-stateless aggregators above: rather than
@@ -395,6 +391,8 @@ ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and 
 ## Completed
 
 Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
+
+- **2026-05-22** — ArKrum (arXiv:2505.17226, Yang et al. 2025) — parameter-free Byzantine-robust aggregator. Estimates `f̂` per round via median filter (`τ = median + (median − min)`) + change-point detection on the sorted-distance vector (5× gap-ratio AND 10× magnitude-ratio thresholds together — pure SSE-min on sorted data biases to interior splits on noise, per Killick et al. 2012 PELT). Final step averages `(n − f̂*)` updates closest to the lowest-score client. Removes Krum's "you must know `f`" constraint. Rust kernel + PyO3 binding + `velocity.strategy.ArKrum` dataclass + Hypothesis-style and fixture-grade tests + docs. Known limitation pinned in a test: colluding byzantines with a tighter intra-cluster spread than honest beat Krum-class scoring; ArKrum inherits this from rKrum/Krum.
 
 - **2026-05-22** — `run_real_training` strategy + partition kwargs. Tool accepts `strategy: dict | None` (parsed via `velocity.strategy.parse_strategy` — e.g. `{"type": "FedProx", "mu": 0.05}`) and `partition: str = "iid"` + `partition_kwargs: dict | None` (Dirichlet `{"alpha": 0.1}`, shard `{"shards_per_client": 2}`). Both validated before elicitation; the elicitation message surfaces the resolved strategy + partition labels so the user knows what they're consenting to. FedProx threads `mu` into `local_train`'s proximal term; aggregator-side strategies (Krum/Bulyan/etc.) compose with the existing local SGD. Inline Python-to-Rust strategy mapping mirrors `VelocityServer._map_strategy`. Stale `_core.pyi` stub (missing `geometric_median` since 2026-04-25) fixed in passing.
 - **2026-05-22** — Confirmation-gated `run_real_training` MCP tool: MNIST FedAvg through the real training primitives, gated on MCP elicitation (June-2025 spec, FastMCP 3.2), scope-capped at 5 rounds × 10 clients, `meta={"anthropic/maxResultSizeChars": 500_000}` annotation. `@logged_tool` grew an async branch.

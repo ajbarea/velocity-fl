@@ -40,12 +40,12 @@ See [Configuration](configuration.md) for field semantics and defaults.
 
 ### `velocity.Strategy`
 
-Sum type over eight frozen dataclasses — parameters live on the instance, not on a separate config surface.
+Sum type over nine frozen dataclasses — parameters live on the instance, not on a separate config surface.
 
 ```python
 Strategy = (
     FedAvg | FedProx | FedMedian | TrimmedMean
-    | Krum | MultiKrum | Bulyan | GeometricMedian
+    | Krum | MultiKrum | Bulyan | GeometricMedian | ArKrum
 )
 
 @dataclass(frozen=True)
@@ -73,9 +73,11 @@ class Bulyan:
 class GeometricMedian:
     eps: float = 1e-6
     max_iter: int = 3
+@dataclass(frozen=True)
+class ArKrum: ...
 ```
 
-All eight are frozen, hashable, and compare by value. `ALL_STRATEGIES` is a tuple of the eight classes (useful for CLI/`strategies` subcommand enumeration).
+All nine are frozen, hashable, and compare by value. `ALL_STRATEGIES` is a tuple of the nine classes (useful for CLI/`strategies` subcommand enumeration).
 
 ```python
 from velocity import (

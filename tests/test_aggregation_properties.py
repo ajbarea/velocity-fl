@@ -437,3 +437,56 @@ def test_multi_krum_m_equals_n_minus_f_is_uniform_mean() -> None:
     result = _core.aggregate(updates, _core.Strategy.multi_krum(0, 3))
     expected = [2.0, 4.0, 6.0]  # uniform mean of the three vectors
     np.testing.assert_allclose(result["w"], expected, rtol=1e-6, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# ArKrum — paper-grade fixture tests for the parameter-free path.
+# Property-tests with random updates are deferred (the threshold-based
+# breakpoint detection isn't a clean numeric oracle to compare against);
+# the Rust-side tests in `vfl-core/src/strategy.rs::tests` carry the
+# unit-level coverage for ar_filter_extreme / ar_estimate_f.
+# ---------------------------------------------------------------------------
+
+
+def test_ar_krum_rejects_too_few_clients() -> None:
+    """ArKrum requires n >= 5 for the median + change-point steps."""
+    updates = [_core.ClientUpdate(num_samples=10, weights={"w": [float(i)] * 3}) for i in range(4)]
+    with pytest.raises(Exception):  # noqa: B017 — PyO3 boundary
+        _core.aggregate(updates, _core.Strategy.ar_krum())
+
+
+def test_ar_krum_excludes_single_extreme_byzantine() -> None:
+    """One byzantine at 1e6 ⇒ filter strips it, aggregate stays near honest cluster."""
+    honest = [_core.ClientUpdate(num_samples=10, weights={"w": [2.0, 2.0, 2.0]}) for _ in range(7)]
+    attacker = _core.ClientUpdate(num_samples=10, weights={"w": [1e6, 1e6, 1e6]})
+    result = _core.aggregate([*honest, attacker], _core.Strategy.ar_krum())
+    for got, want in zip(result["w"], [2.0, 2.0, 2.0], strict=True):
+        assert _close(got, want), f"ArKrum moved under 1 outlier: {got} vs {want}"
+
+
+def test_ar_krum_clean_round_lands_near_honest_centre() -> None:
+    """All-honest, tightly-clustered ⇒ aggregate lands near the centre."""
+    # 6 honest clients drawn from a tight cluster around 1.0
+    centres = [0.95, 1.0, 1.05, 1.1, 0.98, 1.02]
+    updates = [_core.ClientUpdate(num_samples=10, weights={"w": [v]}) for v in centres]
+    result = _core.aggregate(updates, _core.Strategy.ar_krum())
+    # No byzantines to exclude; aggregate sits near the centre (~1.017)
+    assert abs(result["w"][0] - sum(centres) / len(centres)) < 0.1
+
+
+def test_ar_krum_uniform_weighting_ignores_sample_counts() -> None:
+    """ArKrum's averaging step is uniform — matches the Krum / Multi-Krum contract.
+
+    A byzantine could otherwise amplify its pull by inflating ``num_samples``;
+    keeping ArKrum sample-count-agnostic is the safety guarantee.
+    """
+    n = 5
+    weights = [{"w": [float(i)]} for i in range(n)]
+    samples = [1, 1, 1, 1, 1_000_000]  # heavily lopsided
+    updates = [
+        _core.ClientUpdate(num_samples=s, weights=w) for s, w in zip(samples, weights, strict=True)
+    ]
+    result = _core.aggregate(updates, _core.Strategy.ar_krum())
+    # If sample-weighting were honored, the result would jump toward 4.0;
+    # uniform averaging keeps it near the median ~ 2.0 (mean of the 5).
+    assert result["w"][0] < 3.5, f"sample weighting leaked into ArKrum: {result['w'][0]}"

@@ -153,7 +153,37 @@ class GeometricMedian:
     max_iter: int = 3
 
 
-Strategy = FedAvg | FedProx | FedMedian | TrimmedMean | Krum | MultiKrum | Bulyan | GeometricMedian
+@dataclass(frozen=True)
+class ArKrum:
+    """ArKrum (Average-rKrum) — parameter-free Krum.
+
+    Standard Krum requires the caller to specify ``f`` (the Byzantine
+    count) in advance. ArKrum estimates ``f̂`` per round by combining a
+    median-based outlier filter (Algorithm 1 in the paper, ``τ = median +
+    (median - min)``) with SSE-minimising change-point detection on the
+    filtered sorted-distance vector (rKrum's ``ESTIMATE_F``), then averages
+    the ``n - f̂*`` updates closest to the minimum-score client.
+
+    No parameters. Requires ``n ≥ 5`` so the median + change-point steps
+    have enough samples to behave.
+
+    Yang, Imam, et al. *Secure and Private Federated Learning: Achieving
+    Adversarial Resilience through Robust Aggregation*. 2025.
+    https://arxiv.org/abs/2505.17226
+    """
+
+
+Strategy = (
+    FedAvg
+    | FedProx
+    | FedMedian
+    | TrimmedMean
+    | Krum
+    | MultiKrum
+    | Bulyan
+    | GeometricMedian
+    | ArKrum
+)
 """Union of every aggregation strategy — use in type hints and isinstance checks."""
 
 
@@ -166,6 +196,7 @@ ALL_STRATEGIES: tuple[type[Strategy], ...] = (
     MultiKrum,
     Bulyan,
     GeometricMedian,
+    ArKrum,
 )
 """Every concrete strategy class, in stable display order."""
 

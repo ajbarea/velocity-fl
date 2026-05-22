@@ -471,6 +471,7 @@ def _map_strategy_to_rust(strategy: Any) -> Any:
     """
     from velocity import _core
     from velocity.strategy import (
+        ArKrum,
         Bulyan,
         FedAvg,
         FedMedian,
@@ -497,6 +498,8 @@ def _map_strategy_to_rust(strategy: Any) -> Any:
         return _core.Strategy.bulyan(strategy.f, strategy.m)
     if isinstance(strategy, GeometricMedian):
         return _core.Strategy.geometric_median(strategy.eps, strategy.max_iter)
+    if isinstance(strategy, ArKrum):
+        return _core.Strategy.ar_krum()
     raise ValueError(f"Unsupported strategy: {strategy!r}")
 
 
