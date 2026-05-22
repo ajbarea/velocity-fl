@@ -72,6 +72,7 @@ kernel only, measured against pre-built `Vec<f32>` client updates.
 | Krum(f=1) | 34 µs | 73.9 ms | 740 ms |
 | MultiKrum(f=1) | 38 µs | 78.4 ms | 773 ms |
 | Bulyan(f=1) | 101 µs | 147 ms | 1.53 s |
+| ArKrum | 42 µs | 56 ms | 720 ms |
 
 FedAvg on a 10M-parameter model with 10 clients aggregates in ~70 ms.
 FedAvg accumulates in f64 and downcasts to f32 at the end to bound
@@ -88,11 +89,11 @@ This is the number users actually feel. `_rust.Orchestrator.run_round`
 with pre-built client updates, crossing the PyO3 boundary once per round,
 compared against a pure-Python FedAvg on the same inputs.
 
-| tier | Rust FedAvg | Rust FedProx | Rust FedMedian | Rust TrimmedMean(k=1) | Rust Krum(f=1) | Rust MultiKrum(f=1) | Rust Bulyan(f=1) | Python FedAvg | **Rust FedAvg speedup vs Python FedAvg** |
-|---|---|---|---|---|---|---|---|---|---|
-| tiny (~1K) | 4.9 µs | 4.5 µs | 78 µs | 91 µs | 38 µs | 42 µs | 99 µs | 421 µs | **87×** |
-| medium (~1M) | 4.0 ms | 4.0 ms | 94.2 ms | 101 ms | 71.4 ms | 74.3 ms | 143 ms | 545 ms | **135×** |
-| large (~10M) | 42.2 ms | 42.2 ms | 890 ms | 1.01 s | 721 ms | 739 ms | 1.47 s | 5.82 s | **138×** |
+| tier | Rust FedAvg | Rust FedProx | Rust FedMedian | Rust TrimmedMean(k=1) | Rust Krum(f=1) | Rust MultiKrum(f=1) | Rust Bulyan(f=1) | Rust ArKrum | Python FedAvg | **Rust FedAvg speedup vs Python FedAvg** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tiny (~1K) | 4.9 µs | 4.5 µs | 78 µs | 91 µs | 38 µs | 42 µs | 99 µs | 42 µs | 421 µs | **87×** |
+| medium (~1M) | 4.0 ms | 4.0 ms | 94.2 ms | 101 ms | 71.4 ms | 74.3 ms | 143 ms | 56 ms | 545 ms | **135×** |
+| large (~10M) | 42.2 ms | 42.2 ms | 890 ms | 1.01 s | 721 ms | 739 ms | 1.47 s | 720 ms | 5.82 s | **138×** |
 
 Pure-Python FedAvg at the `large` tier costs ~5.8 s per round on this
 snapshot. The full `tests/bench/` suite takes ~9 min on this box at
@@ -144,6 +145,19 @@ factor over Rust FedAvg but gives the strongest distance-based
 Byzantine guarantee in the suite (breakdown at `n - 4f`). The oracle
 in `tests/strategy_reference.py` composes `multi_krum_reference` with
 `trimmed_mean_reference` end-to-end and Hypothesis tests pin parity.
+
+**ArKrum lands near Krum/Multi-Krum** at every tier (42 µs / 56 ms /
+720 ms vs Krum's 38 µs / 71.4 ms / 721 ms at tiny/medium/large) — the
+extra per-client filter + change-point step adds O(n) work on top of
+Krum's O(n²·d) distance loop, and at the realistic n=10 client count
+that's negligible. The parameter-free benefit (caller doesn't supply
+`f`) doesn't cost a perf tier — paying only for the small filter +
+gap-detection passes. Compared to Bulyan (which composes Multi-Krum
+with trimmed-mean for the strongest distance-based bound), ArKrum at
+large is ~2× faster (720 ms vs 1.47 s) — the trade is "no extra
+trimmed-mean pass over survivors" for "data-driven f̂ instead of a
+hard breakdown bound." See [Strategies → ArKrum](strategies.md#arkrum)
+for the algorithm and known limitations.
 
 ### Realistic round cost (run_round + readout)
 
