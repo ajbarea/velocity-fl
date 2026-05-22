@@ -13,10 +13,12 @@ Session-by-session execution (the "what are we doing this PR") lives in
 
 ## Agent stack
 
-- **Real (non-mock) training tool, confirmation-gated** — `run_demo` in
-  `python/velocity/mcp_app.py` still calls the mock `VelocityServer.run`;
-  add a sibling tool that triggers a real round and requires explicit user
-  confirmation before launch.
+- ~~**Real (non-mock) training tool, confirmation-gated**~~ — shipped
+  2026-05-22 (see Completed). `run_real_training` runs MNIST FedAvg
+  through `velocity.training` primitives, gated on MCP elicitation
+  (`ctx.elicit(response_type=RealTrainingConfirm)`), capped at
+  `MAX_REAL_ROUNDS=5` + `MAX_REAL_CLIENTS=10`, with
+  `meta={"anthropic/maxResultSizeChars": 500_000}` on the decorator.
 - **Prefab `PrefabApp` return types** — MCP tools currently return plain
   `dict` / `list[dict]`. Migrate to typed Prefab returns so the Claude UI
   can render them natively. Keep separate from the memory/caching PR.
@@ -25,14 +27,16 @@ Session-by-session execution (the "what are we doing this PR") lives in
   `recent_runs.md` (or any writable memory file) by keeping the last N
   H2 blocks and leaving a dated compaction marker. The audit ledger and
   the structured run DB remain the queryable history.
-- **`_meta["anthropic/maxResultSizeChars"]` on high-volume MCP tools** —
-  any FastMCP tool that returns large outputs (full round history,
-  checkpoint listings, model card dumps) should annotate its decorator
-  with `meta={"anthropic/maxResultSizeChars": 500_000}` so Claude Code
-  clients don't truncate at the 25K default. Pattern verified in
-  kourai-khryseai's `mcp_servers/shell/server.py` (2026-04-23). Worth
-  applying to `run_demo`'s real-training sibling tool once it lands, and
-  to any leaderboard-dump tools added later.
+- ~~**`_meta["anthropic/maxResultSizeChars"]` on high-volume MCP tools**~~ —
+  shipped 2026-05-22 as part of `run_real_training`. Pattern remains
+  worth applying to future leaderboard-dump tools.
+- **Strategy + partition kwargs on `run_real_training`** — today the
+  real-training sibling is hard-wired to FedAvg + IID. Adding
+  `strategy: str = "FedAvg"` + `partition: str = "iid"` (parsed via
+  `velocity.strategy.parse_strategy` and `velocity.datasets`
+  partition_kwargs) lets the agent demo FedProx on a Dirichlet split
+  in one call. Deferred from the original PR to keep elicitation
+  scope surgical.
 
 A2A specialist agents (convergence auditor, robustness auditor, etc.)
 are scoped under [Live experiment leaderboard](#live-experiment-leaderboard)
@@ -431,6 +435,27 @@ Dated one-liners for shipped roadmap-scale work. Most recent first. The
 commit history and `docs/benchmarks.md` / `docs/convergence.md` are the
 authoritative record; this log is the human index into them.
 
+- **2026-05-22** — Confirmation-gated `run_real_training` MCP tool. The
+  real-training sibling to `run_demo` shipped: same conversational
+  surface, but runs *actual* federated MNIST FedAvg through
+  `velocity.training` primitives instead of the mock Gaussian-noise
+  client weights. Gated on **MCP elicitation** (June-2025 spec, FastMCP
+  3.2 `ctx.elicit(response_type=RealTrainingConfirm)`) — the four-arm
+  match (`AcceptedElicitation` with `confirm=True`/`False`,
+  `DeclinedElicitation`, `CancelledElicitation`) routes accept-with-consent
+  to the trainer and short-circuits every other case. Scope is bounded
+  server-side at `MAX_REAL_ROUNDS=5` + `MAX_REAL_CLIENTS=10`, enforced
+  before elicitation so misuse can't even prompt the user. Decorator
+  carries `meta={"anthropic/maxResultSizeChars": 500_000}`. The
+  `@logged_tool` audit-wrapper grew an async branch
+  (`asyncio.iscoroutinefunction`) so the elicitation path still records
+  to `agent_actions`. INSTRUCTIONS gained one paragraph; both prompt-cache
+  hashes bumped. `velocity.training.layers_to_state_dict` had a stale
+  `list[float]` inner type that the convergence example skipped
+  (lives outside `ty.src.include`) — relaxed to `Any` to match the real
+  ndarray-or-list boundary. 8 new tests cover the four elicitation
+  arms, both scope caps, and the async audit-log path. 178 total tests
+  pass (up from 170). Lint + ty + clippy clean.
 - **2026-05-21** — Memory compaction for `recent_runs.md` (and any
   writable memory file). `velocity.memory.compact_entry(user_id, file,
   keep_last_n)` walks H2 (`## `) block boundaries, drops the oldest

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import Any
 
 try:
     import torch
@@ -46,10 +47,16 @@ def state_dict_to_layers(state_dict: dict[str, Tensor]) -> dict[str, list[float]
     return {name: tensor.detach().cpu().flatten().tolist() for name, tensor in state_dict.items()}
 
 
-def layers_to_state_dict(
-    layers: dict[str, list[float]], reference: dict[str, Tensor]
-) -> dict[str, Tensor]:
-    """Inverse of ``state_dict_to_layers``: reshape flat weights back to tensor shapes."""
+def layers_to_state_dict(layers: dict[str, Any], reference: dict[str, Tensor]) -> dict[str, Tensor]:
+    """Inverse of ``state_dict_to_layers``: reshape flat weights back to tensor shapes.
+
+    Accepts anything ``torch.tensor`` can swallow per layer: lists of float,
+    ``numpy.ndarray``, ``tuple[float, ...]``, even another ``Tensor``. The
+    Rust core's ``Orchestrator.global_weights()`` returns
+    ``dict[str, ndarray[float32]]``, so a strict ``list[float]`` signature
+    would be wrong at the actual boundary — ``Any`` reflects what the API
+    really is.
+    """
     return {
         name: torch.tensor(layers[name], dtype=ref.dtype).reshape(ref.shape)
         for name, ref in reference.items()
