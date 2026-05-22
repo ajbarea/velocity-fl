@@ -91,6 +91,9 @@ features = ["pyo3/extension-module"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "nightly: real-dataset paper-scenario tests; gated by --run-nightly (run nightly via .github/workflows/nightly.yml).",
+]
 # Benches live under tests/bench/ and are collected only when explicitly
 # pointed at (e.g. `pytest tests/bench/`); normal `pytest` skips them so
 # the default test run stays fast. The rest of this list restores pytest's

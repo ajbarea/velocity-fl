@@ -19,15 +19,11 @@ Per ROADMAP the natural next sessions are:
 2. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
    siblings return plain dict/list[dict] today; migrate to typed
    Prefab returns so Claude UI can render natively.
-3. **Per-strategy paper-scenario tests on a real dataset** — the
-   hermetic Gaussian-noise scenarios for every aggregator shipped
-   2026-05-22 (`tests/test_convergence.py` covers FedAvg / FedMedian /
-   TrimmedMean / Krum / MultiKrum / Bulyan / GeometricMedian / ArKrum
-   under the gradient-poisoning attack from Krum/Bulyan papers). The
-   natural follow-on is a nightly variant on MNIST / CIFAR with the
-   original paper attack models (label-flipping for Bulyan/RFA,
-   inner-product manipulation for Krum, etc.). Use `load_federated`
-   and the existing nightly workflow.
+3. ~~**Per-strategy paper-scenario tests on a real dataset**~~ — shipped
+   2026-05-22 (see ROADMAP Completed). `tests/test_paper_attacks_nightly.py`
+   covers Bulyan/RFA vs label-flipping, Krum vs IPM, and ArKrum's
+   three-attack matrix on real MNIST; gated by `--run-nightly` opt-in
+   and wired into `.github/workflows/nightly.yml`.
 
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done) matching
