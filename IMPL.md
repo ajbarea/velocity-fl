@@ -16,9 +16,15 @@ Per ROADMAP the natural next sessions are:
    noise-floor upgrade that makes single-digit-percent regression
    detection meaningful on the WSL2 box; see
    [ROADMAP → Performance](ROADMAP.md#performance).
-2. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
-   siblings return plain dict/list[dict] today; migrate to typed
-   Prefab returns so Claude UI can render natively.
+2. **Prefab return types — second pass.** Phase 1 (2026-05-23) shipped
+   `list_runs` / `run_rounds_history` / `compare_runs` / `memory_ledger`
+   as `DataTable` / `Column[LineChart, DataTable]` returns. The two
+   training-control tools (`run_demo`, `run_real_training`) still return
+   `dict[str, Any]` — their result shape is a nested run summary that
+   doesn't map cleanly to a single Prefab component. Pick this up if
+   AJ wants the summary cards rendered (`Card` + `Metric` over the
+   summary stats); otherwise leave the dict return since the model
+   already reasons over it as structured content.
 
 Per-strategy paper-scenario tests on real MNIST shipped 2026-05-22 —
 `tests/test_paper_attacks_nightly.py` covers Bulyan / GeometricMedian

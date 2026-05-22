@@ -19,9 +19,15 @@ Session-by-session execution (the "what are we doing this PR") lives in
   (`ctx.elicit(response_type=RealTrainingConfirm)`), capped at
   `MAX_REAL_ROUNDS=5` + `MAX_REAL_CLIENTS=10`, with
   `meta={"anthropic/maxResultSizeChars": 500_000}` on the decorator.
-- **Prefab `PrefabApp` return types** — MCP tools currently return plain
-  `dict` / `list[dict]`. Migrate to typed Prefab returns so the Claude UI
-  can render them natively. Keep separate from the memory/caching PR.
+- ~~**Prefab return types — phase 1**~~ — shipped 2026-05-23.
+  `list_runs` returns `DataTable`, `run_rounds_history` and
+  `compare_runs` return `Column[LineChart, DataTable]`, `memory_ledger`
+  returns `DataTable`. FastMCP serializes the Prefab tree to
+  `structuredContent` on the tool result so the model still reasons
+  over the rows; the Claude UI renders the interactive widget in the
+  conversation. `run_demo` and `run_real_training` deliberately keep
+  their `dict` return — their nested run summaries don't map to a
+  single component; revisit if AJ wants Card+Metric blocks for them.
 - ~~**Memory compaction**~~ — shipped 2026-05-21 (see Completed).
   `velocity.memory.compact_entry()` + `compact_memory` MCP tool bound
   `recent_runs.md` (or any writable memory file) by keeping the last N
@@ -392,6 +398,7 @@ ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and 
 
 Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
 
+- **2026-05-23** — Prefab return types — phase 1. `list_runs`, `run_rounds_history`, `compare_runs`, `memory_ledger` migrated from `dict` / `list[dict]` to Prefab `DataTable` (sortable + searchable) and `Column[LineChart, DataTable]` (history + comparison flows). Adds `fastmcp[apps]>=3.2` to the `agent` extras dep, which pulls in `prefab-ui` (~1.8 MiB wheel). FastMCP serializes the Prefab tree to `structuredContent` on the tool result so the model still reasons over the rows; the Claude UI renders the interactive widget in the conversation. `run_demo` + `run_real_training` keep `dict` returns — their nested run summaries don't map to a single component; revisit if AJ wants Card+Metric blocks for them. MCP cache-stability hash bumped from `2caab55…` to `bbddac0…` (intentional surface change).
 - **2026-05-22** — Nightly paper-attack scenarios on real MNIST. Extends the hermetic Gaussian-noise tests to a real-dataset matrix with each strategy paired against the attack model from its paper: Bulyan / GeometricMedian (RFA) vs label-flipping (Tolpegin et al. ESORICS 2020 + Pillutla et al. IEEE TSP 2022), Krum vs inner-product manipulation (Xie et al. 2019 "Fall of Empires"), ArKrum against all three (gradient-poisoning, data-poisoning, IPM). `tests/test_paper_attacks_nightly.py` + `--run-nightly` opt-in flag in `conftest.py` + `nightly` marker registered in pyproject.toml + new step in `.github/workflows/nightly.yml`. n=11 / f=2 satisfies every aggregator's minimum-bound; MIN_ACCURACY=0.70 over 8 rounds with Dirichlet(alpha=1.0) non-IID. Local run 2026-05-22: 6/6 pass in 2:11.
 - **2026-05-22** — Per-strategy paper-cited convergence tests. Every aggregator (FedAvg/FedMedian/TrimmedMean/Krum/MultiKrum/Bulyan/GeometricMedian/ArKrum) now has a hermetic test exercising its paper-cited Byzantine-robustness claim against the Krum-paper gradient-poisoning attack (large-magnitude Gaussian noise from the byzantines). Each test sets the minimum-bound client count from the paper (n ≥ 2f+3 for Krum, n ≥ 4f+3 for Bulyan, ≤ ⌊(n-1)/2⌋ for FedMedian/GeoMedian, etc.) and asserts the strategy recovers ≥0.80 accuracy on the Gaussian-blobs benchmark under attack. `_run_strategy` helper + `_byzantine_update` shared across tests. Lifts the test suite from kernel-grade to research-grade: each strategy is no longer just numerically correct, it provably defends against the threat model from its paper.
 - **2026-05-22** — ArKrum (arXiv:2505.17226, Yang et al. 2025) — parameter-free Byzantine-robust aggregator. Estimates `f̂` per round via median filter (`τ = median + (median − min)`) + change-point detection on the sorted-distance vector (5× gap-ratio AND 10× magnitude-ratio thresholds together — pure SSE-min on sorted data biases to interior splits on noise, per Killick et al. 2012 PELT). Final step averages `(n − f̂*)` updates closest to the lowest-score client. Removes Krum's "you must know `f`" constraint. Rust kernel + PyO3 binding + `velocity.strategy.ArKrum` dataclass + Hypothesis-style and fixture-grade tests + docs. Known limitation pinned in a test: colluding byzantines with a tighter intra-cluster spread than honest beat Krum-class scoring; ArKrum inherits this from rKrum/Krum.
