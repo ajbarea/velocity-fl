@@ -1,0 +1,6602 @@
+[
+  {
+    "strategy": "FedAvg",
+    "attack": "label_flip",
+    "seed": 0,
+    "elapsed_seconds": 28.666550189998816,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7498
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.9178453002929687,
+        "post_acc": 0.8282
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.525091015625,
+        "post_acc": 0.8767
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4218432991027832,
+        "post_acc": 0.8802
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3991946937561035,
+        "post_acc": 0.895
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.36488379364013673,
+        "post_acc": 0.8922
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.35964705352783205,
+        "post_acc": 0.9063
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.33064204025268557,
+        "post_acc": 0.9103
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.3270065780639648,
+        "post_acc": 0.9098
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3219940200805664,
+        "post_acc": 0.9172
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.3110218978881836,
+        "post_acc": 0.9189
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2957596466064453,
+        "post_acc": 0.918
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.3063277755737305,
+        "post_acc": 0.9289
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.27647294311523435,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.2938537063598633,
+        "post_acc": 0.9223
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.28433649826049806,
+        "post_acc": 0.9284
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "label_flip",
+    "seed": 1,
+    "elapsed_seconds": 28.617699041002197,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.8372
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8148132690429688,
+        "post_acc": 0.8809
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.43976796569824217,
+        "post_acc": 0.8859
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4124268203735352,
+        "post_acc": 0.899
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3628774536132813,
+        "post_acc": 0.9104
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3452606689453125,
+        "post_acc": 0.9235
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.31171114501953123,
+        "post_acc": 0.9257
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30797308349609376,
+        "post_acc": 0.9261
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.2943211151123047,
+        "post_acc": 0.9253
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.29886472549438475,
+        "post_acc": 0.9361
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.26844950714111326,
+        "post_acc": 0.93
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.28493934173583985,
+        "post_acc": 0.9344
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.27690581970214845,
+        "post_acc": 0.9385
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.27305054092407227,
+        "post_acc": 0.9362
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.2632918403625488,
+        "post_acc": 0.9409
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.26768122863769533,
+        "post_acc": 0.9415
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "label_flip",
+    "seed": 2,
+    "elapsed_seconds": 28.30189943699952,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.7585
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.9609350189208984,
+        "post_acc": 0.8524
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.49837861938476563,
+        "post_acc": 0.858
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4600190963745117,
+        "post_acc": 0.8785
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.41690508422851563,
+        "post_acc": 0.886
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3880401802062988,
+        "post_acc": 0.8806
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.38320636672973635,
+        "post_acc": 0.8944
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.35773138885498046,
+        "post_acc": 0.8918
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.35827434997558594,
+        "post_acc": 0.8945
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3470102828979492,
+        "post_acc": 0.9061
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.33492999572753906,
+        "post_acc": 0.8893
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.353460173034668,
+        "post_acc": 0.8977
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.3409993194580078,
+        "post_acc": 0.9131
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.3183789337158203,
+        "post_acc": 0.894
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.33574587860107424,
+        "post_acc": 0.8883
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3554139747619629,
+        "post_acc": 0.9205
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "label_flip",
+    "seed": 3,
+    "elapsed_seconds": 28.027636003003863,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.8173
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7892850280761718,
+        "post_acc": 0.891
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.4087247787475586,
+        "post_acc": 0.8892
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.39087163314819334,
+        "post_acc": 0.9068
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.33248473739624024,
+        "post_acc": 0.9126
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.32526772384643554,
+        "post_acc": 0.9236
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.28790625381469725,
+        "post_acc": 0.9271
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2844087532043457,
+        "post_acc": 0.9347
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.2683405258178711,
+        "post_acc": 0.9346
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2605582748413086,
+        "post_acc": 0.9338
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.267282453918457,
+        "post_acc": 0.94
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.24329931640625,
+        "post_acc": 0.9373
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.25679726028442385,
+        "post_acc": 0.9427
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.24013787841796874,
+        "post_acc": 0.944
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.23624268112182617,
+        "post_acc": 0.9405
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.24956610565185547,
+        "post_acc": 0.9388
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "label_flip",
+    "seed": 4,
+    "elapsed_seconds": 28.324420520002604,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.7502
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8389232330322266,
+        "post_acc": 0.8917
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.3920682975769043,
+        "post_acc": 0.885
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3848411994934082,
+        "post_acc": 0.9116
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.32369171142578124,
+        "post_acc": 0.9154
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3084439651489258,
+        "post_acc": 0.9242
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.28236422424316404,
+        "post_acc": 0.9273
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2795924751281738,
+        "post_acc": 0.9317
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.25171960029602053,
+        "post_acc": 0.9361
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.25674127044677736,
+        "post_acc": 0.927
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2560554588317871,
+        "post_acc": 0.9342
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.24782163314819336,
+        "post_acc": 0.9377
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.23911562576293946,
+        "post_acc": 0.938
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.23926975555419921,
+        "post_acc": 0.9457
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.21154475898742675,
+        "post_acc": 0.9365
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.23410338821411134,
+        "post_acc": 0.9355
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "ipm",
+    "seed": 0,
+    "elapsed_seconds": 28.483764677999716,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.6955
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.5885840270996094,
+        "post_acc": 0.864
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.2752033508300782,
+        "post_acc": 0.8699
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.209842056274414,
+        "post_acc": 0.8769
+      },
+      {
+        "round": 5,
+        "pre_loss": 1.1906802062988282,
+        "post_acc": 0.8855
+      },
+      {
+        "round": 6,
+        "pre_loss": 1.174244088745117,
+        "post_acc": 0.8816
+      },
+      {
+        "round": 7,
+        "pre_loss": 1.1797921936035156,
+        "post_acc": 0.8878
+      },
+      {
+        "round": 8,
+        "pre_loss": 1.161356607055664,
+        "post_acc": 0.8869
+      },
+      {
+        "round": 9,
+        "pre_loss": 1.169461068725586,
+        "post_acc": 0.8901
+      },
+      {
+        "round": 10,
+        "pre_loss": 1.163927017211914,
+        "post_acc": 0.8791
+      },
+      {
+        "round": 11,
+        "pre_loss": 1.1588294036865234,
+        "post_acc": 0.8857
+      },
+      {
+        "round": 12,
+        "pre_loss": 1.1557458557128906,
+        "post_acc": 0.8894
+      },
+      {
+        "round": 13,
+        "pre_loss": 1.16587568359375,
+        "post_acc": 0.8922
+      },
+      {
+        "round": 14,
+        "pre_loss": 1.1668766143798828,
+        "post_acc": 0.8815
+      },
+      {
+        "round": 15,
+        "pre_loss": 1.1559288513183594,
+        "post_acc": 0.8881
+      },
+      {
+        "round": 16,
+        "pre_loss": 1.1566839752197267,
+        "post_acc": 0.8894
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "ipm",
+    "seed": 1,
+    "elapsed_seconds": 28.17765886199777,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.8416
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.6073562225341798,
+        "post_acc": 0.8809
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.2741384765625,
+        "post_acc": 0.8906
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.2080912719726562,
+        "post_acc": 0.892
+      },
+      {
+        "round": 5,
+        "pre_loss": 1.1916205017089845,
+        "post_acc": 0.8955
+      },
+      {
+        "round": 6,
+        "pre_loss": 1.1867459686279296,
+        "post_acc": 0.8967
+      },
+      {
+        "round": 7,
+        "pre_loss": 1.1826243591308594,
+        "post_acc": 0.8952
+      },
+      {
+        "round": 8,
+        "pre_loss": 1.1824485626220702,
+        "post_acc": 0.8966
+      },
+      {
+        "round": 9,
+        "pre_loss": 1.1772171508789062,
+        "post_acc": 0.8918
+      },
+      {
+        "round": 10,
+        "pre_loss": 1.1823080047607422,
+        "post_acc": 0.8985
+      },
+      {
+        "round": 11,
+        "pre_loss": 1.1793546966552735,
+        "post_acc": 0.8963
+      },
+      {
+        "round": 12,
+        "pre_loss": 1.1725061462402344,
+        "post_acc": 0.8989
+      },
+      {
+        "round": 13,
+        "pre_loss": 1.1727956817626952,
+        "post_acc": 0.8977
+      },
+      {
+        "round": 14,
+        "pre_loss": 1.170432388305664,
+        "post_acc": 0.9004
+      },
+      {
+        "round": 15,
+        "pre_loss": 1.1688029724121094,
+        "post_acc": 0.8999
+      },
+      {
+        "round": 16,
+        "pre_loss": 1.167587158203125,
+        "post_acc": 0.8984
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "ipm",
+    "seed": 2,
+    "elapsed_seconds": 27.88748253599624,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.7665
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.6760787078857422,
+        "post_acc": 0.8244
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.328526675415039,
+        "post_acc": 0.8487
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.245740869140625,
+        "post_acc": 0.8453
+      },
+      {
+        "round": 5,
+        "pre_loss": 1.2196676208496093,
+        "post_acc": 0.8543
+      },
+      {
+        "round": 6,
+        "pre_loss": 1.205428744506836,
+        "post_acc": 0.8497
+      },
+      {
+        "round": 7,
+        "pre_loss": 1.1996335968017577,
+        "post_acc": 0.8656
+      },
+      {
+        "round": 8,
+        "pre_loss": 1.1971037261962891,
+        "post_acc": 0.8575
+      },
+      {
+        "round": 9,
+        "pre_loss": 1.195645718383789,
+        "post_acc": 0.8548
+      },
+      {
+        "round": 10,
+        "pre_loss": 1.1947193420410156,
+        "post_acc": 0.8677
+      },
+      {
+        "round": 11,
+        "pre_loss": 1.1947249389648438,
+        "post_acc": 0.8498
+      },
+      {
+        "round": 12,
+        "pre_loss": 1.193134536743164,
+        "post_acc": 0.861
+      },
+      {
+        "round": 13,
+        "pre_loss": 1.1894350921630858,
+        "post_acc": 0.8545
+      },
+      {
+        "round": 14,
+        "pre_loss": 1.1890637634277343,
+        "post_acc": 0.8675
+      },
+      {
+        "round": 15,
+        "pre_loss": 1.1867058868408202,
+        "post_acc": 0.8612
+      },
+      {
+        "round": 16,
+        "pre_loss": 1.1858642150878906,
+        "post_acc": 0.8687
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "ipm",
+    "seed": 3,
+    "elapsed_seconds": 27.781289275000745,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.8461
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.5482007965087892,
+        "post_acc": 0.8873
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.197217364501953,
+        "post_acc": 0.8881
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.1362807800292969,
+        "post_acc": 0.8978
+      },
+      {
+        "round": 5,
+        "pre_loss": 1.1143034759521484,
+        "post_acc": 0.8986
+      },
+      {
+        "round": 6,
+        "pre_loss": 1.1019145629882812,
+        "post_acc": 0.8984
+      },
+      {
+        "round": 7,
+        "pre_loss": 1.0935411315917969,
+        "post_acc": 0.901
+      },
+      {
+        "round": 8,
+        "pre_loss": 1.0847813537597657,
+        "post_acc": 0.8995
+      },
+      {
+        "round": 9,
+        "pre_loss": 1.0970064422607422,
+        "post_acc": 0.9008
+      },
+      {
+        "round": 10,
+        "pre_loss": 1.0961604553222657,
+        "post_acc": 0.9028
+      },
+      {
+        "round": 11,
+        "pre_loss": 1.0943624877929687,
+        "post_acc": 0.9015
+      },
+      {
+        "round": 12,
+        "pre_loss": 1.0890047271728516,
+        "post_acc": 0.9024
+      },
+      {
+        "round": 13,
+        "pre_loss": 1.0891442443847656,
+        "post_acc": 0.8992
+      },
+      {
+        "round": 14,
+        "pre_loss": 1.0850010040283202,
+        "post_acc": 0.9004
+      },
+      {
+        "round": 15,
+        "pre_loss": 1.0818005126953125,
+        "post_acc": 0.9043
+      },
+      {
+        "round": 16,
+        "pre_loss": 1.0847809265136719,
+        "post_acc": 0.9041
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "ipm",
+    "seed": 4,
+    "elapsed_seconds": 27.8064591020011,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.7297
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.5281097625732423,
+        "post_acc": 0.8606
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.1613197174072265,
+        "post_acc": 0.8689
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.11818232421875,
+        "post_acc": 0.8812
+      },
+      {
+        "round": 5,
+        "pre_loss": 1.1023820892333984,
+        "post_acc": 0.88
+      },
+      {
+        "round": 6,
+        "pre_loss": 1.0931464935302735,
+        "post_acc": 0.8866
+      },
+      {
+        "round": 7,
+        "pre_loss": 1.0852846527099609,
+        "post_acc": 0.886
+      },
+      {
+        "round": 8,
+        "pre_loss": 1.0845244171142578,
+        "post_acc": 0.8916
+      },
+      {
+        "round": 9,
+        "pre_loss": 1.075078692626953,
+        "post_acc": 0.8938
+      },
+      {
+        "round": 10,
+        "pre_loss": 1.0785792846679687,
+        "post_acc": 0.8827
+      },
+      {
+        "round": 11,
+        "pre_loss": 1.0776231079101561,
+        "post_acc": 0.8836
+      },
+      {
+        "round": 12,
+        "pre_loss": 1.0723139068603516,
+        "post_acc": 0.8892
+      },
+      {
+        "round": 13,
+        "pre_loss": 1.0800046173095703,
+        "post_acc": 0.8922
+      },
+      {
+        "round": 14,
+        "pre_loss": 1.0771221405029296,
+        "post_acc": 0.887
+      },
+      {
+        "round": 15,
+        "pre_loss": 1.0679166473388673,
+        "post_acc": 0.8839
+      },
+      {
+        "round": 16,
+        "pre_loss": 1.0698880981445313,
+        "post_acc": 0.8887
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "gaussian",
+    "seed": 0,
+    "elapsed_seconds": 27.944759322999744,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.0928
+      },
+      {
+        "round": 2,
+        "pre_loss": 5716966.5408,
+        "post_acc": 0.098
+      },
+      {
+        "round": 3,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 4,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 5,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 6,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 7,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 8,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 9,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 10,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 11,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 12,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 13,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 14,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 15,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 16,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "gaussian",
+    "seed": 1,
+    "elapsed_seconds": 27.585738528003276,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.0915
+      },
+      {
+        "round": 2,
+        "pre_loss": 5353140.0704,
+        "post_acc": 0.098
+      },
+      {
+        "round": 3,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 4,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 5,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 6,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 7,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 8,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 9,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 10,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 11,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 12,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 13,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 14,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 15,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 16,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "gaussian",
+    "seed": 2,
+    "elapsed_seconds": 27.90559364300134,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.0717
+      },
+      {
+        "round": 2,
+        "pre_loss": 6952318.016,
+        "post_acc": 0.098
+      },
+      {
+        "round": 3,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 4,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 5,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 6,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 7,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 8,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 9,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 10,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 11,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 12,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 13,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 14,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 15,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 16,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "gaussian",
+    "seed": 3,
+    "elapsed_seconds": 27.94710725799814,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.0921
+      },
+      {
+        "round": 2,
+        "pre_loss": 3801620.416,
+        "post_acc": 0.098
+      },
+      {
+        "round": 3,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 4,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 5,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 6,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 7,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 8,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 9,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 10,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 11,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 12,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 13,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 14,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 15,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 16,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      }
+    ]
+  },
+  {
+    "strategy": "FedAvg",
+    "attack": "gaussian",
+    "seed": 4,
+    "elapsed_seconds": 27.841378441000415,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.0797
+      },
+      {
+        "round": 2,
+        "pre_loss": 2664205.216,
+        "post_acc": 0.098
+      },
+      {
+        "round": 3,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 4,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 5,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 6,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 7,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 8,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 9,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 10,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 11,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 12,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 13,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 14,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 15,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      },
+      {
+        "round": 16,
+        "pre_loss": NaN,
+        "post_acc": 0.098
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "label_flip",
+    "seed": 0,
+    "elapsed_seconds": 27.902598848995694,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.6047
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.5013251708984374,
+        "post_acc": 0.8451
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5132136138916016,
+        "post_acc": 0.8894
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3940911987304688,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3931811889648438,
+        "post_acc": 0.8547
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.4687442611694336,
+        "post_acc": 0.8957
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3453674118041992,
+        "post_acc": 0.9081
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30473105545043944,
+        "post_acc": 0.8783
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.36854143905639647,
+        "post_acc": 0.8971
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.33453129272460935,
+        "post_acc": 0.872
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.40244966812133787,
+        "post_acc": 0.9143
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.29169935455322266,
+        "post_acc": 0.9178
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2738044467926025,
+        "post_acc": 0.9162
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2813929382324219,
+        "post_acc": 0.9139
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.2914300254821777,
+        "post_acc": 0.903
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.31204104766845703,
+        "post_acc": 0.9247
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "label_flip",
+    "seed": 1,
+    "elapsed_seconds": 27.98782860099891,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.6403
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.6108223907470702,
+        "post_acc": 0.7965
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.610955339050293,
+        "post_acc": 0.8138
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.5385690048217774,
+        "post_acc": 0.847
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.4647455276489258,
+        "post_acc": 0.8879
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.36561452713012693,
+        "post_acc": 0.8712
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3976314994812012,
+        "post_acc": 0.8924
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3584960578918457,
+        "post_acc": 0.884
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.37797604064941404,
+        "post_acc": 0.9035
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3215993797302246,
+        "post_acc": 0.9042
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.32595294799804686,
+        "post_acc": 0.8995
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.3392325775146484,
+        "post_acc": 0.8895
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.374374227142334,
+        "post_acc": 0.8979
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.35170135269165037,
+        "post_acc": 0.8997
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.349222216796875,
+        "post_acc": 0.9002
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3436767532348633,
+        "post_acc": 0.9095
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "label_flip",
+    "seed": 2,
+    "elapsed_seconds": 27.890340732999903,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.629
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.36344248046875,
+        "post_acc": 0.8233
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5227487701416016,
+        "post_acc": 0.8559
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4951741394042969,
+        "post_acc": 0.8525
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.456445157623291,
+        "post_acc": 0.8806
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3813695106506348,
+        "post_acc": 0.8841
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.35082570571899413,
+        "post_acc": 0.9009
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3266151260375977,
+        "post_acc": 0.9156
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.28861108665466306,
+        "post_acc": 0.8748
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.39632414932250976,
+        "post_acc": 0.912
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.29061149787902835,
+        "post_acc": 0.9058
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.3078811332702637,
+        "post_acc": 0.9143
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2873283073425293,
+        "post_acc": 0.9188
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2618719165802002,
+        "post_acc": 0.9207
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.26429029922485353,
+        "post_acc": 0.9163
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.27973280906677245,
+        "post_acc": 0.9179
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "label_flip",
+    "seed": 3,
+    "elapsed_seconds": 27.945457750996866,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.6231
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0597801635742188,
+        "post_acc": 0.8372
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5372095336914062,
+        "post_acc": 0.8548
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4854743041992188,
+        "post_acc": 0.8752
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.40532361907958986,
+        "post_acc": 0.8614
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.4407451774597168,
+        "post_acc": 0.8848
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3895702369689941,
+        "post_acc": 0.911
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2998931655883789,
+        "post_acc": 0.8883
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.3584347702026367,
+        "post_acc": 0.8785
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3887657356262207,
+        "post_acc": 0.919
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.27024567527771,
+        "post_acc": 0.9247
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2589083297729492,
+        "post_acc": 0.9101
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.29404223556518555,
+        "post_acc": 0.9069
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.3134450668334961,
+        "post_acc": 0.8932
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.36475826187133786,
+        "post_acc": 0.902
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3344884262084961,
+        "post_acc": 0.9291
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "label_flip",
+    "seed": 4,
+    "elapsed_seconds": 27.71582499500073,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.5697
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.55788076171875,
+        "post_acc": 0.7792
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.0297942291259765,
+        "post_acc": 0.8176
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.7695493148803711,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.409474072265625,
+        "post_acc": 0.828
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.630649169921875,
+        "post_acc": 0.8357
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.5132744094848632,
+        "post_acc": 0.8462
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.5153578536987304,
+        "post_acc": 0.8575
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.4776513366699219,
+        "post_acc": 0.8643
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.43775269012451173,
+        "post_acc": 0.8629
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.47405567169189455,
+        "post_acc": 0.8545
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.5280241607666015,
+        "post_acc": 0.8706
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.43199120025634763,
+        "post_acc": 0.8593
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.5202498046875,
+        "post_acc": 0.868
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.46776663818359376,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.4239887260437012,
+        "post_acc": 0.8639
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "ipm",
+    "seed": 0,
+    "elapsed_seconds": 27.877358052006457,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.6047
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.5013251708984374,
+        "post_acc": 0.8451
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5132136138916016,
+        "post_acc": 0.8894
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3940911987304688,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3931811889648438,
+        "post_acc": 0.8547
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.4687442611694336,
+        "post_acc": 0.8957
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3453674118041992,
+        "post_acc": 0.9081
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30473105545043944,
+        "post_acc": 0.8783
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.36854143905639647,
+        "post_acc": 0.8971
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.33453129272460935,
+        "post_acc": 0.872
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.40244966812133787,
+        "post_acc": 0.9143
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.29169935455322266,
+        "post_acc": 0.9178
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2738044467926025,
+        "post_acc": 0.9162
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2813929382324219,
+        "post_acc": 0.9139
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.2914300254821777,
+        "post_acc": 0.903
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.31204104766845703,
+        "post_acc": 0.9247
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "ipm",
+    "seed": 1,
+    "elapsed_seconds": 27.650468754996837,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.6403
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.6108223907470702,
+        "post_acc": 0.7965
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.610955339050293,
+        "post_acc": 0.8138
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.5385690048217774,
+        "post_acc": 0.847
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.4647455276489258,
+        "post_acc": 0.8879
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.36561452713012693,
+        "post_acc": 0.8712
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3976314994812012,
+        "post_acc": 0.8924
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3584960578918457,
+        "post_acc": 0.884
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.37797604064941404,
+        "post_acc": 0.9035
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3215993797302246,
+        "post_acc": 0.9042
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.32595294799804686,
+        "post_acc": 0.8995
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.3392325775146484,
+        "post_acc": 0.8895
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.374374227142334,
+        "post_acc": 0.8979
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.35170135269165037,
+        "post_acc": 0.8997
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.349222216796875,
+        "post_acc": 0.9002
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3436767532348633,
+        "post_acc": 0.9095
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "ipm",
+    "seed": 2,
+    "elapsed_seconds": 27.920065751000948,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.629
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.36344248046875,
+        "post_acc": 0.8233
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5227487701416016,
+        "post_acc": 0.8559
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4951741394042969,
+        "post_acc": 0.8525
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.456445157623291,
+        "post_acc": 0.8806
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3813695106506348,
+        "post_acc": 0.8841
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.35082570571899413,
+        "post_acc": 0.9009
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3266151260375977,
+        "post_acc": 0.9156
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.28861108665466306,
+        "post_acc": 0.8748
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.39632414932250976,
+        "post_acc": 0.912
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.29061149787902835,
+        "post_acc": 0.9058
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.3078811332702637,
+        "post_acc": 0.9143
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2873283073425293,
+        "post_acc": 0.9188
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2618719165802002,
+        "post_acc": 0.9207
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.26429029922485353,
+        "post_acc": 0.9163
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.27973280906677245,
+        "post_acc": 0.9179
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "ipm",
+    "seed": 3,
+    "elapsed_seconds": 27.784133410001232,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.6231
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0597801635742188,
+        "post_acc": 0.8372
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5372095336914062,
+        "post_acc": 0.8548
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4854743041992188,
+        "post_acc": 0.8752
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.40532361907958986,
+        "post_acc": 0.8614
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.4407451774597168,
+        "post_acc": 0.8848
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3895702369689941,
+        "post_acc": 0.911
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2998931655883789,
+        "post_acc": 0.8883
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.3584347702026367,
+        "post_acc": 0.8785
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3887657356262207,
+        "post_acc": 0.919
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.27024567527771,
+        "post_acc": 0.9247
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2589083297729492,
+        "post_acc": 0.9101
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.29404223556518555,
+        "post_acc": 0.9069
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.3134450668334961,
+        "post_acc": 0.8932
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.36475826187133786,
+        "post_acc": 0.902
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3344884262084961,
+        "post_acc": 0.9291
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "ipm",
+    "seed": 4,
+    "elapsed_seconds": 28.019942200000514,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.5697
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.55788076171875,
+        "post_acc": 0.7792
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.0297942291259765,
+        "post_acc": 0.8176
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.7695493148803711,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.409474072265625,
+        "post_acc": 0.828
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.630649169921875,
+        "post_acc": 0.8357
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.5132744094848632,
+        "post_acc": 0.8462
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.5153578536987304,
+        "post_acc": 0.8575
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.4776513366699219,
+        "post_acc": 0.8643
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.43775269012451173,
+        "post_acc": 0.8629
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.47405567169189455,
+        "post_acc": 0.8545
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.5280241607666015,
+        "post_acc": 0.8706
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.43199120025634763,
+        "post_acc": 0.8593
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.5202498046875,
+        "post_acc": 0.868
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.46776663818359376,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.4239887260437012,
+        "post_acc": 0.8639
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "gaussian",
+    "seed": 0,
+    "elapsed_seconds": 28.09218956800032,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.6047
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.5013251708984374,
+        "post_acc": 0.8451
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5132136138916016,
+        "post_acc": 0.8894
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3940911987304688,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3931811889648438,
+        "post_acc": 0.8547
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.4687442611694336,
+        "post_acc": 0.8957
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3453674118041992,
+        "post_acc": 0.9081
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30473105545043944,
+        "post_acc": 0.8783
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.36854143905639647,
+        "post_acc": 0.8971
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.33453129272460935,
+        "post_acc": 0.872
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.40244966812133787,
+        "post_acc": 0.9143
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.29169935455322266,
+        "post_acc": 0.9178
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2738044467926025,
+        "post_acc": 0.9162
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2813929382324219,
+        "post_acc": 0.9139
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.2914300254821777,
+        "post_acc": 0.903
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.31204104766845703,
+        "post_acc": 0.9247
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "gaussian",
+    "seed": 1,
+    "elapsed_seconds": 27.72981779800466,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.6403
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.6108223907470702,
+        "post_acc": 0.7965
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.610955339050293,
+        "post_acc": 0.8138
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.5385690048217774,
+        "post_acc": 0.847
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.4647455276489258,
+        "post_acc": 0.8879
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.36561452713012693,
+        "post_acc": 0.8712
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3976314994812012,
+        "post_acc": 0.8924
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3584960578918457,
+        "post_acc": 0.884
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.37797604064941404,
+        "post_acc": 0.9035
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3215993797302246,
+        "post_acc": 0.9042
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.32595294799804686,
+        "post_acc": 0.8995
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.3392325775146484,
+        "post_acc": 0.8895
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.374374227142334,
+        "post_acc": 0.8979
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.35170135269165037,
+        "post_acc": 0.8997
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.349222216796875,
+        "post_acc": 0.9002
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3436767532348633,
+        "post_acc": 0.9095
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "gaussian",
+    "seed": 2,
+    "elapsed_seconds": 27.912665241005016,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.629
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.36344248046875,
+        "post_acc": 0.8233
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5227487701416016,
+        "post_acc": 0.8559
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4951741394042969,
+        "post_acc": 0.8525
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.456445157623291,
+        "post_acc": 0.8806
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3813695106506348,
+        "post_acc": 0.8841
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.35082570571899413,
+        "post_acc": 0.9009
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3266151260375977,
+        "post_acc": 0.9156
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.28861108665466306,
+        "post_acc": 0.8748
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.39632414932250976,
+        "post_acc": 0.912
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.29061149787902835,
+        "post_acc": 0.9058
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.3078811332702637,
+        "post_acc": 0.9143
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2873283073425293,
+        "post_acc": 0.9188
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2618719165802002,
+        "post_acc": 0.9207
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.26429029922485353,
+        "post_acc": 0.9163
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.27973280906677245,
+        "post_acc": 0.9179
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "gaussian",
+    "seed": 3,
+    "elapsed_seconds": 27.61673494199931,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.6231
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0597801635742188,
+        "post_acc": 0.8372
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5372095336914062,
+        "post_acc": 0.8548
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.4854743041992188,
+        "post_acc": 0.8752
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.40532361907958986,
+        "post_acc": 0.8614
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.4407451774597168,
+        "post_acc": 0.8848
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3895702369689941,
+        "post_acc": 0.911
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2998931655883789,
+        "post_acc": 0.8883
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.3584347702026367,
+        "post_acc": 0.8785
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.3887657356262207,
+        "post_acc": 0.919
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.27024567527771,
+        "post_acc": 0.9247
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2589083297729492,
+        "post_acc": 0.9101
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.29404223556518555,
+        "post_acc": 0.9069
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.3134450668334961,
+        "post_acc": 0.8932
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.36475826187133786,
+        "post_acc": 0.902
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.3344884262084961,
+        "post_acc": 0.9291
+      }
+    ]
+  },
+  {
+    "strategy": "Krum",
+    "attack": "gaussian",
+    "seed": 4,
+    "elapsed_seconds": 27.843988967004407,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.5697
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.55788076171875,
+        "post_acc": 0.7792
+      },
+      {
+        "round": 3,
+        "pre_loss": 1.0297942291259765,
+        "post_acc": 0.8176
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.7695493148803711,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.409474072265625,
+        "post_acc": 0.828
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.630649169921875,
+        "post_acc": 0.8357
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.5132744094848632,
+        "post_acc": 0.8462
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.5153578536987304,
+        "post_acc": 0.8575
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.4776513366699219,
+        "post_acc": 0.8643
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.43775269012451173,
+        "post_acc": 0.8629
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.47405567169189455,
+        "post_acc": 0.8545
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.5280241607666015,
+        "post_acc": 0.8706
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.43199120025634763,
+        "post_acc": 0.8593
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.5202498046875,
+        "post_acc": 0.868
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.46776663818359376,
+        "post_acc": 0.8757
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.4239887260437012,
+        "post_acc": 0.8639
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "label_flip",
+    "seed": 0,
+    "elapsed_seconds": 28.005165814000065,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7076
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8736868530273437,
+        "post_acc": 0.8884
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.3971672653198242,
+        "post_acc": 0.8972
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.33986885528564453,
+        "post_acc": 0.9066
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3109137329101562,
+        "post_acc": 0.9122
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.2878921829223633,
+        "post_acc": 0.9208
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2623957893371582,
+        "post_acc": 0.9263
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.24537589225769044,
+        "post_acc": 0.9275
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.24072019729614258,
+        "post_acc": 0.9373
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2135123046875,
+        "post_acc": 0.9378
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.20662222175598144,
+        "post_acc": 0.9352
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.21656531562805176,
+        "post_acc": 0.9334
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.21280997123718262,
+        "post_acc": 0.9429
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.19052844009399414,
+        "post_acc": 0.9436
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.18629282627105712,
+        "post_acc": 0.947
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1778023916244507,
+        "post_acc": 0.9452
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "label_flip",
+    "seed": 1,
+    "elapsed_seconds": 27.79089209999802,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.6011
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.1692977752685547,
+        "post_acc": 0.7707
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.6059035919189453,
+        "post_acc": 0.8375
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.49142619171142576,
+        "post_acc": 0.8786
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3901850769042969,
+        "post_acc": 0.9006
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.33434158096313477,
+        "post_acc": 0.8999
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.32929746627807616,
+        "post_acc": 0.9065
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3106966598510742,
+        "post_acc": 0.9048
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.310233377456665,
+        "post_acc": 0.917
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2770425193786621,
+        "post_acc": 0.9223
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2709176387786865,
+        "post_acc": 0.9251
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.24799899673461914,
+        "post_acc": 0.9257
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.24535238037109375,
+        "post_acc": 0.9272
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.24037140235900878,
+        "post_acc": 0.9279
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.24462790412902832,
+        "post_acc": 0.9284
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.23798761711120606,
+        "post_acc": 0.9361
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "label_flip",
+    "seed": 2,
+    "elapsed_seconds": 27.707893159000378,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.5613
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.2859905181884765,
+        "post_acc": 0.8262
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5466836822509765,
+        "post_acc": 0.882
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.41717642974853514,
+        "post_acc": 0.8974
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3556587989807129,
+        "post_acc": 0.9051
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.32637778930664063,
+        "post_acc": 0.9131
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2953636344909668,
+        "post_acc": 0.9156
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2903285224914551,
+        "post_acc": 0.9231
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.26688048210144044,
+        "post_acc": 0.9193
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2689745574951172,
+        "post_acc": 0.923
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2550810020446777,
+        "post_acc": 0.9277
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.25012494506835936,
+        "post_acc": 0.9282
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2401525966644287,
+        "post_acc": 0.9336
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2221800189971924,
+        "post_acc": 0.9331
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.22347400703430176,
+        "post_acc": 0.937
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.21218251457214354,
+        "post_acc": 0.9349
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "label_flip",
+    "seed": 3,
+    "elapsed_seconds": 27.807807557997876,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.7418
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8728902252197266,
+        "post_acc": 0.8885
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40428972091674803,
+        "post_acc": 0.893
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3782341842651367,
+        "post_acc": 0.8942
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3613249588012695,
+        "post_acc": 0.9033
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3282782539367676,
+        "post_acc": 0.9108
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3046265869140625,
+        "post_acc": 0.92
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2724267421722412,
+        "post_acc": 0.9229
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.25915935173034665,
+        "post_acc": 0.9239
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2571765350341797,
+        "post_acc": 0.9284
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2387142333984375,
+        "post_acc": 0.9319
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.23254131851196289,
+        "post_acc": 0.9323
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.22941735458374024,
+        "post_acc": 0.9379
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2117059928894043,
+        "post_acc": 0.936
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.21653856010437011,
+        "post_acc": 0.9393
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.20341216125488282,
+        "post_acc": 0.9407
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "label_flip",
+    "seed": 4,
+    "elapsed_seconds": 28.016702738001186,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.726
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0170804595947265,
+        "post_acc": 0.8733
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.4077884407043457,
+        "post_acc": 0.9057
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.32028922653198244,
+        "post_acc": 0.8851
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.36139914779663085,
+        "post_acc": 0.8897
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.34312132720947264,
+        "post_acc": 0.9091
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2937207077026367,
+        "post_acc": 0.8992
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30846686782836913,
+        "post_acc": 0.9049
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.29531242904663085,
+        "post_acc": 0.9136
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2697959732055664,
+        "post_acc": 0.9195
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2529050323486328,
+        "post_acc": 0.9169
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2582897186279297,
+        "post_acc": 0.9235
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.24143227806091308,
+        "post_acc": 0.9286
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.22377431411743165,
+        "post_acc": 0.9276
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.22910327682495119,
+        "post_acc": 0.9266
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.22986421127319337,
+        "post_acc": 0.9309
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "ipm",
+    "seed": 0,
+    "elapsed_seconds": 27.824513460996968,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7076
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8736868530273437,
+        "post_acc": 0.8884
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.3971672653198242,
+        "post_acc": 0.8972
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.33986885528564453,
+        "post_acc": 0.9066
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3109137329101562,
+        "post_acc": 0.9122
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.2878921829223633,
+        "post_acc": 0.9208
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2623957893371582,
+        "post_acc": 0.9263
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.24537589225769044,
+        "post_acc": 0.9275
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.24072019729614258,
+        "post_acc": 0.9373
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2135123046875,
+        "post_acc": 0.9378
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.20662222175598144,
+        "post_acc": 0.9352
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.21656531562805176,
+        "post_acc": 0.9334
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.21280997123718262,
+        "post_acc": 0.9429
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.19052844009399414,
+        "post_acc": 0.9436
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.18629282627105712,
+        "post_acc": 0.947
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1778023916244507,
+        "post_acc": 0.9452
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "ipm",
+    "seed": 1,
+    "elapsed_seconds": 27.9757744439994,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.6011
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.1692977752685547,
+        "post_acc": 0.7707
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.6059035919189453,
+        "post_acc": 0.8375
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.49142619171142576,
+        "post_acc": 0.8786
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3901850769042969,
+        "post_acc": 0.9006
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.33434158096313477,
+        "post_acc": 0.8999
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.32929746627807616,
+        "post_acc": 0.9065
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3106966598510742,
+        "post_acc": 0.9048
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.310233377456665,
+        "post_acc": 0.917
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2770425193786621,
+        "post_acc": 0.9223
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2709176387786865,
+        "post_acc": 0.9251
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.24799899673461914,
+        "post_acc": 0.9257
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.24535238037109375,
+        "post_acc": 0.9272
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.24037140235900878,
+        "post_acc": 0.9279
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.24462790412902832,
+        "post_acc": 0.9284
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.23798761711120606,
+        "post_acc": 0.9361
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "ipm",
+    "seed": 2,
+    "elapsed_seconds": 28.023939828999573,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.5613
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.2859905181884765,
+        "post_acc": 0.8262
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5466836822509765,
+        "post_acc": 0.882
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.41717642974853514,
+        "post_acc": 0.8974
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3556587989807129,
+        "post_acc": 0.9051
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.32637778930664063,
+        "post_acc": 0.9131
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2953636344909668,
+        "post_acc": 0.9156
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2903285224914551,
+        "post_acc": 0.9231
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.26688048210144044,
+        "post_acc": 0.9193
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2689745574951172,
+        "post_acc": 0.923
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2550810020446777,
+        "post_acc": 0.9277
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.25012494506835936,
+        "post_acc": 0.9282
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2401525966644287,
+        "post_acc": 0.9336
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2221800189971924,
+        "post_acc": 0.9331
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.22347400703430176,
+        "post_acc": 0.937
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.21218251457214354,
+        "post_acc": 0.9349
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "ipm",
+    "seed": 3,
+    "elapsed_seconds": 28.163002774999768,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.7418
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8728902252197266,
+        "post_acc": 0.8885
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40428972091674803,
+        "post_acc": 0.893
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3782341842651367,
+        "post_acc": 0.8942
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3613249588012695,
+        "post_acc": 0.9033
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3282782539367676,
+        "post_acc": 0.9108
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3046265869140625,
+        "post_acc": 0.92
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2724267421722412,
+        "post_acc": 0.9229
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.25915935173034665,
+        "post_acc": 0.9239
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2571765350341797,
+        "post_acc": 0.9284
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2387142333984375,
+        "post_acc": 0.9319
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.23254131851196289,
+        "post_acc": 0.9323
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.22941735458374024,
+        "post_acc": 0.9379
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2117059928894043,
+        "post_acc": 0.936
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.21653856010437011,
+        "post_acc": 0.9393
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.20341216125488282,
+        "post_acc": 0.9407
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "ipm",
+    "seed": 4,
+    "elapsed_seconds": 27.764611673002946,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.726
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0170804595947265,
+        "post_acc": 0.8733
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.4077884407043457,
+        "post_acc": 0.9057
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.32028922653198244,
+        "post_acc": 0.8851
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.36139914779663085,
+        "post_acc": 0.8897
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.34312132720947264,
+        "post_acc": 0.9091
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2937207077026367,
+        "post_acc": 0.8992
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30846686782836913,
+        "post_acc": 0.9049
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.29531242904663085,
+        "post_acc": 0.9136
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2697959732055664,
+        "post_acc": 0.9195
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2529050323486328,
+        "post_acc": 0.9169
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2582897186279297,
+        "post_acc": 0.9235
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.24143227806091308,
+        "post_acc": 0.9286
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.22377431411743165,
+        "post_acc": 0.9276
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.22910327682495119,
+        "post_acc": 0.9266
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.22986421127319337,
+        "post_acc": 0.9309
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "gaussian",
+    "seed": 0,
+    "elapsed_seconds": 27.979744117001246,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7076
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8736868530273437,
+        "post_acc": 0.8884
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.3971672653198242,
+        "post_acc": 0.8972
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.33986885528564453,
+        "post_acc": 0.9066
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3109137329101562,
+        "post_acc": 0.9122
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.2878921829223633,
+        "post_acc": 0.9208
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2623957893371582,
+        "post_acc": 0.9263
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.24537589225769044,
+        "post_acc": 0.9275
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.24072019729614258,
+        "post_acc": 0.9373
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2135123046875,
+        "post_acc": 0.9378
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.20662222175598144,
+        "post_acc": 0.9352
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.21656531562805176,
+        "post_acc": 0.9334
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.21280997123718262,
+        "post_acc": 0.9429
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.19052844009399414,
+        "post_acc": 0.9436
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.18629282627105712,
+        "post_acc": 0.947
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1778023916244507,
+        "post_acc": 0.9452
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "gaussian",
+    "seed": 1,
+    "elapsed_seconds": 28.144851833996654,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.6011
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.1692977752685547,
+        "post_acc": 0.7707
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.6059035919189453,
+        "post_acc": 0.8375
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.49142619171142576,
+        "post_acc": 0.8786
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3901850769042969,
+        "post_acc": 0.9006
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.33434158096313477,
+        "post_acc": 0.8999
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.32929746627807616,
+        "post_acc": 0.9065
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.3106966598510742,
+        "post_acc": 0.9048
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.310233377456665,
+        "post_acc": 0.917
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2770425193786621,
+        "post_acc": 0.9223
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2709176387786865,
+        "post_acc": 0.9251
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.24799899673461914,
+        "post_acc": 0.9257
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.24535238037109375,
+        "post_acc": 0.9272
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.24037140235900878,
+        "post_acc": 0.9279
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.24462790412902832,
+        "post_acc": 0.9284
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.23798761711120606,
+        "post_acc": 0.9361
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "gaussian",
+    "seed": 2,
+    "elapsed_seconds": 28.17600600100559,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.5613
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.2859905181884765,
+        "post_acc": 0.8262
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.5466836822509765,
+        "post_acc": 0.882
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.41717642974853514,
+        "post_acc": 0.8974
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3556587989807129,
+        "post_acc": 0.9051
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.32637778930664063,
+        "post_acc": 0.9131
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2953636344909668,
+        "post_acc": 0.9156
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2903285224914551,
+        "post_acc": 0.9231
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.26688048210144044,
+        "post_acc": 0.9193
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2689745574951172,
+        "post_acc": 0.923
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2550810020446777,
+        "post_acc": 0.9277
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.25012494506835936,
+        "post_acc": 0.9282
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.2401525966644287,
+        "post_acc": 0.9336
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2221800189971924,
+        "post_acc": 0.9331
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.22347400703430176,
+        "post_acc": 0.937
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.21218251457214354,
+        "post_acc": 0.9349
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "gaussian",
+    "seed": 3,
+    "elapsed_seconds": 27.646066369001346,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.7418
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8728902252197266,
+        "post_acc": 0.8885
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40428972091674803,
+        "post_acc": 0.893
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3782341842651367,
+        "post_acc": 0.8942
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3613249588012695,
+        "post_acc": 0.9033
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3282782539367676,
+        "post_acc": 0.9108
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.3046265869140625,
+        "post_acc": 0.92
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2724267421722412,
+        "post_acc": 0.9229
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.25915935173034665,
+        "post_acc": 0.9239
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2571765350341797,
+        "post_acc": 0.9284
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2387142333984375,
+        "post_acc": 0.9319
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.23254131851196289,
+        "post_acc": 0.9323
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.22941735458374024,
+        "post_acc": 0.9379
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.2117059928894043,
+        "post_acc": 0.936
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.21653856010437011,
+        "post_acc": 0.9393
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.20341216125488282,
+        "post_acc": 0.9407
+      }
+    ]
+  },
+  {
+    "strategy": "MultiKrum",
+    "attack": "gaussian",
+    "seed": 4,
+    "elapsed_seconds": 27.744407637997938,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.726
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0170804595947265,
+        "post_acc": 0.8733
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.4077884407043457,
+        "post_acc": 0.9057
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.32028922653198244,
+        "post_acc": 0.8851
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.36139914779663085,
+        "post_acc": 0.8897
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.34312132720947264,
+        "post_acc": 0.9091
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2937207077026367,
+        "post_acc": 0.8992
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.30846686782836913,
+        "post_acc": 0.9049
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.29531242904663085,
+        "post_acc": 0.9136
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.2697959732055664,
+        "post_acc": 0.9195
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.2529050323486328,
+        "post_acc": 0.9169
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.2582897186279297,
+        "post_acc": 0.9235
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.24143227806091308,
+        "post_acc": 0.9286
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.22377431411743165,
+        "post_acc": 0.9276
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.22910327682495119,
+        "post_acc": 0.9266
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.22986421127319337,
+        "post_acc": 0.9309
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "label_flip",
+    "seed": 0,
+    "elapsed_seconds": 27.85026064699923,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7378
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7382401458740234,
+        "post_acc": 0.9033
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.350765958404541,
+        "post_acc": 0.9176
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.2892913604736328,
+        "post_acc": 0.9264
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25384871520996094,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23718699378967284,
+        "post_acc": 0.9325
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22393920974731446,
+        "post_acc": 0.9389
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2018773666381836,
+        "post_acc": 0.9427
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.19113431854248047,
+        "post_acc": 0.9451
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18345310440063475,
+        "post_acc": 0.9481
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1708828149795532,
+        "post_acc": 0.9508
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.16354224185943603,
+        "post_acc": 0.9518
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15654860496520995,
+        "post_acc": 0.9549
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14686144905090331,
+        "post_acc": 0.9558
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.14335956954956056,
+        "post_acc": 0.9584
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1362255355834961,
+        "post_acc": 0.959
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "label_flip",
+    "seed": 1,
+    "elapsed_seconds": 28.04763348499546,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.782
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7543520538330079,
+        "post_acc": 0.8907
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40011890792846677,
+        "post_acc": 0.9091
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.32314872207641604,
+        "post_acc": 0.9211
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2799413040161133,
+        "post_acc": 0.9287
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.24745698966979982,
+        "post_acc": 0.9334
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.23056663246154785,
+        "post_acc": 0.9383
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21252845153808594,
+        "post_acc": 0.9414
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20012140884399415,
+        "post_acc": 0.945
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18347568511962892,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.17393528137207032,
+        "post_acc": 0.9486
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1680344928741455,
+        "post_acc": 0.9513
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15890251121520996,
+        "post_acc": 0.9516
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.15437777614593506,
+        "post_acc": 0.9534
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.15049923725128173,
+        "post_acc": 0.9568
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.14324972324371338,
+        "post_acc": 0.9569
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "label_flip",
+    "seed": 2,
+    "elapsed_seconds": 28.07120188400586,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.6244
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.106709149169922,
+        "post_acc": 0.8595
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.46011107330322265,
+        "post_acc": 0.8941
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.36635288696289064,
+        "post_acc": 0.9045
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3212181610107422,
+        "post_acc": 0.9221
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.267102844619751,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2428697624206543,
+        "post_acc": 0.9354
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.22042073211669921,
+        "post_acc": 0.9351
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.21646012725830077,
+        "post_acc": 0.9389
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.20701136398315428,
+        "post_acc": 0.9425
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.18981112632751465,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.18273107986450196,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.17121368713378907,
+        "post_acc": 0.9487
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.1661424196243286,
+        "post_acc": 0.9522
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.16086906070709228,
+        "post_acc": 0.9535
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1523183340072632,
+        "post_acc": 0.953
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "label_flip",
+    "seed": 3,
+    "elapsed_seconds": 28.43088317400543,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.7887
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8167264099121094,
+        "post_acc": 0.897
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.36002219772338867,
+        "post_acc": 0.91
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3060613723754883,
+        "post_acc": 0.9233
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2622217037200928,
+        "post_acc": 0.9301
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23355019874572755,
+        "post_acc": 0.9374
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21005423164367676,
+        "post_acc": 0.9405
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.19475680351257324,
+        "post_acc": 0.9442
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.18106723594665527,
+        "post_acc": 0.9477
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1664970542907715,
+        "post_acc": 0.9491
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.16267340545654296,
+        "post_acc": 0.9517
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.15341485195159912,
+        "post_acc": 0.9546
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.14712760105133058,
+        "post_acc": 0.9549
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14385733127593994,
+        "post_acc": 0.9568
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13403142719268799,
+        "post_acc": 0.9591
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.12916936473846435,
+        "post_acc": 0.9582
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "label_flip",
+    "seed": 4,
+    "elapsed_seconds": 27.860285034999833,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.686
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.9863163330078125,
+        "post_acc": 0.8731
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40544864654541013,
+        "post_acc": 0.9032
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3217928016662598,
+        "post_acc": 0.9191
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.27335868110656736,
+        "post_acc": 0.9249
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.24657961120605468,
+        "post_acc": 0.9331
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22065158805847168,
+        "post_acc": 0.934
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21521510810852051,
+        "post_acc": 0.9379
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.1971262020111084,
+        "post_acc": 0.9424
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18757684364318847,
+        "post_acc": 0.9486
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1679361406326294,
+        "post_acc": 0.9512
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.15876446380615233,
+        "post_acc": 0.954
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15120284557342528,
+        "post_acc": 0.9562
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14319105548858643,
+        "post_acc": 0.957
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1393225824356079,
+        "post_acc": 0.9582
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.13474944267272948,
+        "post_acc": 0.959
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "ipm",
+    "seed": 0,
+    "elapsed_seconds": 27.798971691998304,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7378
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7382401458740234,
+        "post_acc": 0.9033
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.350765958404541,
+        "post_acc": 0.9176
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.2892913604736328,
+        "post_acc": 0.9264
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25384871520996094,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23718699378967284,
+        "post_acc": 0.9325
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22393920974731446,
+        "post_acc": 0.9389
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2018773666381836,
+        "post_acc": 0.9427
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.19113431854248047,
+        "post_acc": 0.9451
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18345310440063475,
+        "post_acc": 0.9481
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1708828149795532,
+        "post_acc": 0.9508
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.16354224185943603,
+        "post_acc": 0.9518
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15654860496520995,
+        "post_acc": 0.9549
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14686144905090331,
+        "post_acc": 0.9558
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.14335956954956056,
+        "post_acc": 0.9584
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1362255355834961,
+        "post_acc": 0.959
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "ipm",
+    "seed": 1,
+    "elapsed_seconds": 27.77552219900099,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.782
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7543520538330079,
+        "post_acc": 0.8907
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40011890792846677,
+        "post_acc": 0.9091
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.32314872207641604,
+        "post_acc": 0.9211
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2799413040161133,
+        "post_acc": 0.9287
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.24745698966979982,
+        "post_acc": 0.9334
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.23056663246154785,
+        "post_acc": 0.9383
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21252845153808594,
+        "post_acc": 0.9414
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20012140884399415,
+        "post_acc": 0.945
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18347568511962892,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.17393528137207032,
+        "post_acc": 0.9486
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1680344928741455,
+        "post_acc": 0.9513
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15890251121520996,
+        "post_acc": 0.9516
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.15437777614593506,
+        "post_acc": 0.9534
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.15049923725128173,
+        "post_acc": 0.9568
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.14324972324371338,
+        "post_acc": 0.9569
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "ipm",
+    "seed": 2,
+    "elapsed_seconds": 27.77609389099962,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.6244
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.106709149169922,
+        "post_acc": 0.8595
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.46011107330322265,
+        "post_acc": 0.8941
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.36635288696289064,
+        "post_acc": 0.9045
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3212181610107422,
+        "post_acc": 0.9221
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.267102844619751,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2428697624206543,
+        "post_acc": 0.9354
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.22042073211669921,
+        "post_acc": 0.9351
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.21646012725830077,
+        "post_acc": 0.9389
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.20701136398315428,
+        "post_acc": 0.9425
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.18981112632751465,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.18273107986450196,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.17121368713378907,
+        "post_acc": 0.9487
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.1661424196243286,
+        "post_acc": 0.9522
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.16086906070709228,
+        "post_acc": 0.9535
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1523183340072632,
+        "post_acc": 0.953
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "ipm",
+    "seed": 3,
+    "elapsed_seconds": 27.927617752000515,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.7887
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8167264099121094,
+        "post_acc": 0.897
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.36002219772338867,
+        "post_acc": 0.91
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3060613723754883,
+        "post_acc": 0.9233
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2622217037200928,
+        "post_acc": 0.9301
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23355019874572755,
+        "post_acc": 0.9374
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21005423164367676,
+        "post_acc": 0.9405
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.19475680351257324,
+        "post_acc": 0.9442
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.18106723594665527,
+        "post_acc": 0.9477
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1664970542907715,
+        "post_acc": 0.9491
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.16267340545654296,
+        "post_acc": 0.9517
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.15341485195159912,
+        "post_acc": 0.9546
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.14712760105133058,
+        "post_acc": 0.9549
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14385733127593994,
+        "post_acc": 0.9568
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13403142719268799,
+        "post_acc": 0.9591
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.12916936473846435,
+        "post_acc": 0.9582
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "ipm",
+    "seed": 4,
+    "elapsed_seconds": 27.90211605100194,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.686
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.9863163330078125,
+        "post_acc": 0.8731
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40544864654541013,
+        "post_acc": 0.9032
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3217928016662598,
+        "post_acc": 0.9191
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.27335868110656736,
+        "post_acc": 0.9249
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.24657961120605468,
+        "post_acc": 0.9331
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22065158805847168,
+        "post_acc": 0.934
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21521510810852051,
+        "post_acc": 0.9379
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.1971262020111084,
+        "post_acc": 0.9424
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18757684364318847,
+        "post_acc": 0.9486
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1679361406326294,
+        "post_acc": 0.9512
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.15876446380615233,
+        "post_acc": 0.954
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15120284557342528,
+        "post_acc": 0.9562
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14319105548858643,
+        "post_acc": 0.957
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1393225824356079,
+        "post_acc": 0.9582
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.13474944267272948,
+        "post_acc": 0.959
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "gaussian",
+    "seed": 0,
+    "elapsed_seconds": 27.572319981001783,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7378
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7382401458740234,
+        "post_acc": 0.9033
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.350765958404541,
+        "post_acc": 0.9176
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.2892913604736328,
+        "post_acc": 0.9264
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25384871520996094,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23718699378967284,
+        "post_acc": 0.9325
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22393920974731446,
+        "post_acc": 0.9389
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2018773666381836,
+        "post_acc": 0.9427
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.19113431854248047,
+        "post_acc": 0.9451
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18345310440063475,
+        "post_acc": 0.9481
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1708828149795532,
+        "post_acc": 0.9508
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.16354224185943603,
+        "post_acc": 0.9518
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15654860496520995,
+        "post_acc": 0.9549
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14686144905090331,
+        "post_acc": 0.9558
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.14335956954956056,
+        "post_acc": 0.9584
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1362255355834961,
+        "post_acc": 0.959
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "gaussian",
+    "seed": 1,
+    "elapsed_seconds": 28.025781364005525,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.782
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7543520538330079,
+        "post_acc": 0.8907
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40011890792846677,
+        "post_acc": 0.9091
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.32314872207641604,
+        "post_acc": 0.9211
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2799413040161133,
+        "post_acc": 0.9287
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.24745698966979982,
+        "post_acc": 0.9334
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.23056663246154785,
+        "post_acc": 0.9383
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21252845153808594,
+        "post_acc": 0.9414
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20012140884399415,
+        "post_acc": 0.945
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18347568511962892,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.17393528137207032,
+        "post_acc": 0.9486
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1680344928741455,
+        "post_acc": 0.9513
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15890251121520996,
+        "post_acc": 0.9516
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.15437777614593506,
+        "post_acc": 0.9534
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.15049923725128173,
+        "post_acc": 0.9568
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.14324972324371338,
+        "post_acc": 0.9569
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "gaussian",
+    "seed": 2,
+    "elapsed_seconds": 27.870551200998307,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.6244
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.106709149169922,
+        "post_acc": 0.8595
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.46011107330322265,
+        "post_acc": 0.8941
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.36635288696289064,
+        "post_acc": 0.9045
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3212181610107422,
+        "post_acc": 0.9221
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.267102844619751,
+        "post_acc": 0.9285
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2428697624206543,
+        "post_acc": 0.9354
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.22042073211669921,
+        "post_acc": 0.9351
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.21646012725830077,
+        "post_acc": 0.9389
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.20701136398315428,
+        "post_acc": 0.9425
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.18981112632751465,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.18273107986450196,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.17121368713378907,
+        "post_acc": 0.9487
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.1661424196243286,
+        "post_acc": 0.9522
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.16086906070709228,
+        "post_acc": 0.9535
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1523183340072632,
+        "post_acc": 0.953
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "gaussian",
+    "seed": 3,
+    "elapsed_seconds": 27.851027664000867,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.7887
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8167264099121094,
+        "post_acc": 0.897
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.36002219772338867,
+        "post_acc": 0.91
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3060613723754883,
+        "post_acc": 0.9233
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2622217037200928,
+        "post_acc": 0.9301
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23355019874572755,
+        "post_acc": 0.9374
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21005423164367676,
+        "post_acc": 0.9405
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.19475680351257324,
+        "post_acc": 0.9442
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.18106723594665527,
+        "post_acc": 0.9477
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1664970542907715,
+        "post_acc": 0.9491
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.16267340545654296,
+        "post_acc": 0.9517
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.15341485195159912,
+        "post_acc": 0.9546
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.14712760105133058,
+        "post_acc": 0.9549
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14385733127593994,
+        "post_acc": 0.9568
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13403142719268799,
+        "post_acc": 0.9591
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.12916936473846435,
+        "post_acc": 0.9582
+      }
+    ]
+  },
+  {
+    "strategy": "Bulyan",
+    "attack": "gaussian",
+    "seed": 4,
+    "elapsed_seconds": 27.661413223002455,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.686
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.9863163330078125,
+        "post_acc": 0.8731
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.40544864654541013,
+        "post_acc": 0.9032
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.3217928016662598,
+        "post_acc": 0.9191
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.27335868110656736,
+        "post_acc": 0.9249
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.24657961120605468,
+        "post_acc": 0.9331
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22065158805847168,
+        "post_acc": 0.934
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21521510810852051,
+        "post_acc": 0.9379
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.1971262020111084,
+        "post_acc": 0.9424
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18757684364318847,
+        "post_acc": 0.9486
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1679361406326294,
+        "post_acc": 0.9512
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.15876446380615233,
+        "post_acc": 0.954
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15120284557342528,
+        "post_acc": 0.9562
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14319105548858643,
+        "post_acc": 0.957
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1393225824356079,
+        "post_acc": 0.9582
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.13474944267272948,
+        "post_acc": 0.959
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "label_flip",
+    "seed": 0,
+    "elapsed_seconds": 27.43519295599981,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7837
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7172739379882812,
+        "post_acc": 0.9035
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.3412817611694336,
+        "post_acc": 0.9147
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.2943735107421875,
+        "post_acc": 0.9255
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2550719871520996,
+        "post_acc": 0.9317
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23049348793029786,
+        "post_acc": 0.9362
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21156478576660157,
+        "post_acc": 0.9433
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.19123568878173827,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.1761506420135498,
+        "post_acc": 0.9492
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.16969031963348388,
+        "post_acc": 0.9515
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.15853712272644044,
+        "post_acc": 0.9552
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.14815204467773438,
+        "post_acc": 0.9581
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.1410666223526001,
+        "post_acc": 0.9599
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.13397910709381103,
+        "post_acc": 0.9604
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13019651069641114,
+        "post_acc": 0.9626
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1238395414352417,
+        "post_acc": 0.9643
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "label_flip",
+    "seed": 1,
+    "elapsed_seconds": 27.915238174995466,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.8516
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7348132659912109,
+        "post_acc": 0.895
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.37322138061523435,
+        "post_acc": 0.915
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.30234439239501953,
+        "post_acc": 0.9267
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25852977485656736,
+        "post_acc": 0.9329
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23166783638000488,
+        "post_acc": 0.939
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21219351997375488,
+        "post_acc": 0.9434
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.1923584457397461,
+        "post_acc": 0.9463
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.18176431465148926,
+        "post_acc": 0.9508
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1668900020599365,
+        "post_acc": 0.9523
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1579490692138672,
+        "post_acc": 0.9544
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1484357307434082,
+        "post_acc": 0.9571
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.1411630792617798,
+        "post_acc": 0.958
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.13475113525390625,
+        "post_acc": 0.9602
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13089214820861816,
+        "post_acc": 0.9605
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.12505811882019044,
+        "post_acc": 0.9621
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "label_flip",
+    "seed": 2,
+    "elapsed_seconds": 27.851063588001125,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.6621
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0147103332519531,
+        "post_acc": 0.8575
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.44738031158447267,
+        "post_acc": 0.9016
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.33506503524780273,
+        "post_acc": 0.9129
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.29159067001342776,
+        "post_acc": 0.9231
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.26081570777893065,
+        "post_acc": 0.9322
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22929699897766112,
+        "post_acc": 0.9372
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2090968589782715,
+        "post_acc": 0.9402
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20006004524230958,
+        "post_acc": 0.9436
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1886146999359131,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1732739501953125,
+        "post_acc": 0.9496
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1668323329925537,
+        "post_acc": 0.9518
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15664459342956544,
+        "post_acc": 0.9532
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.15102793331146241,
+        "post_acc": 0.9559
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1453394552230835,
+        "post_acc": 0.9576
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.13728989791870116,
+        "post_acc": 0.9557
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "label_flip",
+    "seed": 3,
+    "elapsed_seconds": 28.17874278799718,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.8192
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7172158065795898,
+        "post_acc": 0.9074
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.33391535568237307,
+        "post_acc": 0.9161
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.28806834259033204,
+        "post_acc": 0.9264
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25107194938659666,
+        "post_acc": 0.9335
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.22384621505737304,
+        "post_acc": 0.9395
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.20288278160095216,
+        "post_acc": 0.9419
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.18696075134277343,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.17358885879516603,
+        "post_acc": 0.9509
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.15952791500091554,
+        "post_acc": 0.9521
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.15246997871398926,
+        "post_acc": 0.954
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1451718250274658,
+        "post_acc": 0.9567
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.13958709201812744,
+        "post_acc": 0.9593
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.13248082790374757,
+        "post_acc": 0.9616
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1246436019897461,
+        "post_acc": 0.9628
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.11798625240325927,
+        "post_acc": 0.9629
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "label_flip",
+    "seed": 4,
+    "elapsed_seconds": 28.02776295500371,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.71
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8463139739990234,
+        "post_acc": 0.8946
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.356524893951416,
+        "post_acc": 0.915
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.28753040542602537,
+        "post_acc": 0.9265
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.24884222335815429,
+        "post_acc": 0.9323
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.2233525421142578,
+        "post_acc": 0.9366
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.20293304176330568,
+        "post_acc": 0.942
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.18616605529785157,
+        "post_acc": 0.9475
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.16927393074035643,
+        "post_acc": 0.9502
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.15905901794433594,
+        "post_acc": 0.9535
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1496421335220337,
+        "post_acc": 0.9567
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.13773117256164552,
+        "post_acc": 0.9611
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.12915477027893066,
+        "post_acc": 0.9615
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.12332782745361329,
+        "post_acc": 0.9651
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.11579385013580322,
+        "post_acc": 0.9653
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.11108864879608155,
+        "post_acc": 0.9663
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "ipm",
+    "seed": 0,
+    "elapsed_seconds": 27.66429954100022,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.0113
+      },
+      {
+        "round": 2,
+        "pre_loss": 2.499029931640625,
+        "post_acc": 0.667
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.997087939453125,
+        "post_acc": 0.664
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.14166533203125,
+        "post_acc": 0.9039
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3397955116271973,
+        "post_acc": 0.8953
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.357432763671875,
+        "post_acc": 0.9242
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.25442692947387696,
+        "post_acc": 0.9185
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.266627477645874,
+        "post_acc": 0.9371
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20763147430419923,
+        "post_acc": 0.9372
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.20646040840148927,
+        "post_acc": 0.9428
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.18352104110717773,
+        "post_acc": 0.9435
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1797766969680786,
+        "post_acc": 0.9511
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.16499947338104248,
+        "post_acc": 0.9497
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.15793940868377684,
+        "post_acc": 0.9545
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.14940016498565672,
+        "post_acc": 0.9544
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.14399528884887694,
+        "post_acc": 0.9573
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "ipm",
+    "seed": 1,
+    "elapsed_seconds": 27.78347206000035,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.0148
+      },
+      {
+        "round": 2,
+        "pre_loss": 2.5451718933105467,
+        "post_acc": 0.7865
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.7612837722778321,
+        "post_acc": 0.7539
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.0471771545410156,
+        "post_acc": 0.9027
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3293436233520508,
+        "post_acc": 0.914
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3050173736572266,
+        "post_acc": 0.9308
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2363462131500244,
+        "post_acc": 0.9387
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.21411962776184082,
+        "post_acc": 0.9412
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.19414286994934082,
+        "post_acc": 0.9458
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18364627151489257,
+        "post_acc": 0.9518
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.16007914085388184,
+        "post_acc": 0.9494
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.16803355655670166,
+        "post_acc": 0.9573
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.14059139385223388,
+        "post_acc": 0.9572
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14027147827148437,
+        "post_acc": 0.9616
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.12594197311401367,
+        "post_acc": 0.9625
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1249330114364624,
+        "post_acc": 0.9645
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "ipm",
+    "seed": 2,
+    "elapsed_seconds": 27.808830989000853,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.0016
+      },
+      {
+        "round": 2,
+        "pre_loss": 2.5350167724609376,
+        "post_acc": 0.7762
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.8012841064453124,
+        "post_acc": 0.659
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.3356574798583984,
+        "post_acc": 0.9023
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.33508105850219727,
+        "post_acc": 0.8853
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.37546205215454104,
+        "post_acc": 0.9221
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.2516026638031006,
+        "post_acc": 0.9244
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.24983633918762208,
+        "post_acc": 0.9377
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20188218040466308,
+        "post_acc": 0.9429
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.19044468421936034,
+        "post_acc": 0.9477
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1698808532714844,
+        "post_acc": 0.9474
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.17527177047729492,
+        "post_acc": 0.9531
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15554732704162597,
+        "post_acc": 0.956
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14594844188690184,
+        "post_acc": 0.9572
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13971111793518065,
+        "post_acc": 0.9593
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1331951587677002,
+        "post_acc": 0.9645
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "ipm",
+    "seed": 3,
+    "elapsed_seconds": 28.120109709001554,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.0021
+      },
+      {
+        "round": 2,
+        "pre_loss": 2.5486542114257813,
+        "post_acc": 0.7815
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.80380859375,
+        "post_acc": 0.7359
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.0908795745849609,
+        "post_acc": 0.9077
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.31599400138854983,
+        "post_acc": 0.9031
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.331488631439209,
+        "post_acc": 0.9259
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.24227485008239746,
+        "post_acc": 0.9323
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.22630284042358398,
+        "post_acc": 0.9367
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20421771697998048,
+        "post_acc": 0.9429
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.18666084518432619,
+        "post_acc": 0.9482
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.17005861892700194,
+        "post_acc": 0.9489
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.16813081512451172,
+        "post_acc": 0.9519
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.154083642578125,
+        "post_acc": 0.9564
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.14533289108276368,
+        "post_acc": 0.9577
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13818234977722169,
+        "post_acc": 0.9598
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.13218670520782472,
+        "post_acc": 0.9611
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "ipm",
+    "seed": 4,
+    "elapsed_seconds": 28.084786572995654,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.0036
+      },
+      {
+        "round": 2,
+        "pre_loss": 2.5238202270507815,
+        "post_acc": 0.7398
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.7948590087890625,
+        "post_acc": 0.7094
+      },
+      {
+        "round": 4,
+        "pre_loss": 1.0066854400634766,
+        "post_acc": 0.8944
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.3444000877380371,
+        "post_acc": 0.8872
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.3672167572021484,
+        "post_acc": 0.9261
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.24885967330932618,
+        "post_acc": 0.9217
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.26279009246826174,
+        "post_acc": 0.9326
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.2188948257446289,
+        "post_acc": 0.935
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.21448066749572753,
+        "post_acc": 0.9406
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.19137897071838378,
+        "post_acc": 0.943
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1904286346435547,
+        "post_acc": 0.9495
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.16316426753997804,
+        "post_acc": 0.9475
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.1775174819946289,
+        "post_acc": 0.9539
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.15077464714050293,
+        "post_acc": 0.9545
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.15522377300262452,
+        "post_acc": 0.9547
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "gaussian",
+    "seed": 0,
+    "elapsed_seconds": 28.24890445899655,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3071897216796877,
+        "post_acc": 0.7837
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7172739379882812,
+        "post_acc": 0.9035
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.3412817611694336,
+        "post_acc": 0.9147
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.2943735107421875,
+        "post_acc": 0.9255
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.2550719871520996,
+        "post_acc": 0.9317
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23049348793029786,
+        "post_acc": 0.9362
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21156478576660157,
+        "post_acc": 0.9433
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.19123568878173827,
+        "post_acc": 0.9476
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.1761506420135498,
+        "post_acc": 0.9492
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.16969031963348388,
+        "post_acc": 0.9515
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.15853712272644044,
+        "post_acc": 0.9552
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.14815204467773438,
+        "post_acc": 0.9581
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.1410666223526001,
+        "post_acc": 0.9599
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.13397910709381103,
+        "post_acc": 0.9604
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13019651069641114,
+        "post_acc": 0.9626
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.1238395414352417,
+        "post_acc": 0.9643
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "gaussian",
+    "seed": 1,
+    "elapsed_seconds": 27.634178632994008,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.30123896484375,
+        "post_acc": 0.8516
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7348132659912109,
+        "post_acc": 0.895
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.37322138061523435,
+        "post_acc": 0.915
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.30234439239501953,
+        "post_acc": 0.9267
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25852977485656736,
+        "post_acc": 0.9329
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.23166783638000488,
+        "post_acc": 0.939
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.21219351997375488,
+        "post_acc": 0.9434
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.1923584457397461,
+        "post_acc": 0.9463
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.18176431465148926,
+        "post_acc": 0.9508
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1668900020599365,
+        "post_acc": 0.9523
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1579490692138672,
+        "post_acc": 0.9544
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1484357307434082,
+        "post_acc": 0.9571
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.1411630792617798,
+        "post_acc": 0.958
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.13475113525390625,
+        "post_acc": 0.9602
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.13089214820861816,
+        "post_acc": 0.9605
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.12505811882019044,
+        "post_acc": 0.9621
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "gaussian",
+    "seed": 2,
+    "elapsed_seconds": 27.80865301599988,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3041443115234377,
+        "post_acc": 0.6621
+      },
+      {
+        "round": 2,
+        "pre_loss": 1.0147103332519531,
+        "post_acc": 0.8575
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.44738031158447267,
+        "post_acc": 0.9016
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.33506503524780273,
+        "post_acc": 0.9129
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.29159067001342776,
+        "post_acc": 0.9231
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.26081570777893065,
+        "post_acc": 0.9322
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.22929699897766112,
+        "post_acc": 0.9372
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.2090968589782715,
+        "post_acc": 0.9402
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.20006004524230958,
+        "post_acc": 0.9436
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.1886146999359131,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1732739501953125,
+        "post_acc": 0.9496
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1668323329925537,
+        "post_acc": 0.9518
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.15664459342956544,
+        "post_acc": 0.9532
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.15102793331146241,
+        "post_acc": 0.9559
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1453394552230835,
+        "post_acc": 0.9576
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.13728989791870116,
+        "post_acc": 0.9557
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "gaussian",
+    "seed": 3,
+    "elapsed_seconds": 27.79452219599625,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3048059753417967,
+        "post_acc": 0.8192
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.7172158065795898,
+        "post_acc": 0.9074
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.33391535568237307,
+        "post_acc": 0.9161
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.28806834259033204,
+        "post_acc": 0.9264
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.25107194938659666,
+        "post_acc": 0.9335
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.22384621505737304,
+        "post_acc": 0.9395
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.20288278160095216,
+        "post_acc": 0.9419
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.18696075134277343,
+        "post_acc": 0.9464
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.17358885879516603,
+        "post_acc": 0.9509
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.15952791500091554,
+        "post_acc": 0.9521
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.15246997871398926,
+        "post_acc": 0.954
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.1451718250274658,
+        "post_acc": 0.9567
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.13958709201812744,
+        "post_acc": 0.9593
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.13248082790374757,
+        "post_acc": 0.9616
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.1246436019897461,
+        "post_acc": 0.9628
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.11798625240325927,
+        "post_acc": 0.9629
+      }
+    ]
+  },
+  {
+    "strategy": "ArKrum",
+    "attack": "gaussian",
+    "seed": 4,
+    "elapsed_seconds": 27.820679072996427,
+    "records": [
+      {
+        "round": 1,
+        "pre_loss": 2.3115167236328125,
+        "post_acc": 0.71
+      },
+      {
+        "round": 2,
+        "pre_loss": 0.8463139739990234,
+        "post_acc": 0.8946
+      },
+      {
+        "round": 3,
+        "pre_loss": 0.356524893951416,
+        "post_acc": 0.915
+      },
+      {
+        "round": 4,
+        "pre_loss": 0.28753040542602537,
+        "post_acc": 0.9265
+      },
+      {
+        "round": 5,
+        "pre_loss": 0.24884222335815429,
+        "post_acc": 0.9323
+      },
+      {
+        "round": 6,
+        "pre_loss": 0.2233525421142578,
+        "post_acc": 0.9366
+      },
+      {
+        "round": 7,
+        "pre_loss": 0.20293304176330568,
+        "post_acc": 0.942
+      },
+      {
+        "round": 8,
+        "pre_loss": 0.18616605529785157,
+        "post_acc": 0.9475
+      },
+      {
+        "round": 9,
+        "pre_loss": 0.16927393074035643,
+        "post_acc": 0.9502
+      },
+      {
+        "round": 10,
+        "pre_loss": 0.15905901794433594,
+        "post_acc": 0.9535
+      },
+      {
+        "round": 11,
+        "pre_loss": 0.1496421335220337,
+        "post_acc": 0.9567
+      },
+      {
+        "round": 12,
+        "pre_loss": 0.13773117256164552,
+        "post_acc": 0.9611
+      },
+      {
+        "round": 13,
+        "pre_loss": 0.12915477027893066,
+        "post_acc": 0.9615
+      },
+      {
+        "round": 14,
+        "pre_loss": 0.12332782745361329,
+        "post_acc": 0.9651
+      },
+      {
+        "round": 15,
+        "pre_loss": 0.11579385013580322,
+        "post_acc": 0.9653
+      },
+      {
+        "round": 16,
+        "pre_loss": 0.11108864879608155,
+        "post_acc": 0.9663
+      }
+    ]
+  }
+]

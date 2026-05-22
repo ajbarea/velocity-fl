@@ -8,15 +8,42 @@ being in-flight.
 Long-horizon planning lives in [ROADMAP.md](ROADMAP.md). Session-scale
 execution lives here.
 
+## In flight
+
+**Attack-arena data dump** — `scripts/dump_attack_arena.py` running 5
+strategies (FedAvg + Krum + MultiKrum + Bulyan + ArKrum) × 3 paper-
+cited attacks (label_flip + ipm + gaussian) × 5 seeds × 16 rounds on
+real MNIST (n=11 / f=2 / Dirichlet α=1.0). Output: `runs.json` + a
+per-(strategy, attack, round) `aggregated.csv` with mean + std across
+seeds — the shape NeurIPS 2026 MLRC-track norms expect for FL
+convergence comparisons.
+
+Preview run (1 seed, FedAvg + Krum × 3 attacks) confirmed the
+dramatic gap: FedAvg under Gaussian noise craters to 9.8% accuracy
+while Krum holds 92.5%. At a single seed Krum's curves under all 3
+attacks are byte-identical (Krum deterministically selects the same
+honest update at fixed seed regardless of which client got
+byzantine'd); multi-seed averaging diversifies the splits and reveals
+the real per-attack variance — which is exactly why 5 seeds (not 1)
+is the 2026 standard.
+
+Wall-time estimate: ~28 s/run × 75 runs ≈ 35 minutes on WSL2 CPU.
+
 ## Next up (queued, not active)
 
 Per ROADMAP the natural next sessions are:
 
-1. **CodSpeed + crowd-scale (50-100 clients) bench tier** — the
+1. **Attack-arena Prefab dashboard** (Phase 2 of the Prefab work) —
+   wire `attack_arena(attack)` MCP tool that reads
+   `out/attack_arena/aggregated.csv` and returns
+   `Column[Grid[Card+Metric+Sparkline], LineChart-with-mean+std-bands,
+   DataTable]`. Pairs with the generative-UI provider for the LinkedIn
+   demo screencast.
+2. **CodSpeed + crowd-scale (50-100 clients) bench tier** — the
    noise-floor upgrade that makes single-digit-percent regression
    detection meaningful on the WSL2 box; see
    [ROADMAP → Performance](ROADMAP.md#performance).
-2. **Prefab return types — second pass.** Phase 1 (2026-05-23) shipped
+3. **Prefab return types — third pass.** Phase 1 (2026-05-23) shipped
    `list_runs` / `run_rounds_history` / `compare_runs` / `memory_ledger`
    as `DataTable` / `Column[LineChart, DataTable]` returns. The two
    training-control tools (`run_demo`, `run_real_training`) still return
