@@ -29,7 +29,17 @@ import random
 from typing import Any
 
 import pytest
-from velocity import Bulyan, FedAvg, FedMedian, FedProx, Krum, MultiKrum, Strategy, TrimmedMean
+from velocity import (
+    ArKrum,
+    Bulyan,
+    FedAvg,
+    FedMedian,
+    FedProx,
+    Krum,
+    MultiKrum,
+    Strategy,
+    TrimmedMean,
+)
 from velocity.server import _RUST_AVAILABLE, _rust
 from velocity.strategy import strategy_name
 
@@ -107,6 +117,8 @@ def _make_rust_strategy(strategy: Strategy) -> Any:
         return _rust.Strategy.multi_krum(strategy.f, strategy.m)
     if isinstance(strategy, Bulyan):
         return _rust.Strategy.bulyan(strategy.f, strategy.m)
+    if isinstance(strategy, ArKrum):
+        return _rust.Strategy.ar_krum()
     raise ValueError(strategy)
 
 
@@ -130,6 +142,7 @@ STRATEGIES = [
     Krum(f=1),
     MultiKrum(f=1),
     Bulyan(f=1),
+    ArKrum(),
 ]
 
 
