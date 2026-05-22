@@ -19,17 +19,15 @@ Per ROADMAP the natural next sessions are:
 2. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
    siblings return plain dict/list[dict] today; migrate to typed
    Prefab returns so Claude UI can render natively.
-3. **Per-strategy paper-scenario tests** — every aggregator has a
-   canonical paper-cited test (Krum on MNIST + Gaussian-noise with
-   33% Byzantines, Bulyan on CIFAR + label-flip, RFA on CIFAR-10 +
-   sample-quality weighting, ArKrum across three attacks on image+text).
-   `load_federated` makes each plug-and-play; add a hermetic per-paper
-   scenario covering each strategy's claimed sweet spot + failure mode.
-   Lifts the test suite from "kernel-level" to "research-grade".
-4. **ArKrum benchmark row in `docs/benchmarks.md`** — kernel landed
-   2026-05-22; benchmark across the small / medium / large tiers to
-   set the perf baseline (deferred from the kernel PR to keep the diff
-   focused on correctness).
+3. **Per-strategy paper-scenario tests on a real dataset** — the
+   hermetic Gaussian-noise scenarios for every aggregator shipped
+   2026-05-22 (`tests/test_convergence.py` covers FedAvg / FedMedian /
+   TrimmedMean / Krum / MultiKrum / Bulyan / GeometricMedian / ArKrum
+   under the gradient-poisoning attack from Krum/Bulyan papers). The
+   natural follow-on is a nightly variant on MNIST / CIFAR with the
+   original paper attack models (label-flipping for Bulyan/RFA,
+   inner-product manipulation for Krum, etc.). Use `load_federated`
+   and the existing nightly workflow.
 
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done) matching
