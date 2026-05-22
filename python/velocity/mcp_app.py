@@ -19,13 +19,20 @@ User scope:
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import inspect
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, cast
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
+from fastmcp.server.elicitation import (
+    AcceptedElicitation,
+    CancelledElicitation,
+    DeclinedElicitation,
+)
 
 from velocity import db
 from velocity import memory as mem
@@ -35,18 +42,46 @@ def logged_tool[F: Callable[..., Any]](fn: F) -> F:
     """Audit-log wrapper for ``@mcp.tool``.
 
     Records every call in ``agent_actions`` with tool name, args (minus
-    ``user_id``, which has its own column), elapsed ms, and error class on
-    failure. Apply *below* ``@mcp.tool`` so FastMCP sees the wrapped
-    function's preserved signature.
+    ``user_id`` and ``ctx``, which have their own provenance), elapsed ms,
+    and error class on failure. Handles both sync and ``async def`` tools
+    — elicitation tools need the async path. Apply *below* ``@mcp.tool``
+    so FastMCP sees the wrapped function's preserved signature.
     """
     sig = inspect.signature(fn)
     tool_name = fn.__name__
+
+    def _strip(call_args: dict[str, Any]) -> dict[str, Any]:
+        call_args.pop("ctx", None)
+        return call_args
+
+    if asyncio.iscoroutinefunction(fn):
+
+        @functools.wraps(fn)
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+            bound = sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+            call_args = _strip(dict(bound.arguments))
+            user_id = call_args.pop("user_id", None)
+            started = time.monotonic()
+            error: str | None = None
+            try:
+                return await fn(*args, **kwargs)
+            except Exception as exc:
+                error = f"{type(exc).__name__}: {exc}"
+                raise
+            finally:
+                if user_id is not None:
+                    elapsed_ms = int((time.monotonic() - started) * 1000)
+                    summary = error or f"ok ({elapsed_ms}ms)"
+                    db.log_action(user_id, None, tool_name, call_args, result_summary=summary)
+
+        return cast(F, async_wrapper)
 
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         bound = sig.bind(*args, **kwargs)
         bound.apply_defaults()
-        call_args = dict(bound.arguments)
+        call_args = _strip(dict(bound.arguments))
         user_id = call_args.pop("user_id", None)
         started = time.monotonic()
         error: str | None = None
@@ -96,6 +131,10 @@ learning framework. Your users are PhD researchers running FL experiments.
 
 ## Safety
 - Never run ``run_demo`` with more rounds than the tool allows.
+- ``run_real_training`` triggers an actual federated round on MNIST and
+  asks the user to confirm via elicitation before any download or training
+  starts. Pass through the elicitation honestly — never auto-confirm on the
+  user's behalf.
 - Never call ``forget_memory`` without an explicit user request.
 - Always log hypotheses the user states aloud via ``update_hypothesis``.
 """
@@ -103,6 +142,25 @@ learning framework. Your users are PhD researchers running FL experiments.
 mcp = FastMCP(name="velocityfl", instructions=INSTRUCTIONS)
 
 MAX_DEMO_ROUNDS = 5
+# Cap real-training scope so an MCP-driven session can't kick off a 30-minute
+# job by accident. The convergence example uses 15 rounds x 5 clients for the
+# nightly run; that's not what we want from an in-conversation tool.
+MAX_REAL_ROUNDS = 5
+MAX_REAL_CLIENTS = 10
+
+
+@dataclass
+class RealTrainingConfirm:
+    """Elicitation payload for ``run_real_training`` — explicit user consent.
+
+    Boolean field rather than action-only because the MCP June-2025
+    elicitation spec scopes ``decline`` to "the user does not want to provide
+    information", which a Claude client may surface as a generic dismissal
+    rather than a hard "do not run". A typed bool inside ``accept`` is the
+    unambiguous channel for "yes, launch the real training round".
+    """
+
+    confirm: bool
 
 
 # ---------------------------------------------------------------------------
@@ -261,6 +319,230 @@ def run_demo(
         db.record_round(run_id, s)
     db.complete_run(run_id)
     return {"run_id": run_id, "summaries": summaries}
+
+
+@mcp.tool(meta={"anthropic/maxResultSizeChars": 500_000})
+@logged_tool
+async def run_real_training(
+    ctx: Context,
+    user_id: str,
+    dataset: str = "ylecun/mnist",
+    num_clients: int = 3,
+    rounds: int = 3,
+    local_epochs: int = 1,
+    batch_size: int = 64,
+    lr: float = 0.01,
+    seed: int = 0,
+) -> dict[str, Any]:
+    """Trigger a real federated round against MNIST (not mock).
+
+    Confirmation-gated via MCP elicitation (June-2025 spec): the tool calls
+    ``ctx.elicit`` with a clear summary of the work before any download or
+    training starts. Declined / cancelled responses short-circuit with a
+    status payload — no DB write, no network I/O.
+
+    Scope is bounded server-side: ``rounds <= MAX_REAL_ROUNDS``,
+    ``num_clients <= MAX_REAL_CLIENTS``. The intent is "demonstrate real
+    FL inside a Claude conversation", not "run the nightly convergence
+    sweep".
+
+    Returns ``{"run_id", "summaries", "final_loss", "final_accuracy"}`` on
+    success; ``{"status": "declined"|"cancelled", "reason": ...}`` if the
+    user does not consent.
+    """
+    if rounds > MAX_REAL_ROUNDS:
+        raise ValueError(f"rounds must be <= {MAX_REAL_ROUNDS}")
+    if num_clients > MAX_REAL_CLIENTS:
+        raise ValueError(f"num_clients must be <= {MAX_REAL_CLIENTS}")
+
+    result = await ctx.elicit(
+        message=(
+            f"About to start REAL federated training:\n"
+            f"  dataset={dataset}, clients={num_clients}, rounds={rounds},\n"
+            f"  local_epochs={local_epochs}, batch_size={batch_size}, lr={lr}.\n"
+            f"First run downloads MNIST (~13MB) via Hugging Face.\n"
+            f"Set confirm=true to launch."
+        ),
+        response_type=RealTrainingConfirm,
+    )
+    match result:
+        case AcceptedElicitation(data=data) if data.confirm:
+            pass
+        case AcceptedElicitation():
+            return {"status": "declined", "reason": "confirm=false"}
+        case DeclinedElicitation():
+            return {"status": "declined", "reason": "user declined elicitation"}
+        case CancelledElicitation():
+            return {"status": "cancelled", "reason": "user cancelled elicitation"}
+        case _:  # defensive — covers any future elicitation variant
+            return {"status": "cancelled", "reason": "unknown elicitation result"}
+
+    return await _execute_real_training(
+        user_id=user_id,
+        dataset=dataset,
+        num_clients=num_clients,
+        rounds=rounds,
+        local_epochs=local_epochs,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+    )
+
+
+async def _execute_real_training(
+    *,
+    user_id: str,
+    dataset: str,
+    num_clients: int,
+    rounds: int,
+    local_epochs: int,
+    batch_size: int,
+    lr: float,
+    seed: int,
+) -> dict[str, Any]:
+    """Run real federated training off the asyncio thread.
+
+    Real training is CPU/GPU-bound and blocks the event loop for minutes;
+    ``asyncio.to_thread`` keeps the MCP transport responsive (heartbeats,
+    cancellation) while training proceeds. Split from ``run_real_training``
+    so tests can call the elicitation gate without driving real torch.
+    """
+    return await asyncio.to_thread(
+        _run_real_training_sync,
+        user_id=user_id,
+        dataset=dataset,
+        num_clients=num_clients,
+        rounds=rounds,
+        local_epochs=local_epochs,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+    )
+
+
+def _run_real_training_sync(
+    *,
+    user_id: str,
+    dataset: str,
+    num_clients: int,
+    rounds: int,
+    local_epochs: int,
+    batch_size: int,
+    lr: float,
+    seed: int,
+) -> dict[str, Any]:
+    """Sync inner loop — mirrors examples/mnist_fedavg.py shape.
+
+    Lazily imports torch + velocity.datasets so MCP module import stays
+    cheap for clients that never call this tool.
+    """
+    import copy
+
+    import torch
+    from torch import nn
+
+    from velocity import _core
+    from velocity.datasets import load_federated
+    from velocity.training import (
+        evaluate,
+        layer_shapes,
+        layers_to_state_dict,
+        local_train,
+        state_dict_to_layers,
+    )
+
+    torch.manual_seed(seed)
+
+    split = load_federated(
+        dataset,
+        num_clients=num_clients,
+        partition="iid",
+        batch_size=batch_size,
+        seed=seed,
+    )
+
+    # Tiny MLP — same shape as examples/mnist_fedavg.py
+    def make_model() -> nn.Module:
+        return nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(28 * 28, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, split.num_classes),
+        )
+
+    template = make_model()
+    template_state = template.state_dict()
+
+    model_id = f"mlp-128-64-{dataset.replace('/', '_')}"
+    orch = _core.Orchestrator(
+        model_id=model_id,
+        dataset=dataset,
+        strategy=_core.Strategy.fed_avg(),
+        storage="memory://",
+        min_clients=num_clients,
+        rounds=rounds,
+        layer_shapes=layer_shapes(template_state),
+    )
+    orch.set_global_weights(state_dict_to_layers(template_state))
+
+    config = {
+        "strategy": "FedAvg",
+        "model_id": model_id,
+        "dataset": dataset,
+        "rounds": rounds,
+        "num_clients": num_clients,
+        "local_epochs": local_epochs,
+        "batch_size": batch_size,
+        "lr": lr,
+        "seed": seed,
+        "mode": "real",
+    }
+    run_id = db.start_run(user_id, config)
+
+    summaries: list[dict[str, Any]] = []
+    for _round_idx in range(rounds):
+        global_state = layers_to_state_dict(orch.global_weights(), template_state)
+        pre_eval = make_model()
+        pre_eval.load_state_dict(global_state)
+        pre_loss, _ = evaluate(pre_eval, split.test_loader)
+
+        client_updates = []
+        for client in split.clients:
+            local_model = make_model()
+            local_model.load_state_dict(copy.deepcopy(global_state))
+            local_train(local_model, client.loader, epochs=local_epochs, lr=lr)
+            client_updates.append(
+                _core.ClientUpdate(
+                    num_samples=client.num_samples,
+                    weights=state_dict_to_layers(local_model.state_dict()),
+                )
+            )
+
+        summary_obj = orch.run_round(client_updates, reported_loss=pre_loss)
+        post_eval = make_model()
+        post_eval.load_state_dict(layers_to_state_dict(orch.global_weights(), template_state))
+        post_loss, post_acc = evaluate(post_eval, split.test_loader)
+
+        summary = {
+            "round": summary_obj.round,
+            "num_clients": summary_obj.num_clients,
+            "global_loss": float(post_loss),
+            "global_accuracy": float(post_acc),
+            "attack_results": [],
+            "selected_client_ids": summary_obj.selected_client_ids,
+        }
+        db.record_round(run_id, summary)
+        summaries.append(summary)
+
+    db.complete_run(run_id)
+    return {
+        "run_id": run_id,
+        "summaries": summaries,
+        "final_loss": summaries[-1]["global_loss"],
+        "final_accuracy": summaries[-1]["global_accuracy"],
+    }
 
 
 # ---------------------------------------------------------------------------
