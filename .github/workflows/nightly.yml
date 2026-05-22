@@ -62,6 +62,9 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-datasets-mnist-cifar10-v1
 
+      - name: Paper-cited attack scenarios on real MNIST (label-flip / IPM / Gaussian)
+        run: uv run pytest tests/test_paper_attacks_nightly.py --run-nightly -v
+
       - name: Run MNIST FedAvg example (shard non-IID baseline)
         run: uv run python examples/mnist_fedavg.py
 
