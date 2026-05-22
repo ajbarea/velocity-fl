@@ -44,12 +44,15 @@ from prefab_ui.components import (
     Column,
     DataTable,
     DataTableColumn,
+    Grid,
+    Heading,
     Metric,
+    Muted,
     Row,
     Tab,
     Tabs,
 )
-from prefab_ui.components.charts import ChartSeries, LineChart
+from prefab_ui.components.charts import ChartSeries, LineChart, Sparkline
 
 from velocity import db
 from velocity import memory as mem
@@ -515,6 +518,138 @@ def _arena_attack_panel(attack: str) -> Column:
         search=True,
     )
     return Column(children=[summary_row, chart, detail])
+
+
+def _arena_worst_case_leaderboard() -> list[dict[str, Any]]:
+    """Strategies sorted by worst-case (min) final accuracy across attacks.
+
+    For each strategy, finds the attack that produced the lowest final
+    accuracy (its weakest case) and the convergence curve under that
+    attack. Returns the list pre-sorted best-to-worst by that worst-case
+    number — the "if I have to pick one strategy without knowing the
+    attack, which is safest?" leaderboard shape.
+    """
+    if _ARENA is None:
+        return []
+    finals: dict[str, dict[str, float]] = {}
+    curves: dict[str, dict[str, list[float]]] = {}
+    for attack in _ARENA_ATTACKS:
+        rows = _ARENA[attack]
+        for strategy in _ARENA_STRATEGIES:
+            finals.setdefault(strategy, {})[attack] = rows[-1][strategy]
+            curves.setdefault(strategy, {})[attack] = [r[strategy] for r in rows]
+    out: list[dict[str, Any]] = []
+    for strategy in _ARENA_STRATEGIES:
+        worst_attack = min(finals[strategy], key=lambda a: finals[strategy][a])
+        out.append(
+            {
+                "strategy": strategy,
+                "worst": finals[strategy][worst_attack],
+                "worst_attack": worst_attack,
+                "worst_attack_label": _ARENA_LABELS[worst_attack],
+                "curve": curves[strategy][worst_attack],
+            }
+        )
+    out.sort(key=lambda r: r["worst"], reverse=True)
+    return out
+
+
+@mcp.tool
+@logged_tool
+def attack_arena_leaderboard() -> Column:
+    """Worst-case Byzantine-FL defender leaderboard.
+
+    Composes the Prefab equivalent of the kind of widget a generative
+    UI prompt would produce — one Card per strategy, ranked by worst-
+    case final accuracy across the three paper-cited attacks, with a
+    Sparkline showing each strategy's convergence under its own worst
+    attack. The Prefab vocabulary (Grid + Card + Metric + Badge +
+    Sparkline + Muted) is what `mcp.add_provider(GenerativeUI())`
+    exposes to LLM-authored code in the same sandbox; this typed-tool
+    version makes the same widget reachable as a single deterministic
+    call instead of a chat round-trip through the LLM.
+
+    Data lineage: same `out/attack_arena/aggregated.csv` corpus the
+    `attack_arena` tool reads — Strategy x Attack final-round means.
+    """
+    leaderboard = _arena_worst_case_leaderboard()
+    if not leaderboard:
+        return Column(
+            children=[
+                Card(
+                    children=[
+                        CardHeader(children=[CardTitle("No arena data")]),
+                        CardContent(
+                            children=[
+                                Metric(
+                                    label="status",
+                                    value="run scripts/dump_attack_arena.py first",
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+
+    def card_for(rank: int, row: dict[str, Any]) -> Card:
+        worst = row["worst"]
+        if worst >= 0.95:
+            variant, label = "success", "Strong defense"
+        elif worst >= 0.90:
+            variant, label = "info", "Robust"
+        elif worst >= 0.50:
+            variant, label = "warning", "Degraded"
+        else:
+            variant, label = "destructive", "Cratered"
+        return Card(
+            children=[
+                CardHeader(children=[CardTitle(f"#{rank + 1}  {row['strategy']}")]),
+                CardContent(
+                    children=[
+                        Column(
+                            gap=3,
+                            children=[
+                                Metric(
+                                    label="Worst-case accuracy",
+                                    value=f"{worst:.1%}",
+                                    description=f"under {row['worst_attack_label']}",
+                                ),
+                                Badge(label, variant=variant),
+                                Sparkline(
+                                    data=row["curve"],  # ty: ignore[invalid-argument-type]
+                                    variant=variant,
+                                    curve="smooth",
+                                    fill=True,
+                                    mode="line",
+                                    height=60,
+                                ),
+                                Muted(f"Convergence vs {row['worst_attack_label']}"),
+                            ],
+                        )
+                    ]
+                ),
+            ]
+        )
+
+    return Column(
+        gap=6,
+        children=[
+            Heading("Worst-case Byzantine-FL defender leaderboard", level=2),
+            Muted(
+                "Strategies ranked by worst-case (min) final accuracy across the "
+                "three paper-cited attacks (Gaussian / IPM / Label-flip). Real "
+                "MNIST, n=11 / f=2 / Dirichlet alpha=1.0, mean over 5 seeds, 16 "
+                "rounds. Sparkline shows each strategy's convergence under its "
+                "own worst-attack."
+            ),
+            Grid(
+                columns=5,
+                gap=4,
+                children=[card_for(i, row) for i, row in enumerate(leaderboard)],
+            ),
+        ],
+    )
 
 
 @mcp.tool
