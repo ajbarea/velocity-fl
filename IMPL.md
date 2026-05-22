@@ -12,18 +12,19 @@ execution lives here.
 
 Per ROADMAP the natural next sessions are:
 
-1. **CodSpeed + crowd-scale (50–100 clients) bench tier** — the
+1. **CodSpeed + crowd-scale (50-100 clients) bench tier** — the
    noise-floor upgrade that makes single-digit-percent regression
    detection meaningful on the WSL2 box; see
    [ROADMAP → Performance](ROADMAP.md#performance).
 2. **Prefab `PrefabApp` return types on MCP tools** — `run_demo` and
    siblings return plain dict/list[dict] today; migrate to typed
    Prefab returns so Claude UI can render natively.
-3. ~~**Per-strategy paper-scenario tests on a real dataset**~~ — shipped
-   2026-05-22 (see ROADMAP Completed). `tests/test_paper_attacks_nightly.py`
-   covers Bulyan/RFA vs label-flipping, Krum vs IPM, and ArKrum's
-   three-attack matrix on real MNIST; gated by `--run-nightly` opt-in
-   and wired into `.github/workflows/nightly.yml`.
+
+Per-strategy paper-scenario tests on real MNIST shipped 2026-05-22 —
+`tests/test_paper_attacks_nightly.py` covers Bulyan / GeometricMedian
+(RFA) vs label-flipping, Krum vs inner-product manipulation, and
+ArKrum's three-attack matrix; gated by `--run-nightly` and wired into
+`.github/workflows/nightly.yml`.
 
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done) matching
