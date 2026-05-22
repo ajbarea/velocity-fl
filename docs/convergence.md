@@ -35,6 +35,14 @@ The hermetic convergence proof runs on every CI build:
 uv run pytest tests/test_convergence.py -v
 ```
 
+The nightly paper-attack scenarios (real MNIST + paper-specific
+attacks per strategy) run on the daily schedule via `nightly.yml`
+and require the `--run-nightly` opt-in flag locally:
+
+```bash
+uv run pytest tests/test_paper_attacks_nightly.py --run-nightly -v
+```
+
 The MNIST and CIFAR-10 demos require the `[hf,torch]` extras and download
 their datasets on first run via Hugging Face `datasets`:
 
@@ -150,29 +158,30 @@ Dirichlet α=0.1).
   with client count.
 - Convergence on language modelling or multi-modal tasks — the current
   column standardisation only targets `(image, label)` shapes.
-- Robustness with attacks active. Existing attack simulations (model
-  poisoning, Sybil, Gaussian noise, label flipping) live in
-  `vfl-core/src/security.rs` and have unit tests but no
-  end-to-end-with-real-training convergence assertion yet.
 
 ## What's still mocked
 
 The aggregation path, round loop, datasets, and partitioners are now
 real end-to-end. The following surfaces still contain stand-ins:
 
-- **Attacks** (`vfl-core/src/security.rs`) — `simulate_*` functions
-  *do* mutate weights, but only as illustrative perturbations rather
-  than implementations of published attack literature (e.g. real
-  inner-product manipulation, real projected-gradient attacks). The
-  unit tests assert "weights changed," not "attack achieves its
-  documented effect."
+- **Round-level attacks on the Rust side** (`vfl-core/src/security.rs`) —
+  `simulate_*` functions *do* mutate weights, but only as illustrative
+  perturbations rather than implementations of published attack
+  literature (e.g. real projected-gradient attacks). The hermetic
+  Python-side tests in `tests/test_convergence.py` and the nightly
+  `tests/test_paper_attacks_nightly.py` are the path that injects
+  real paper-cited attacks (Krum/Bulyan-paper Gaussian gradient
+  poisoning, Tolpegin label flipping, Xie inner-product manipulation)
+  end-to-end through PyO3 — they assert defense, not just "weights
+  changed."
 - **Storage** — `ExperimentConfig.storage` is a URI string with no
   resolver behind it.
-- **Strategies** — `FedAvg`, `FedProx` (server-side identical to
-  FedAvg by construction; the proximal term is client-side),
-  `FedMedian`, `Krum`, and `MultiKrum` are real. Other published
-  strategies (Trimmed Mean, Bulyan, FedYogi, FedAdam) are not
-  implemented.
+- **Strategies** — every published strategy currently in the
+  benchmark suite is real: `FedAvg`, `FedProx` (server-side identical
+  to FedAvg by construction; the proximal term is client-side),
+  `FedMedian`, `TrimmedMean`, `Krum`, `MultiKrum`, `Bulyan`,
+  `GeometricMedian`, and `ArKrum`. Adaptive-server algorithms
+  (`FedYogi`, `FedAdam`) are not yet implemented.
 - **Orchestrator `dataset` field** — on the Rust side,
   `ExperimentConfig.dataset` remains a record-keeping string. The real
   loading entry point is `velocity.datasets.load_federated`, which is
@@ -185,8 +194,14 @@ exercises it from this page.
 
 ## Follow-ups
 
-- [ ] Convergence-under-attack: assert FedMedian survives a poisoned
-  client where FedAvg is corrupted, measured rather than asserted by hand
+- [x] Convergence-under-attack — shipped 2026-05-22. Every Byzantine-robust
+  aggregator (FedMedian / TrimmedMean / Krum / MultiKrum / Bulyan /
+  GeometricMedian / ArKrum) has a hermetic test in `test_convergence.py`
+  asserting recovery under the Krum/Bulyan-paper Gaussian gradient
+  poisoning at the paper's minimum client bound. The nightly variant
+  on real MNIST in `test_paper_attacks_nightly.py` pairs each strategy
+  with the attack from its own paper (label-flip for Bulyan/RFA, IPM
+  for Krum, three-attack matrix for ArKrum).
 - [ ] Dirichlet-α sweep: chart accuracy vs heterogeneity at fixed
   client count (α ∈ {0.01, 0.1, 0.5, 1.0, ∞ ≈ IID})
 - [ ] Crowd-scale convergence (50+ clients) — paired with the
