@@ -33,7 +33,7 @@ where the LLM writes Prefab Python on the fly.
 | `run_rounds_history` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Per-run convergence curve + raw rounds table. |
 | `compare_runs` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Two-series overlay LineChart of two runs + delta table. |
 | `memory_ledger` | `ToolResult` wrapping `DataTable` | Audit log of memory writes. |
-| `attack_arena` | `ToolResult` wrapping `Tabs[Tab x 3 attacks]` | Three-tab dashboard. Each tab = Row of strategy cards + per-attack convergence LineChart + DataTable. |
+| `attack_arena` | `ToolResult` wrapping `Tabs[Tab x 6 attacks]` | One tab per FLPoison canonical attack. Each tab = Row of strategy cards + per-attack convergence LineChart + DataTable. |
 | `attack_arena_leaderboard` | `ToolResult` wrapping `Column[Heading, Grid[5 Cards]]` | Worst-case ranking. Each Card = strategy + worst-case accuracy + Badge + Sparkline. |
 | `generate_prefab_ui` | rendered Prefab tree | LLM-authored UI. Code runs in a Pyodide sandbox. |
 | `search_prefab_components` | `dict` | Component discovery for the LLM. |
@@ -258,11 +258,11 @@ Both `attack_arena()` and `attack_arena_leaderboard()` read
 
 | | |
 | --- | --- |
-| Matrix | 5 strategies x 3 attacks x 5 seeds x 16 rounds |
+| Matrix | 5 strategies x 6 attacks x 5 seeds x 16 rounds |
 | Strategies | FedAvg, Krum, MultiKrum, Bulyan, ArKrum |
-| Attacks | gaussian, ipm, label_flip (vFL's curated paper-cited set) |
+| Attacks | gaussian, ipm, label_flip, sign_flip, alie, fang_krum (FLPoison canonical headliner set per arXiv:2502.03801) |
 | Configuration | Real Hugging Face MNIST, n=11 clients, f=2 byzantines, Dirichlet alpha=1.0 |
-| Wall time | ~35 minutes on CPU |
+| Wall time | ~55 minutes on CPU |
 
 Full provenance + the reproducibility caption template are in
 [`out/attack_arena/README.md`](https://github.com/ajbarea/vFL/blob/main/out/attack_arena/README.md).

@@ -201,7 +201,8 @@ exercises it from this page.
   poisoning at the paper's minimum client bound. The nightly variant
   on real MNIST in `test_paper_attacks_nightly.py` pairs each strategy
   with the attack from its own paper (label-flip for Bulyan/RFA, IPM
-  for Krum, three-attack matrix for ArKrum).
+  for Krum, full FLPoison canonical matrix for ArKrum — gaussian,
+  ipm, label_flip, sign_flip, alie, fang_krum).
 - [ ] Dirichlet-α sweep: chart accuracy vs heterogeneity at fixed
   client count (α ∈ {0.01, 0.1, 0.5, 1.0, ∞ ≈ IID})
 - [ ] Crowd-scale convergence (50+ clients) — paired with the

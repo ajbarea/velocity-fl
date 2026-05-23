@@ -409,16 +409,21 @@ def compare_runs(run_id_a: str, run_id_b: str) -> ToolResult:
 
 
 # ---------------------------------------------------------------------------
-# Attack arena dashboard — Byzantine-FL convergence under three paper-cited
-# attacks. Reads the corpus that `scripts/dump_attack_arena.py` produced.
+# Attack arena dashboard — Byzantine-FL convergence under the FLPoison
+# canonical headliner set (six paper-cited attacks). Reads the corpus that
+# `scripts/dump_attack_arena.py` produced; ordering here drives the Tab and
+# leaderboard ordering in the dashboard.
 # ---------------------------------------------------------------------------
 
 _ARENA_STRATEGIES = ("FedAvg", "Krum", "MultiKrum", "Bulyan", "ArKrum")
-_ARENA_ATTACKS = ("gaussian", "ipm", "label_flip")
+_ARENA_ATTACKS = ("gaussian", "ipm", "label_flip", "sign_flip", "alie", "fang_krum")
 _ARENA_LABELS = {
     "gaussian": "Gaussian (Krum-paper)",
     "ipm": "IPM (Fall of Empires)",
     "label_flip": "Label flip (Tolpegin 2020)",
+    "sign_flip": "Sign flip (Damaskinos 2018)",
+    "alie": "ALIE (Baruch 2019)",
+    "fang_krum": "Fang-Krum (Fang 2020)",
 }
 
 
@@ -598,9 +603,9 @@ def attack_arena_leaderboard() -> ToolResult:
 
     Composes the Prefab equivalent of the kind of widget a generative
     UI prompt would produce — one Card per strategy, ranked by worst-
-    case final accuracy across the three paper-cited attacks, with a
-    Sparkline showing each strategy's convergence under its own worst
-    attack. The Prefab vocabulary (Grid + Card + Metric + Badge +
+    case final accuracy across the FLPoison canonical attack matrix,
+    with a Sparkline showing each strategy's convergence under its own
+    worst attack. The Prefab vocabulary (Grid + Card + Metric + Badge +
     Sparkline + Muted) is what `mcp.add_provider(GenerativeUI())`
     exposes to LLM-authored code in the same sandbox; this typed-tool
     version makes the same widget reachable as a single deterministic
@@ -665,7 +670,7 @@ def attack_arena_leaderboard() -> ToolResult:
                                 ),
                                 Badge(label, variant=variant),
                                 Sparkline(
-                                    data=row["curve"],  # ty: ignore[invalid-argument-type]
+                                    data=row["curve"],
                                     variant=variant,
                                     curve="smooth",
                                     fill=True,
@@ -685,11 +690,11 @@ def attack_arena_leaderboard() -> ToolResult:
         children=[
             Heading("Worst-case Byzantine-FL defender leaderboard", level=2),
             Muted(
-                "Strategies ranked by worst-case (min) final accuracy across the "
-                "three paper-cited attacks (Gaussian / IPM / Label-flip). Real "
-                "MNIST, n=11 / f=2 / Dirichlet alpha=1.0, mean over 5 seeds, 16 "
-                "rounds. Sparkline shows each strategy's convergence under its "
-                "own worst-attack."
+                "Strategies ranked by worst-case (min) final accuracy across "
+                "the FLPoison canonical matrix (Gaussian, IPM, Label-flip, "
+                "Sign-flip, ALIE, Fang-Krum). Real MNIST, n=11 / f=2 / Dirichlet "
+                "alpha=1.0, mean over 5 seeds, 16 rounds. Sparkline shows each "
+                "strategy's convergence under its own worst-attack."
             ),
             Grid(
                 columns=5,
@@ -711,11 +716,11 @@ def attack_arena_leaderboard() -> ToolResult:
 def attack_arena() -> ToolResult:
     """Render the Byzantine-FL attack-arena dashboard.
 
-    Three tabbed panels (Gaussian / IPM / Label-flip) — each showing
-    a row of 5 strategy summary Cards (final accuracy + ± std + Badge
-    keyed by defense strength), a LineChart of the per-round mean
-    convergence trajectories across the 5 seeds, and a detailed
-    DataTable.
+    One tabbed panel per FLPoison canonical attack (Gaussian, IPM, Label-
+    flip, Sign-flip, ALIE, Fang-Krum) — each showing a row of 5 strategy
+    summary Cards (final accuracy + ± std + Badge keyed by defense
+    strength), a LineChart of the per-round mean convergence trajectories
+    across the 5 seeds, and a detailed DataTable.
 
     Returns a ToolResult bundling a per-attack text summary (model-
     visible, ~150 tokens) with the rendered Prefab Tabs tree (user-
@@ -725,11 +730,11 @@ def attack_arena() -> ToolResult:
     model's reasoning window.
 
     Data lineage: ``out/attack_arena/aggregated.csv`` produced by
-    ``scripts/dump_attack_arena.py`` — 5 strategies x 3 attacks x 5
+    ``scripts/dump_attack_arena.py`` — 5 strategies x 6 attacks x 5
     seeds x 16 rounds on real Hugging Face MNIST, n=11 / f=2 /
-    Dirichlet alpha=1.0. Run the script to regenerate; see
-    ``out/attack_arena/README.md`` for the full provenance + caption-
-    ready citation template.
+    Dirichlet alpha=1.0. Attack canon = FLPoison SoK (arXiv:2502.03801).
+    Run the script to regenerate; see ``out/attack_arena/README.md`` for
+    the full provenance + caption-ready citation template.
     """
     tree = Tabs(
         value="gaussian",
