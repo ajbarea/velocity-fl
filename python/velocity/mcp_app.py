@@ -277,16 +277,15 @@ def memory_index(user_id: str) -> str:
 
 @mcp.tool
 @logged_tool
-def list_runs(user_id: str, limit: int = 10) -> DataTable:
+def list_runs(user_id: str, limit: int = 10) -> ToolResult:
     """Return the researcher's most recent runs (newest first).
 
-    Renders as an interactive sortable DataTable in Claude's UI. The model
-    sees the same row records as structured content for downstream
-    reasoning (FastMCP serializes Prefab to `structuredContent` on the
-    tool result).
+    Renders as an interactive sortable DataTable in Claude's UI. The
+    model reads a compact text summary; the user sees the rendered
+    table. May 2026 best practice per gofastmcp.com/apps/prefab.
     """
     rows = db.recent_runs(user_id, limit)
-    return DataTable(
+    table = DataTable(
         columns=[
             DataTableColumn(key="run_id", header="Run", sortable=True),
             DataTableColumn(key="strategy", header="Strategy", sortable=True),
@@ -298,19 +297,33 @@ def list_runs(user_id: str, limit: int = 10) -> DataTable:
         rows=rows,  # ty: ignore[invalid-argument-type]
         search=True,
     )
+    if not rows:
+        summary = f"No runs recorded yet for {user_id}."
+    else:
+        summary_lines = [f"{len(rows)} run(s) for {user_id} (newest first):"]
+        for r in rows[:5]:
+            completed = r.get("completed_at") or "in flight"
+            summary_lines.append(
+                f"  - {r['run_id']} | {r['strategy']} on {r['model_id']} "
+                f"| {r['status']} | {completed}"
+            )
+        if len(rows) > 5:
+            summary_lines.append(f"  ... and {len(rows) - 5} more.")
+        summary = "\n".join(summary_lines)
+    return ToolResult(content=summary, structured_content=table.to_json())
 
 
 @mcp.tool
 @logged_tool
-def run_rounds_history(run_id: str) -> Column:
+def run_rounds_history(run_id: str) -> ToolResult:
     """Return per-round (round_num, global_loss, num_clients) for a run.
 
     Renders as a stacked Column: LineChart of the loss trajectory + raw
-    DataTable. The model still gets the row records as structured content
-    via FastMCP's Prefab serialization.
+    DataTable. The model reads a compact "loss went from X to Y over N
+    rounds" summary; the renderer paints the chart + table.
     """
     rows = db.run_history(run_id)
-    return Column(
+    tree = Column(
         children=[
             LineChart(
                 data=rows,
@@ -327,15 +340,27 @@ def run_rounds_history(run_id: str) -> Column:
             ),
         ],
     )
+    if not rows:
+        summary = f"No round history for {run_id}."
+    else:
+        first, last = rows[0], rows[-1]
+        summary = (
+            f"Run {run_id}: {len(rows)} rounds, "
+            f"global_loss {first.get('global_loss', float('nan')):.4f} -> "
+            f"{last.get('global_loss', float('nan')):.4f}, "
+            f"{last.get('num_clients', '?')} clients at final round."
+        )
+    return ToolResult(content=summary, structured_content=tree.to_json())
 
 
 @mcp.tool
 @logged_tool
-def compare_runs(run_id_a: str, run_id_b: str) -> Column:
+def compare_runs(run_id_a: str, run_id_b: str) -> ToolResult:
     """Paired-round comparison of global_loss between two runs.
 
     Renders as a stacked Column: LineChart overlaying the two loss curves
-    + per-round delta DataTable.
+    + per-round delta DataTable. The model reads a short comparison
+    summary (final losses, winner, delta).
     """
     a = {r["round_num"]: r for r in db.run_history(run_id_a)}
     b = {r["round_num"]: r for r in db.run_history(run_id_b)}
@@ -349,7 +374,7 @@ def compare_runs(run_id_a: str, run_id_b: str) -> Column:
         }
         for n in shared
     ]
-    return Column(
+    tree = Column(
         children=[
             LineChart(
                 data=rows,
@@ -370,6 +395,17 @@ def compare_runs(run_id_a: str, run_id_b: str) -> Column:
             ),
         ],
     )
+    if not shared:
+        summary = f"No shared rounds between {run_id_a} and {run_id_b}."
+    else:
+        last = rows[-1]
+        winner = run_id_a if last["loss_a"] < last["loss_b"] else run_id_b
+        summary = (
+            f"Compare {run_id_a} vs {run_id_b} over {len(shared)} shared rounds. "
+            f"Final loss: A={last['loss_a']:.4f}, B={last['loss_b']:.4f} "
+            f"(delta={last['delta']:+.4f}). Winner: {winner}."
+        )
+    return ToolResult(content=summary, structured_content=tree.to_json())
 
 
 # ---------------------------------------------------------------------------
@@ -1119,10 +1155,14 @@ def show_memory(user_id: str, file: str) -> str:
 
 @mcp.tool
 @logged_tool
-def memory_ledger(user_id: str, limit: int = 50) -> DataTable:
-    """Return the last N memory write events for auditing."""
+def memory_ledger(user_id: str, limit: int = 50) -> ToolResult:
+    """Return the last N memory write events for auditing.
+
+    Renders as a searchable DataTable. The model reads a count + last-
+    event summary; the renderer paints the full audit log.
+    """
     rows = mem.events(user_id, limit)
-    return DataTable(
+    table = DataTable(
         columns=[
             DataTableColumn(key="ts", header="Timestamp", sortable=True),
             DataTableColumn(key="action", header="Action", sortable=True),
@@ -1132,6 +1172,16 @@ def memory_ledger(user_id: str, limit: int = 50) -> DataTable:
         rows=rows,  # ty: ignore[invalid-argument-type]
         search=True,
     )
+    if not rows:
+        summary = f"No memory events recorded for {user_id}."
+    else:
+        latest = rows[-1]
+        summary = (
+            f"{len(rows)} memory event(s) for {user_id}. "
+            f"Latest: {latest.get('action', '?')} on {latest.get('file', '?')} "
+            f"at {latest.get('ts', '?')}."
+        )
+    return ToolResult(content=summary, structured_content=table.to_json())
 
 
 @mcp.tool

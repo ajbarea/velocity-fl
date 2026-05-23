@@ -23,7 +23,7 @@ from velocity import mcp_app  # noqa: E402
 
 EXPECTED_INSTRUCTIONS_HASH = "929c48ae82830360f6c9022c1282ae18eef3eccb5fba42c6fe845f1e33d0d358"
 
-EXPECTED_SURFACE_HASH = "62f7c55aaa663dca3b591f3ac72ebcf4ec86a8b97052d8eb985f9625d6f5a38b"
+EXPECTED_SURFACE_HASH = "80bac6fad921c064a3a95ee7e1c01c3a351421577a8fd93b8fd66faa83256e02"
 
 
 def _sha256(data: bytes) -> str:

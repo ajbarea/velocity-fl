@@ -29,12 +29,12 @@ where the LLM writes Prefab Python on the fly.
 
 | Tool | Returns | What it renders |
 | --- | --- | --- |
-| `list_runs` | `DataTable` | Sortable, searchable table of recent runs. |
-| `run_rounds_history` | `Column[LineChart, DataTable]` | Per-run convergence curve + raw rounds table. |
-| `compare_runs` | `Column[LineChart, DataTable]` | Two-series overlay LineChart of two runs + delta table. |
-| `memory_ledger` | `DataTable` | Audit log of memory writes. |
-| `attack_arena` | `Tabs[Tab x 3 attacks]` | Three-tab dashboard. Each tab = Row of strategy cards + per-attack convergence LineChart + DataTable. |
-| `attack_arena_leaderboard` | `Column[Heading, Grid[5 Cards]]` | Worst-case ranking. Each Card = strategy + worst-case accuracy + Badge + Sparkline. |
+| `list_runs` | `ToolResult` wrapping `DataTable` | Sortable, searchable table of recent runs. |
+| `run_rounds_history` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Per-run convergence curve + raw rounds table. |
+| `compare_runs` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Two-series overlay LineChart of two runs + delta table. |
+| `memory_ledger` | `ToolResult` wrapping `DataTable` | Audit log of memory writes. |
+| `attack_arena` | `ToolResult` wrapping `Tabs[Tab x 3 attacks]` | Three-tab dashboard. Each tab = Row of strategy cards + per-attack convergence LineChart + DataTable. |
+| `attack_arena_leaderboard` | `ToolResult` wrapping `Column[Heading, Grid[5 Cards]]` | Worst-case ranking. Each Card = strategy + worst-case accuracy + Badge + Sparkline. |
 | `generate_prefab_ui` | rendered Prefab tree | LLM-authored UI. Code runs in a Pyodide sandbox. |
 | `search_prefab_components` | `dict` | Component discovery for the LLM. |
 
@@ -46,9 +46,9 @@ writing Prefab Python at call time.
 
 ### `ToolResult` dual content (May 2026 token-efficiency pattern)
 
-The two arena tools (`attack_arena` and `attack_arena_leaderboard`)
-return [`fastmcp.tools.ToolResult`](https://gofastmcp.com/apps/prefab)
-rather than a bare Prefab component:
+All six Prefab-returning tools listed above return
+[`fastmcp.tools.ToolResult`](https://gofastmcp.com/apps/prefab) rather
+than a bare Prefab component:
 
 ```python
 return ToolResult(
@@ -63,8 +63,27 @@ is the explicitly-recommended pattern in the May 2026 FastMCP Apps
 docs — it keeps the model's reasoning context lean (the model does
 not need to parse ~5–10K tokens of nested component JSON to answer a
 question about the run) while preserving the rich rendering for the
-human. New tools that wrap large datasets should use `ToolResult`;
-single-card / single-metric returns can stay bare.
+human.
+
+The text summary's shape varies by tool:
+
+- `list_runs` lists count + the first five run IDs with strategy /
+  status / timestamps.
+- `run_rounds_history` reports "N rounds, loss X → Y, K clients at
+  final round".
+- `compare_runs` reports the two final losses + delta + winner.
+- `memory_ledger` reports count + latest event signature.
+- `attack_arena` reports per-attack ranked accuracy for all five
+  strategies.
+- `attack_arena_leaderboard` reports the worst-case rank with each
+  strategy's worst-attack final accuracy.
+
+When you write a new Prefab-returning tool, follow the same shape:
+build the tree, build a one-or-two-line summary that *answers the
+question* (not "rendered a tree of 5 cards" but "ArKrum tops at 96%"),
+return both via `ToolResult`. Tools that don't yet have a Prefab
+widget (the memory-mutation tools `update_hypothesis`,
+`append_to_memory`, etc.) keep their plain `str` returns.
 
 ### Choosing typed tools vs `FastMCPApp`
 
@@ -286,23 +305,28 @@ std bands across multiple seeds; single-seed traces are not the
 The vFL pattern:
 
 1. Import the components you need from `prefab_ui.components` and
-   `prefab_ui.components.charts`.
-2. Type the return annotation to the outermost Prefab class (e.g.
-   `def my_tool() -> Column`).
+   `prefab_ui.components.charts`, plus `ToolResult` from
+   `fastmcp.tools`.
+2. Type the return annotation as `ToolResult`.
 3. Build the tree with the explicit-children style
    (`Column(children=[...])`) so the call sites are auditable. The
    context-manager style is reserved for `generate_prefab_ui` code,
    where the streaming-render-as-tokens-arrive property matters.
-4. If the tool reads a file, load at module import time into a
+4. Compose a one-or-two-line text summary that *answers the question*
+   the tool's caller is likely asking. Not "rendered a tree of 5
+   cards" — that's noise. Something like "ArKrum tops at 96.0%, FedAvg
+   cratered at 9.8% under Gaussian." That string is what the LLM reads;
+   make it earn its tokens.
+5. Return `ToolResult(content=summary, structured_content=tree.to_json())`.
+6. If the tool reads a file, load at module import time into a
    frozen constant; the MCP cacheable prefix must not change at
    call time (prompt-caching invariant).
-5. Run `make lint + make test-py`. Update
-   `EXPECTED_SURFACE_HASH` if the surface changed.
+7. Run `make lint + make test-py`. Update `EXPECTED_SURFACE_HASH` if
+   the surface changed.
 
-The `attack_arena()` and `attack_arena_leaderboard()` tools in
-`python/velocity/mcp_app.py` are working references. Pattern after
-either depending on whether you need tab-style navigation or a single
-synthesis panel.
+All six Prefab-returning tools in `python/velocity/mcp_app.py` are
+working references. `attack_arena()` and `attack_arena_leaderboard()`
+are the most complete examples; `list_runs` is the simplest.
 
 ## References
 
