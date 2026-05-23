@@ -220,36 +220,6 @@ for medical-FL benchmarks specifically.
 
 ## Performance
 
-- **Buffer-protocol / numpy return path** — the remaining PyO3 cost is
-  on the *output* side: `HashMap<String, Vec<f32>>` → `dict[str,
-  list[float]]` allocates one `PyFloat` per parameter. At the `large`
-  tier (10M params) this dominates; the input side is already zero-copy
-  on the no-attack path. Fix: return `numpy.ndarray` via the buffer
-  protocol to share the underlying f32 buffer with zero copies. Named
-  as the next lever in `docs/benchmarks.md:98-105`.
-  - **Call sites** (`vfl-core/src/lib.rs`): `Orchestrator.global_weights`
-    (L240), `ClientUpdate.weights` getter (L79), free `aggregate` (L281),
-    `gaussian_noise` (L299). `run_round` itself returns a `PyRoundSummary`
-    struct — the marshaling cost lives in the *getters* and the direct
-    `aggregate` / `gaussian_noise` returns, not in `run_round`'s return.
-  - **Rust dep**: add `numpy = "0.21"` (paired with pyo3 0.21) to
-    `vfl-core/Cargo.toml`. `PyArray1::from_slice` / `IntoPyArray` builds
-    the ndarray without cloning the `Vec<f32>`.
-  - **Python dep**: promote `numpy` from the `torch` extra to
-    `[project].dependencies` in `pyproject.toml`. Update
-    `python/velocity/_core.pyi` return types: `dict[str, list[float]]`
-    → `dict[str, numpy.typing.NDArray[np.float32]]` (4 sites: L20, L52,
-    L56, L58).
-  - **Breaking for 0.1.0-alpha**: iteration and indexing still work,
-    but `.append()` on layer values breaks — callers switch to
-    `np.concatenate` or preallocated writes. Note in CHANGELOG on cut.
-  - **Measurement**: re-run `tests/bench/test_round_speed.py` at `large`
-    tier. Current Rust FedAvg `large` is 49.3 ms through the Python
-    surface (`docs/benchmarks.md:83`) vs 74.2 ms raw divan (L65) — the
-    apparent *speedup* from raw→Python is WSL2 noise, not real; the
-    true boundary cost hides in the getter call that follows
-    `run_round`. Target: the subsequent `.global_weights` read becomes
-    O(layers) not O(params). Update `docs/benchmarks.md` snapshot after.
 - **FedMedian SIMD quickselect or histogram median** — FedMedian still
   runs ~12× FedAvg at large tier. Coordinate-wise `select_nth_unstable_by`
   is branchy and doesn't vectorise well. Worth revisiting only when
