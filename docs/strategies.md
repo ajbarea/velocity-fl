@@ -15,7 +15,7 @@ VelocityFL ships nine aggregation strategies. All nine are implemented in Rust a
 | Untrusted clients, up to `f` compromised, want the strongest distance-based defense | **`Bulyan(f=…, m=…)`** |
 | Untrusted clients, up to ⌊(n−1)/2⌋ compromised, want geometric (not coordinate-wise) robustness | **`GeometricMedian()`** |
 | Untrusted clients, unknown / per-round Byzantine count, want parameter-free Krum (not Fang-Krum threat model — see ArKrum's _Known weaknesses_) | **`ArKrum()`** |
-| Untrusted clients, aggregator-aware adversary (Fang-style optimisation attacks) | **`GeometricMedian()`** or **`Bulyan(f=…, m=…)`** — *not* a Krum-family selector |
+| Untrusted clients, aggregator-aware adversary (Fang-style optimisation attacks) | **`GeometricMedian()`** (Fang-robust) or coordinate-wise **`TrimmedMean(k=…)`** / **`FedMedian`** (degraded but less catastrophic than Krum-family) — avoid every Krum-family selector including Bulyan, which inherits Multi-Krum's vulnerability per Fang's *Full-Krum transfers to Bulyan* result |
 
 All nine are value objects: compare with `==`, safe to hash, safe to share between threads.
 
