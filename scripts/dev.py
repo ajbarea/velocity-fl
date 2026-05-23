@@ -652,6 +652,8 @@ CLEAN_DIRS = (
     ".coverage",
 )
 
+LOG_ARCHIVE_MAX_AGE_DAYS = 30
+
 
 def cmd_clean(_: argparse.Namespace) -> int:
     _print_header("Clean")
@@ -669,12 +671,14 @@ def cmd_clean(_: argparse.Namespace) -> int:
             continue
         shutil.rmtree(pycache, ignore_errors=True)
     # Timestamped log archives — dev-latest.log is the active handle for the
-    # current run, so leave it alone.
+    # current run, so leave it alone. Prune archives older than the retention
+    # window; recent archives stay for debug context.
     if LOGS_DIR.is_dir():
-        archives = sorted(LOGS_DIR.glob("dev-*-*.log"))
-        if archives:
-            print(f"  rm logs/dev-*-*.log  ({len(archives)} archive(s))")
-            for archive in archives:
+        cutoff = time.time() - LOG_ARCHIVE_MAX_AGE_DAYS * 86400
+        stale = [a for a in LOGS_DIR.glob("dev-*-*.log") if a.stat().st_mtime < cutoff]
+        if stale:
+            print(f"  rm logs/dev-*-*.log  ({len(stale)} archive(s) > {LOG_ARCHIVE_MAX_AGE_DAYS}d)")
+            for archive in stale:
                 archive.unlink(missing_ok=True)
     return 0
 
