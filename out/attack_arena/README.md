@@ -27,10 +27,11 @@ directly comparable to the nightly green-light:
 
 ## Attacks
 
-FLPoison canonical headliner set per Liu et al., *SoK: Benchmarking
-Poisoning Attacks and Defenses in Federated Learning*, arXiv:2502.03801
-(2025). Implementations live in `velocity.paper_attacks`; reference
-implementations: https://github.com/vio1etus/FLPoison .
+FLPoison canonical headliner set per Zhang, Liu, He, Wu, Cong, Huang,
+*SoK: Benchmarking Poisoning Attacks and Defenses in Federated Learning*,
+arXiv:2502.03801 (2025-02-06). Implementations live in
+`velocity.paper_attacks`; reference implementations:
+https://github.com/vio1etus/FLPoison .
 
 - **gaussian** — Blanchard et al., NeurIPS 2017 (Krum paper).
   Byzantines emit `randn × 100.0`-scaled noise per layer.

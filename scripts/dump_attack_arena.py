@@ -230,7 +230,8 @@ def main() -> int:
     total = len(strategies) * len(attacks) * args.seeds
     print(
         f"plan: {len(strategies)} strategies x {len(attacks)} attacks x {args.seeds} seeds "
-        f"x {args.rounds} rounds = {total} runs"
+        f"x {args.rounds} rounds = {total} runs",
+        flush=True,
     )
     if args.dry_run:
         return 0
@@ -259,9 +260,14 @@ def main() -> int:
                 )
                 elapsed = time.perf_counter() - t0
                 final_acc = records[-1]["post_acc"]
+                # flush so `python ... | tee` / nohup logs see progress in
+                # real time across a 55-min sweep (Python defaults to block-
+                # buffering when stdout isn't a TTY, hiding progress until
+                # the process exits).
                 print(
                     f"  [{run_idx:>3}/{total}] {strategy:>9} x {attack:>10} · seed={seed} "
-                    f"· final_acc={final_acc:.3f} · {elapsed:.1f}s"
+                    f"· final_acc={final_acc:.3f} · {elapsed:.1f}s",
+                    flush=True,
                 )
                 all_runs.append(
                     {

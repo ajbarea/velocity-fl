@@ -11,12 +11,12 @@ utility — it lives here rather than in `velocity.training` because every
 caller pairs it with an attack injection (and the optional `label_attack_for`
 parameter is attack-specific).
 
-Reference: Yifei Liu et al., *SoK: Benchmarking Poisoning Attacks and
-Defenses in Federated Learning*, arXiv:2502.03801 (2025).
-Canonical Python implementations live at https://github.com/vio1etus/FLPoison ;
-this module mirrors the formulas in `attackers/{alie,fangattack,signflipping,
-ipm,gaussian}.py` so vFL's matrix is directly comparable to FLPoison's
-headliner numbers.
+Reference: Heyi Zhang, Yule Liu, Xinlei He, Jun Wu, Tianshuo Cong, Xinyi
+Huang, *SoK: Benchmarking Poisoning Attacks and Defenses in Federated
+Learning*, arXiv:2502.03801 (2025-02-06). Canonical Python implementations
+live at https://github.com/vio1etus/FLPoison ; this module mirrors the
+formulas in `attackers/{alie,fangattack,signflipping,ipm,gaussian}.py`
+so vFL's matrix is directly comparable to FLPoison's headliner numbers.
 """
 
 from __future__ import annotations
@@ -142,11 +142,14 @@ def gaussian_byzantine(
 ) -> _core.ClientUpdate:
     """Byzantine update = N(0, std^2) noise per parameter.
 
-    research(2026-05): Blanchard et al., *Machine Learning with Adversaries:
-    Byzantine Tolerant Gradient Descent*, NeurIPS 2017 — the canonical
+    research(2026-05): Peva Blanchard, El Mahdi El Mhamdi, Rachid
+    Guerraoui, Julien Stainer, *Machine Learning with Adversaries:
+    Byzantine Tolerant Gradient Descent*, NIPS 2017 — the canonical
     "gradient-poisoning" baseline every Byzantine-robust paper compares
-    against. The std=100 magnitude follows the FLPoison reference
-    (`attackers/gaussian.py`) for visible-but-not-pathological perturbation.
+    against. The std=100 magnitude is vFL's own choice (matches the
+    hermetic Krum convergence tests at `tests/test_convergence.py`);
+    FLPoison's `attackers/gaussian.py` defaults to ``noise_std=1`` and
+    parameterizes the magnitude externally.
     """
     rng = torch.Generator().manual_seed(seed)
     poisoned = {
@@ -170,13 +173,15 @@ def inner_product_manipulation(
 ) -> _core.ClientUpdate:
     """Byzantine emits ``epsilon * weighted_mean(honest)``.
 
-    research(2026-05): Xie, Koyejo, Gupta, *Fall of Empires: Breaking
-    Byzantine-tolerant SGD by Inner Product Manipulation*, UAI 2020
-    (arXiv:1903.03936). With ``epsilon=-1`` the byzantine update is the
-    *negation* of the honest weighted mean — preserves the magnitude
+    research(2026-05): Cong Xie, Sanmi Koyejo, Indranil Gupta, *Fall of
+    Empires: Breaking Byzantine-tolerant SGD by Inner Product Manipulation*,
+    UAI 2020 (arXiv:1903.03936). With ``epsilon=-1`` the byzantine update
+    is the *negation* of the honest weighted mean — preserves the magnitude
     cluster centroid (so it sneaks through Krum-style distance defenses)
     while reversing the gradient direction. The FLPoison reference impl
-    (`attackers/ipm.py`) uses the same formula.
+    (`attackers/ipm.py`) uses an unweighted ``-scaling_factor * mean(honest)``
+    with default ``scaling_factor=0.1``; vFL uses sample-weighted mean +
+    ``epsilon=-1`` to match the nightly-test setup's existing convention.
     """
     total = sum(honest_samples)
     mean: dict[str, Tensor] = {}
@@ -200,12 +205,16 @@ def sign_flip_byzantine(
 ) -> _core.ClientUpdate:
     """Byzantine emits ``-attacker_state`` (every parameter sign-flipped).
 
-    research(2026-05): Damaskinos, Mhamdi, Guerraoui, Patra, Taziki,
-    *Asynchronous Byzantine Machine Learning (the case of SGD)*, ICML 2018.
-    The simplest non-trivial model-poisoning primitive — the floor case
-    every robust aggregator must trivially clear. FedAvg under sign-flip
-    is the demo's "even the most naive attack craters baseline aggregation"
-    panel. FLPoison reference impl: `attackers/signflipping.py`.
+    research(2026-05): the FLPoison benchmark cites Georgios Damaskinos,
+    El Mahdi El Mhamdi, Rachid Guerraoui, Rhicheek Patra, Mahsa Taziki,
+    *Asynchronous Byzantine Machine Learning (the case of SGD)*, ICML 2018
+    (the Kardam defense paper, which evaluates sign-flip as one of the
+    baseline attacks); the sign-flipping primitive itself predates this
+    paper in the gradient-compression literature. The simplest non-trivial
+    model-poisoning primitive — the floor case every robust aggregator
+    must trivially clear. FedAvg under sign-flip is the demo's "even the
+    most naive attack craters baseline aggregation" panel. FLPoison
+    reference impl: `attackers/signflipping.py`.
     """
     poisoned = {name: (-t).flatten().tolist() for name, t in attacker_state.items()}
     return _core.ClientUpdate(num_samples=num_samples, weights=poisoned)
@@ -219,13 +228,14 @@ def sign_flip_byzantine(
 def alie_z_max(num_clients: int, num_adv: int) -> float:
     """Canonical ALIE perturbation coefficient.
 
-    research(2026-05): formula from Baruch, Baruch, Goldberg, *A Little Is
-    Enough: Circumventing Defenses for Distributed Learning*, NeurIPS 2019
-    (arXiv:1902.06156), eq. 3. FLPoison reference (`attackers/alie.py`)
-    computes ``s = floor(N/2 + 1) - f``, ``cdf_value = (N - f - s)/(N - f)``,
-    ``z_max = norm.ppf(cdf_value)``. We use ``torch.erfinv`` instead of
-    ``scipy.stats.norm.ppf`` to avoid pulling scipy into vFL's runtime
-    deps: ``norm.ppf(p) = sqrt(2) * erfinv(2p - 1)``.
+    research(2026-05): formula from Gilad Baruch, Moran Baruch, Yoav
+    Goldberg, *A Little Is Enough: Circumventing Defenses for Distributed
+    Learning*, NeurIPS 2019 (arXiv:1902.06156). FLPoison reference
+    (`attackers/alie.py`) computes ``s = floor(N/2 + 1) - f``,
+    ``cdf_value = (N - f - s)/(N - f)``, ``z_max = norm.ppf(cdf_value)``.
+    We use ``torch.erfinv`` instead of ``scipy.stats.norm.ppf`` to avoid
+    pulling scipy into vFL's runtime deps:
+    ``norm.ppf(p) = sqrt(2) * erfinv(2p - 1)``.
 
     At our default n=11/f=2 the resulting z_max is ~0.14 — small but
     non-zero. ALIE is most effective when the honest cluster is wide
