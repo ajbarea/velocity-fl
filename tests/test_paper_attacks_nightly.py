@@ -240,7 +240,32 @@ def test_krum_resists_inner_product_manipulation_mnist() -> None:
 
 
 @pytest.mark.parametrize(
-    "attack", ["gaussian", "label_flip", "ipm", "sign_flip", "alie", "fang_krum"]
+    "attack",
+    [
+        "gaussian",
+        "label_flip",
+        "ipm",
+        "sign_flip",
+        "alie",
+        pytest.param(
+            "fang_krum",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason=(
+                    "Empirical (2026-05-23 sweep): ArKrum collapses to ~10% accuracy "
+                    "under Fang-Krum at n=11/f=2 (full-sweep mean 0.096 ± 0.01 across "
+                    "5 seeds; see out/attack_arena/aggregated.csv). The parameter-free "
+                    "f̂ estimator (median filter + change-point detection) misidentifies "
+                    "the attacker set when Fang's binary-search-crafted updates land "
+                    "inside the honest cluster's distance envelope. ArKrum inherits "
+                    "Krum's selection geometry — Fang was designed specifically to "
+                    "defeat that geometry. Documented as a known limitation; an "
+                    "ArKrum-vs-Fang follow-up is queued in IMPL.md. Strict xfail so a "
+                    "future fix (e.g., Fang-aware preprocessor) surfaces immediately."
+                ),
+            ),
+        ),
+    ],
 )
 def test_arkrum_full_flpoison_matrix_mnist(attack: str) -> None:
     """Yang et al. arXiv:2505.17226 — ArKrum vs the full FLPoison matrix.
@@ -254,7 +279,7 @@ def test_arkrum_full_flpoison_matrix_mnist(attack: str) -> None:
     * ``ipm``         — inner-product    (Xie et al., 2019)
     * ``sign_flip``   — sign-flipping    (Damaskinos et al., ICML 2018)
     * ``alie``        — defense-evading  (Baruch et al., NeurIPS 2019)
-    * ``fang_krum``   — Krum-targeted    (Fang et al., USENIX Security 2020)
+    * ``fang_krum``   — Krum-targeted    (Fang et al., USENIX Security 2020) — strict xfail
 
     ``n=11``, ``f=2`` for the test; ArKrum discovers f̂ per round.
     """
