@@ -670,12 +670,16 @@ def cmd_clean(_: argparse.Namespace) -> int:
         if ".venv" in pycache.parts or "target" in pycache.parts:
             continue
         shutil.rmtree(pycache, ignore_errors=True)
-    # Timestamped log archives — dev-latest.log is the active handle for the
-    # current run, so leave it alone. Prune archives older than the retention
+    # Timestamped log archives — *-latest.log files are active handles for the
+    # current run, so leave them alone. Prune archives older than the retention
     # window; recent archives stay for debug context.
     if LOGS_DIR.is_dir():
         cutoff = time.time() - LOG_ARCHIVE_MAX_AGE_DAYS * 86400
-        stale = [a for a in LOGS_DIR.glob("dev-*-*.log") if a.stat().st_mtime < cutoff]
+        stale = [
+            a
+            for a in LOGS_DIR.glob("dev-*-*.log")
+            if not a.name.endswith("-latest.log") and a.stat().st_mtime < cutoff
+        ]
         if stale:
             print(f"  rm logs/dev-*-*.log  ({len(stale)} archive(s) > {LOG_ARCHIVE_MAX_AGE_DAYS}d)")
             for archive in stale:
