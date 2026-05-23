@@ -64,14 +64,12 @@ Per ROADMAP the natural next sessions are:
    otherwise leave the dict return since the model already reasons over
    it as structured content.
 
-3. **ArKrum-vs-Fang follow-up** — the 2026-05-23 sweep surfaced ArKrum
-   cratering under Fang-Krum (9.6% final acc, vs 94-96% on every other
-   attack). The parameter-free f̂ estimator misidentifies attackers
-   under aggregator-aware Krum-targeted perturbation. Worth a
-   dedicated session: characterize the f̂ failure mode, sketch a
-   Fang-aware variant, and either patch ArKrum or document the
-   limitation in `docs/strategies.md` with an honest "known weakness".
-
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done) matching
 the same template as the FLPoison session-plan that was here pre-merge.
+
+The ArKrum-vs-Fang follow-up that was queued here shipped 2026-05-23 as
+a *Known weaknesses* docs subsection (decision rationale: no
+parameter-free patch preserves Krum's score function; SpectralKrum
+arXiv:2512.11760 acknowledges the same fundamental limit). See
+ROADMAP `## Completed` 2026-05-23.

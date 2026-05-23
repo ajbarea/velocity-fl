@@ -1,6 +1,6 @@
 # Strategies
 
-VelocityFL ships eight aggregation strategies. All eight are implemented in Rust and exposed as frozen Python dataclasses in `velocity.strategy`. Pick one based on your threat model and client heterogeneity.
+VelocityFL ships nine aggregation strategies. All nine are implemented in Rust and exposed as frozen Python dataclasses in `velocity.strategy`. Pick one based on your threat model and client heterogeneity.
 
 ## Decision guide
 
@@ -14,7 +14,8 @@ VelocityFL ships eight aggregation strategies. All eight are implemented in Rust
 | Untrusted clients, up to `f` compromised, want to average `m` survivors | **`MultiKrum(f=…, m=…)`** |
 | Untrusted clients, up to `f` compromised, want the strongest distance-based defense | **`Bulyan(f=…, m=…)`** |
 | Untrusted clients, up to ⌊(n−1)/2⌋ compromised, want geometric (not coordinate-wise) robustness | **`GeometricMedian()`** |
-| Untrusted clients, unknown / per-round Byzantine count, want parameter-free Krum | **`ArKrum()`** |
+| Untrusted clients, unknown / per-round Byzantine count, want parameter-free Krum (not Fang-Krum threat model — see ArKrum's _Known weaknesses_) | **`ArKrum()`** |
+| Untrusted clients, aggregator-aware adversary (Fang-style optimisation attacks) | **`GeometricMedian()`** or **`Bulyan(f=…, m=…)`** — *not* a Krum-family selector |
 
 All nine are value objects: compare with `==`, safe to hash, safe to share between threads.
 
@@ -250,7 +251,18 @@ from velocity import VelocityServer, ArKrum
 server = VelocityServer(model_id=..., dataset=..., strategy=ArKrum())
 ```
 
-> **Known limitation** — Krum-family algorithms break when byzantines outvote honest. ArKrum inherits this from rKrum/Krum: if the malicious cluster is denser (lower intra-cluster distance) than the honest cluster, the Krum score on a byzantine `u_i` becomes lower than on an honest one and `u*` lands on the byzantine side. The paper's evaluation assumes honest is the dominant tight cluster. For an explicitly colluding-safe defense, look at trust-history-based methods (PID/Trust removal — queued under ROADMAP "Client-removal defenses").
+### Known weaknesses
+
+**Dense colluding cluster.** Krum-family algorithms break when byzantines outvote honest. ArKrum inherits this from rKrum/Krum: if the malicious cluster is denser (lower intra-cluster distance) than the honest cluster, the Krum score on a byzantine `u_i` becomes lower than on an honest one and `u*` lands on the byzantine side. The paper's evaluation assumes honest is the dominant tight cluster. For an explicitly colluding-safe defense, look at trust-history-based methods (PID/Trust removal — queued under ROADMAP "Client-removal defenses").
+
+**Fang-style aggregator-aware attacks.** Fang et al. (USENIX Security 2020, arXiv:1911.11815) show that an attacker who knows the aggregator's score function can optimise a perturbation that places malicious updates near the honest cluster — close enough that the score function selects them, but pointed at a target poisoning direction. Against Fang-Krum, ArKrum's parameter-free `f̂` estimator typically returns 0 (no big gap on the sorted-distance vector, no outliers above τ), and ArKrum degrades to FedAvg over all clients including the attackers. On vFL's `n=11 / f=2` MNIST nightly, this collapses ArKrum to **9.6% final accuracy** vs. **94-96%** under non-aggregator-aware attacks (label-flip, sign-flip, ALIE, IPM, Gaussian).
+
+This is **not a bug in our implementation** — it is a property of every Krum-family aggregator that scores updates by sum-of-nearest-neighbour distances. SpectralKrum (arXiv:2512.11760, Dec 2025), the newest Krum variant in the literature, explicitly acknowledges *"limited advantage over simpler statistical methods under min-max perturbations where malicious updates remain spectrally indistinguishable from benign ones"* — Fang is min-max perturbation.
+
+If your threat model includes an aggregator-aware adversary, do not use ArKrum, Krum, MultiKrum, Bulyan, or SpectralKrum (Krum-family selectors all share this surface). Reach for `GeometricMedian()` (Weiszfeld-iteration RFA, Pillutla et al. IEEE TSP 2022, 1/2 breakdown point with bounded contamination over a constant number of iterations) or `TrimmedMean(k=f)` / `FedMedian` (coordinate-wise statistics; Fang's transferable Full-Trim variant still degrades these, but less catastrophically than Krum-family). The decision-guide table above flags the Fang-robust choices explicitly.
+
+<!-- research(2026-05): Fang USENIX 2020 + SpectralKrum 2025 confirm Krum-family selectors share aggregator-aware vulnerability; no known parameter-free fix that preserves Krum's score function. Documented as known weakness rather than patched — adding a non-zero minimum f̂ would defeat "parameter-free", and aggregator-aware detection is a separate algorithm (SpectralKrum) not a patch. Bulyan + GeometricMedian remain the Fang-robust choices in this codebase. -->
+
 
 ---
 
