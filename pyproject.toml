@@ -48,8 +48,12 @@ torch = [
 # `run_rounds_history`, `memory_ledger`, `compare_runs`) can render in
 # Claude's UI as DataTable / LineChart instead of raw JSON. FastMCP 3.2 is
 # where Prefab support landed natively (`from fastmcp.apps import ...`).
+# Direct `prefab-ui` pin per the May 2026 FastMCP Apps docs — prefab-ui is
+# pre-1.0 and patch releases routinely break component APIs; rely on the
+# transitive constraint and you'll get bitten on a Bulyan-scale dep update.
 agent = [
     "fastmcp[apps]>=3.2",
+    "prefab-ui>=0.19,<0.20",
 ]
 all = [
     "velocity-fl[hf,torch]",
@@ -67,6 +71,7 @@ dev = [
     "ty>=0.0.25,<0.1",
     "zensical",
     "fastmcp[apps]>=3.2",
+    "prefab-ui>=0.19,<0.20",
 ]
 
 [project.scripts]

@@ -13,6 +13,7 @@ nav = [
   { "CLI Reference" = "cli.md" },
   { "Architecture" = "architecture.md" },
   { "Configuration" = "configuration.md" },
+  { "MCP Apps" = "mcp-apps.md" },
   { "Strategies" = "strategies.md" },
   { "Attacks" = "attacks.md" },
   { "API Reference" = "api.md" },

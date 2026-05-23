@@ -164,4 +164,6 @@ Do not use HTTP transport with Claude Desktop. Claude Desktop expects stdio for 
 
 The `mcp_app.py` server exposes vFL's experiment management, strategy lookup, run recording, and (in the planned `run_demo` real-training successor) federated round triggering. Every tool call is logged to the `agent_actions` audit table per the design contract in `mcp_app.py`.
 
+Several of these tools return interactive Prefab dashboards (charts, sortable tables, attack-defense leaderboards) rather than raw JSON, and `mcp.add_provider(GenerativeUI())` lets the LLM compose custom UIs at call time inside a Pyodide sandbox. See [MCP Apps](mcp-apps.md) for the dashboard catalog, the `fastmcp dev apps` local preview, the Deno prerequisite for the generative path, and the attack-arena demo data lineage.
+
 > research(2026-05): manual `mcpServers` block + the `fastmcp install claude-desktop` CLI are both current per gofastmcp.com 2026-05. The `--with fastmcp` arg keeps the spawned subprocess hermetic even outside this repo's `uv` environment; drop it if you'd rather have Claude Desktop spawn from the project venv.

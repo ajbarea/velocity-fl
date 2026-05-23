@@ -25,16 +25,35 @@ import inspect
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
 
 from fastmcp import Context, FastMCP
+from fastmcp.apps.generative import GenerativeUI
 from fastmcp.server.elicitation import (
     AcceptedElicitation,
     CancelledElicitation,
     DeclinedElicitation,
 )
-from prefab_ui.components import Column, DataTable, DataTableColumn
-from prefab_ui.components.charts import ChartSeries, LineChart
+from fastmcp.tools import ToolResult
+from prefab_ui.components import (
+    Badge,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    Column,
+    DataTable,
+    DataTableColumn,
+    Grid,
+    Heading,
+    Metric,
+    Muted,
+    Row,
+    Tab,
+    Tabs,
+)
+from prefab_ui.components.charts import ChartSeries, LineChart, Sparkline
 
 from velocity import db
 from velocity import memory as mem
@@ -144,6 +163,15 @@ learning framework. Your users are PhD researchers running FL experiments.
 """
 
 mcp = FastMCP(name="velocityfl", instructions=INSTRUCTIONS)
+
+# research(2026-05): GenerativeUI provider lets the LLM write Prefab Python
+# on the fly inside a Pyodide sandbox + stream the rendered result through
+# the same `ui://` resource as hand-authored components. Registers three
+# capabilities: `generate_prefab_ui`, `search_prefab_components`, and the
+# streaming renderer. Pairs with `attack_arena` below — declarative
+# dashboards for the canonical view, generative for "ask the model to
+# compose a custom panel".
+mcp.add_provider(GenerativeUI())
 
 MAX_DEMO_ROUNDS = 5
 # Cap real-training scope so an MCP-driven session can't kick off a 30-minute
@@ -342,6 +370,350 @@ def compare_runs(run_id_a: str, run_id_b: str) -> Column:
             ),
         ],
     )
+
+
+# ---------------------------------------------------------------------------
+# Attack arena dashboard — Byzantine-FL convergence under three paper-cited
+# attacks. Reads the corpus that `scripts/dump_attack_arena.py` produced.
+# ---------------------------------------------------------------------------
+
+_ARENA_STRATEGIES = ("FedAvg", "Krum", "MultiKrum", "Bulyan", "ArKrum")
+_ARENA_ATTACKS = ("gaussian", "ipm", "label_flip")
+_ARENA_LABELS = {
+    "gaussian": "Gaussian (Krum-paper)",
+    "ipm": "IPM (Fall of Empires)",
+    "label_flip": "Label flip (Tolpegin 2020)",
+}
+
+
+def _load_arena_corpus() -> dict[str, list[dict[str, Any]]] | None:
+    """Load `out/attack_arena/aggregated.csv` reshaped per attack.
+
+    Returns ``None`` when the corpus is absent (the tool surface stays
+    cacheable; the tool itself raises a clear ``ValueError`` if invoked
+    against an empty corpus). The script that produces the file is
+    documented at ``out/attack_arena/README.md``.
+
+    Shape: ``{attack -> [{round, FedAvg, Krum, …, _FedAvg_std, …}, …]}``
+    where each round-row carries the per-strategy mean accuracy + std
+    keyed by ``_{strategy}_std`` (the underscore-prefix keeps the
+    LineChart's ``series=[ChartSeries(dataKey=strategy)]`` resolution
+    clean).
+    """
+    import csv
+
+    path = Path(__file__).resolve().parents[2] / "out" / "attack_arena" / "aggregated.csv"
+    if not path.exists():
+        return None
+    by_attack: dict[str, dict[int, dict[str, Any]]] = {}
+    with path.open() as fh:
+        for row in csv.DictReader(fh):
+            attack = row["attack"]
+            rnd = int(row["round"])
+            strategy = row["strategy"]
+            slot = by_attack.setdefault(attack, {}).setdefault(rnd, {"round": rnd})
+            slot[strategy] = float(row["mean_acc"])
+            slot[f"_{strategy}_std"] = float(row["std_acc"])
+    return {a: [d for _, d in sorted(by_round.items())] for a, by_round in by_attack.items()}
+
+
+_ARENA = _load_arena_corpus()
+
+
+def _arena_strategy_card(strategy: str, mean_acc: float, std_acc: float) -> Card:
+    if mean_acc >= 0.95:
+        variant, label = "success", "Strong defense"
+    elif mean_acc >= 0.90:
+        variant, label = "info", "Robust"
+    elif mean_acc >= 0.50:
+        variant, label = "warning", "Degraded"
+    else:
+        variant, label = "destructive", "Cratered"
+    return Card(
+        children=[
+            CardHeader(children=[CardTitle(strategy)]),
+            CardContent(
+                children=[
+                    Metric(
+                        label="Final accuracy",
+                        value=f"{mean_acc:.1%}",
+                        description=f"± {std_acc:.3f} over 5 seeds",
+                    ),
+                    Badge(label=label, variant=variant),
+                ]
+            ),
+        ]
+    )
+
+
+def _arena_attack_panel(attack: str) -> Column:
+    if _ARENA is None or attack not in _ARENA:
+        return Column(
+            children=[
+                Card(
+                    children=[
+                        CardHeader(children=[CardTitle(f"No data for attack {attack!r}")]),
+                        CardContent(
+                            children=[
+                                Metric(
+                                    label="status",
+                                    value="run scripts/dump_attack_arena.py to populate",
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+    rows = _ARENA[attack]
+    finals = rows[-1]
+    summary_row = Row(
+        gap=4,
+        children=[
+            _arena_strategy_card(s, finals[s], finals[f"_{s}_std"]) for s in _ARENA_STRATEGIES
+        ],
+    )
+    chart = Card(
+        children=[
+            CardHeader(
+                children=[
+                    CardTitle(
+                        f"{_ARENA_LABELS[attack]} · convergence over 16 rounds "
+                        f"(mean over 5 seeds · n=11 / f=2 / MNIST · Dirichlet alpha=1.0)"
+                    )
+                ]
+            ),
+            CardContent(
+                children=[
+                    LineChart(
+                        data=rows,
+                        x_axis="round",
+                        series=[ChartSeries(dataKey=s, label=s) for s in _ARENA_STRATEGIES],
+                        height=380,
+                        curve="smooth",
+                        show_dots=True,
+                    )
+                ]
+            ),
+        ]
+    )
+    table_rows: list[dict[str, Any]] = []
+    for r in rows:
+        for strategy in _ARENA_STRATEGIES:
+            table_rows.append(
+                {
+                    "round": r["round"],
+                    "strategy": strategy,
+                    "mean_acc": round(r[strategy], 4),
+                    "std_acc": round(r[f"_{strategy}_std"], 4),
+                }
+            )
+    detail = DataTable(
+        columns=[
+            DataTableColumn(key="round", header="Round", sortable=True),
+            DataTableColumn(key="strategy", header="Strategy", sortable=True),
+            DataTableColumn(key="mean_acc", header="Mean acc", sortable=True),
+            DataTableColumn(key="std_acc", header="Std acc", sortable=True),
+        ],
+        rows=table_rows,  # ty: ignore[invalid-argument-type]
+        search=True,
+    )
+    return Column(children=[summary_row, chart, detail])
+
+
+def _arena_worst_case_leaderboard() -> list[dict[str, Any]]:
+    """Strategies sorted by worst-case (min) final accuracy across attacks.
+
+    For each strategy, finds the attack that produced the lowest final
+    accuracy (its weakest case) and the convergence curve under that
+    attack. Returns the list pre-sorted best-to-worst by that worst-case
+    number — the "if I have to pick one strategy without knowing the
+    attack, which is safest?" leaderboard shape.
+    """
+    if _ARENA is None:
+        return []
+    finals: dict[str, dict[str, float]] = {}
+    curves: dict[str, dict[str, list[float]]] = {}
+    for attack in _ARENA_ATTACKS:
+        rows = _ARENA[attack]
+        for strategy in _ARENA_STRATEGIES:
+            finals.setdefault(strategy, {})[attack] = rows[-1][strategy]
+            curves.setdefault(strategy, {})[attack] = [r[strategy] for r in rows]
+    out: list[dict[str, Any]] = []
+    for strategy in _ARENA_STRATEGIES:
+        worst_attack = min(finals[strategy], key=lambda a: finals[strategy][a])
+        out.append(
+            {
+                "strategy": strategy,
+                "worst": finals[strategy][worst_attack],
+                "worst_attack": worst_attack,
+                "worst_attack_label": _ARENA_LABELS[worst_attack],
+                "curve": curves[strategy][worst_attack],
+            }
+        )
+    out.sort(key=lambda r: r["worst"], reverse=True)
+    return out
+
+
+@mcp.tool
+@logged_tool
+def attack_arena_leaderboard() -> ToolResult:
+    """Worst-case Byzantine-FL defender leaderboard.
+
+    Composes the Prefab equivalent of the kind of widget a generative
+    UI prompt would produce — one Card per strategy, ranked by worst-
+    case final accuracy across the three paper-cited attacks, with a
+    Sparkline showing each strategy's convergence under its own worst
+    attack. The Prefab vocabulary (Grid + Card + Metric + Badge +
+    Sparkline + Muted) is what `mcp.add_provider(GenerativeUI())`
+    exposes to LLM-authored code in the same sandbox; this typed-tool
+    version makes the same widget reachable as a single deterministic
+    call instead of a chat round-trip through the LLM.
+
+    Returns a ToolResult that bundles a compact text summary (what the
+    model reads, ~100 tokens) with the Prefab tree (what the user sees,
+    rendered by the bundled React renderer). The text-and-UI split is
+    the May 2026 best-practice pattern documented at
+    gofastmcp.com/apps/prefab — keeps the model's context lean without
+    sacrificing the rich rendering.
+
+    Data lineage: same `out/attack_arena/aggregated.csv` corpus the
+    `attack_arena` tool reads — Strategy x Attack final-round means.
+    """
+    leaderboard = _arena_worst_case_leaderboard()
+    if not leaderboard:
+        empty = Column(
+            children=[
+                Card(
+                    children=[
+                        CardHeader(children=[CardTitle("No arena data")]),
+                        CardContent(
+                            children=[
+                                Metric(
+                                    label="status",
+                                    value="run scripts/dump_attack_arena.py first",
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+        return ToolResult(
+            content="Attack-arena corpus empty. Run scripts/dump_attack_arena.py first.",
+            structured_content=empty.to_json(),
+        )
+
+    def card_for(rank: int, row: dict[str, Any]) -> Card:
+        worst = row["worst"]
+        if worst >= 0.95:
+            variant, label = "success", "Strong defense"
+        elif worst >= 0.90:
+            variant, label = "info", "Robust"
+        elif worst >= 0.50:
+            variant, label = "warning", "Degraded"
+        else:
+            variant, label = "destructive", "Cratered"
+        return Card(
+            children=[
+                CardHeader(children=[CardTitle(f"#{rank + 1}  {row['strategy']}")]),
+                CardContent(
+                    children=[
+                        Column(
+                            gap=3,
+                            children=[
+                                Metric(
+                                    label="Worst-case accuracy",
+                                    value=f"{worst:.1%}",
+                                    description=f"under {row['worst_attack_label']}",
+                                ),
+                                Badge(label, variant=variant),
+                                Sparkline(
+                                    data=row["curve"],  # ty: ignore[invalid-argument-type]
+                                    variant=variant,
+                                    curve="smooth",
+                                    fill=True,
+                                    mode="line",
+                                    height=60,
+                                ),
+                                Muted(f"Convergence vs {row['worst_attack_label']}"),
+                            ],
+                        )
+                    ]
+                ),
+            ]
+        )
+
+    tree = Column(
+        gap=6,
+        children=[
+            Heading("Worst-case Byzantine-FL defender leaderboard", level=2),
+            Muted(
+                "Strategies ranked by worst-case (min) final accuracy across the "
+                "three paper-cited attacks (Gaussian / IPM / Label-flip). Real "
+                "MNIST, n=11 / f=2 / Dirichlet alpha=1.0, mean over 5 seeds, 16 "
+                "rounds. Sparkline shows each strategy's convergence under its "
+                "own worst-attack."
+            ),
+            Grid(
+                columns=5,
+                gap=4,
+                children=[card_for(i, row) for i, row in enumerate(leaderboard)],
+            ),
+        ],
+    )
+    summary_lines = [
+        f"#{i + 1} {r['strategy']}: {r['worst']:.1%} worst-case (under {r['worst_attack_label']})"
+        for i, r in enumerate(leaderboard)
+    ]
+    summary = "Worst-case Byzantine-FL ranking (real MNIST, 5 seeds):\n" + "\n".join(summary_lines)
+    return ToolResult(content=summary, structured_content=tree.to_json())
+
+
+@mcp.tool
+@logged_tool
+def attack_arena() -> ToolResult:
+    """Render the Byzantine-FL attack-arena dashboard.
+
+    Three tabbed panels (Gaussian / IPM / Label-flip) — each showing
+    a row of 5 strategy summary Cards (final accuracy + ± std + Badge
+    keyed by defense strength), a LineChart of the per-round mean
+    convergence trajectories across the 5 seeds, and a detailed
+    DataTable.
+
+    Returns a ToolResult bundling a per-attack text summary (model-
+    visible, ~150 tokens) with the rendered Prefab Tabs tree (user-
+    visible widget). May 2026 best practice per gofastmcp.com/apps/prefab
+    is to keep model context lean by surfacing a compact text alongside
+    rich UI rather than streaming the full component JSON tree into the
+    model's reasoning window.
+
+    Data lineage: ``out/attack_arena/aggregated.csv`` produced by
+    ``scripts/dump_attack_arena.py`` — 5 strategies x 3 attacks x 5
+    seeds x 16 rounds on real Hugging Face MNIST, n=11 / f=2 /
+    Dirichlet alpha=1.0. Run the script to regenerate; see
+    ``out/attack_arena/README.md`` for the full provenance + caption-
+    ready citation template.
+    """
+    tree = Tabs(
+        value="gaussian",
+        children=[
+            Tab(_ARENA_LABELS[a], value=a, children=[_arena_attack_panel(a)])
+            for a in _ARENA_ATTACKS
+        ],
+    )
+    if _ARENA is None:
+        summary = "Attack-arena corpus empty. Run scripts/dump_attack_arena.py first."
+    else:
+        lines = ["Byzantine-FL attack arena (real MNIST, 5 seeds, 16 rounds):"]
+        for attack in _ARENA_ATTACKS:
+            finals = _ARENA[attack][-1]
+            ranked = sorted(_ARENA_STRATEGIES, key=lambda s: finals[s], reverse=True)
+            lines.append(
+                f"  {_ARENA_LABELS[attack]}: " + ", ".join(f"{s}={finals[s]:.1%}" for s in ranked)
+            )
+        summary = "\n".join(lines)
+    return ToolResult(content=summary, structured_content=tree.to_json())
 
 
 @mcp.tool
