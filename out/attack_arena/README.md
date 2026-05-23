@@ -7,8 +7,42 @@ arena dashboard (`attack_arena` MCP tool, Prefab phase 2).
 
 ```bash
 uv run python scripts/dump_attack_arena.py --rounds 16 --seeds 5
-# wall time: ~55 min on CPU
+# wall time: ~85 min on CPU (5 strategies × 6 attacks × 5 seeds = 150 runs)
 ```
+
+## Final-round results (round 16, mean ± std across 5 seeds)
+
+| Strategy   | gaussian    | ipm         | label_flip  | sign_flip   | alie        | fang_krum   |
+| ---        | ---         | ---         | ---         | ---         | ---         | ---         |
+| FedAvg     | 0.098±0.00  | 0.893±0.01  | 0.933±0.01  | 0.862±0.04  | 0.965±0.00  | 0.134±0.03  |
+| Krum       | 0.909±0.03  | 0.909±0.03  | 0.909±0.03  | 0.909±0.03  | 0.963±0.00  | 0.909±0.03  |
+| MultiKrum  | 0.938±0.01  | 0.938±0.01  | 0.938±0.01  | 0.938±0.01  | 0.957±0.00  | 0.938±0.01  |
+| Bulyan     | 0.957±0.00  | 0.957±0.00  | 0.957±0.00  | 0.957±0.00  | 0.960±0.00  | 0.957±0.00  |
+| ArKrum     | 0.962±0.00  | 0.958±0.00  | 0.962±0.00  | 0.945±0.01  | 0.964±0.00  | **0.096±0.01** |
+
+Headline findings:
+
+- **ArKrum cratered under Fang-Krum** (9.6% — random for MNIST). The
+  parameter-free f̂ estimator misidentifies the attacker set when the
+  attacker explicitly targets Krum-style selection geometry. This is the
+  most interesting empirical surprise in the sweep — ArKrum holds 94-96%
+  on every other attack class.
+- **FedAvg cratered under Gaussian and Fang-Krum**, held under
+  IPM/label_flip/sign_flip/ALIE. The Gaussian / Fang collapses are the
+  expected "no defense" baseline.
+- **Krum / MultiKrum / Bulyan held against everything** including Fang —
+  the Krum-aware attack still loses to the actual Krum selection when
+  ``num_adv=2`` and the cluster size is too small for Fang's binary
+  search to find a winning ``lambda``.
+- **ALIE was the weakest attack across the board** at this scale
+  (n=11/f=2 → z_max≈0.14, a very mild perturbation). Confirms the
+  Baruch et al. observation: ALIE's potency scales with cluster width
+  and attacker fraction.
+- **Krum's identical numbers across attacks** are not a bug: Krum's
+  deterministic selection picks the same honest update at a fixed seed
+  regardless of which clients got byzantine'd, so the final accuracy is
+  determined by the seed alone for any attack that doesn't fool the
+  selection criterion.
 
 ## Configuration
 

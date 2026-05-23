@@ -28,26 +28,11 @@ Session-by-session execution (the "what are we doing this PR") lives in
   conversation. `run_demo` and `run_real_training` deliberately keep
   their `dict` return — their nested run summaries don't map to a
   single component; revisit if AJ wants Card+Metric blocks for them.
-- **Attack-arena dashboard (Prefab phase 2 — LinkedIn demo lane)** —
-  follow-up to the 2026-05-23 attack-arena data dump
-  (`scripts/dump_attack_arena.py` → `out/attack_arena/aggregated.csv`,
-  5 strategies × 3 paper-cited attacks × 5 seeds × 16 rounds on real
-  MNIST n=11/f=2/Dirichlet α=1.0). Reads the CSV at server startup,
-  exposes an `attack_arena(attack)` MCP tool returning a
-  `Column[Grid[Card+Metric+Sparkline], LineChart-with-mean+std-bands,
-  DataTable]` tree. The bands are the NeurIPS 2026 / MLRC-track norm
-  for FL convergence comparisons; single-seed traces are the prior
-  state of the art and look amateur in 2026. Headliner panel: FedAvg
-  vs four defenses under Gaussian (FedAvg craters to ~10%; defenses
-  hold ~92%). Pairs with the generative-UI provider for the live "ask
-  the LLM to compose a comparison panel" beat.
-- **Generative-UI provider** — `mcp.add_provider(GenerativeUI())`
-  registers `generate_prefab_ui` + `search_prefab_components` + a
-  streaming `ui://` resource. Three-line wiring; the demo flow is
-  *"ask the model to build a custom figure from the existing typed
-  tool returns"*, leveraging the Pyodide sandbox bundled with
-  `fastmcp[apps]`. Ships alongside the attack-arena dashboard so the
-  LinkedIn screencast can close on the generative beat.
+- ~~**Attack-arena dashboard (Prefab phase 2 — LinkedIn demo lane)**~~ —
+  shipped 2026-05-23 (#34). 6-tab dashboard over the full FLPoison
+  canonical matrix; see Completed.
+- ~~**Generative-UI provider**~~ — shipped 2026-05-23 (#34) alongside
+  the attack-arena dashboard; see Completed.
 - ~~**Memory compaction**~~ — shipped 2026-05-21 (see Completed).
   `velocity.memory.compact_entry()` + `compact_memory` MCP tool bound
   `recent_runs.md` (or any writable memory file) by keeping the last N
@@ -418,6 +403,11 @@ ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and 
 
 Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
 
+- **2026-05-23** — FLPoison canonical headliner expansion (#36). Extends the attack-arena matrix from 3 to 6 paper-cited attacks: adds **sign-flip** (Damaskinos et al. ICML 2018 — the simplest model-poisoning floor), **ALIE** (Baruch, Baruch, Goldberg NeurIPS 2019 / arXiv:1902.06156 — defense-evading within-variance perturbation), and **Fang-Krum** (Fang, Cao, Jia, Gong USENIX Security 2020 / arXiv:1911.11815 — aggregator-aware binary-search attack). Consolidates attack primitives into `python/velocity/paper_attacks.py` (single `run_federated_round` helper + per-attack functions; both `scripts/dump_attack_arena.py` and `tests/test_paper_attacks_nightly.py` previously carried byte-identical inline copies). 17 hermetic unit tests in `tests/test_paper_attacks.py`. Dashboard `_ARENA_ATTACKS` extended from 3 to 6 keys; `attack_arena` tool auto-renders 6 tabs. MCP cache-stability hash bumped `80bac6fa…` → `171c8b8c…` (intentional, for the "FLPoison canonical matrix" docstring). Sweep re-ran 5 × 6 × 5 = 150 runs (85 min CPU); surfaced an interesting empirical surprise — ArKrum cratered under Fang-Krum (9.6% final acc vs 94-96% on every other attack), the parameter-free f̂ estimator misidentifies the attacker set under aggregator-aware Krum-targeted geometry. Documented as a known limitation in `out/attack_arena/README.md` + queued as a follow-up session in IMPL.md.
+- **2026-05-23** — ToolResult dual-content across all six Prefab tools (#35). Every Prefab-returning MCP tool now returns `fastmcp.tools.ToolResult` bundling a compact text summary (model-visible, ~100-200 tokens) with the rendered Prefab tree (`structured_content`). May 2026 best practice per gofastmcp.com/apps/prefab — keeps the model's reasoning window lean (no parsing ~5-10K tokens of nested component JSON) while preserving rich rendering for the human.
+- **2026-05-23** — Prefab attack-arena dashboard + GenerativeUI provider (#34). `attack_arena()` Tabs widget + `attack_arena_leaderboard()` worst-case Grid + `mcp.add_provider(GenerativeUI())` registering `generate_prefab_ui` + `search_prefab_components` + streaming `ui://` resource. Pyodide sandbox bundled with `fastmcp[apps]`. Three-line generative-UI wiring. Pinned `prefab-ui>=0.19,<0.20` in `agent` extras + `dev` group (pre-1.0 patch releases break component APIs). `docs/mcp-apps.md` guide added.
+- **2026-05-23** — Attack-arena MNIST sweep — real data for the LinkedIn dashboard (#33). `scripts/dump_attack_arena.py` matrix runner; `out/attack_arena/{runs.json, aggregated.csv, README.md}`. Real Hugging Face MNIST, n=11/f=2/Dirichlet α=1.0, mean ± std bands over 5 seeds. NeurIPS 2026 MLRC-track norm for FL convergence comparisons. Initial sweep: 5 strategies × 3 attacks × 5 seeds × 16 rounds (refreshed to 6 attacks in #36).
+- **2026-05-23** — codecov/codecov-action v6.0.0 → v6.0.1 (#32).
 - **2026-05-23** — Prefab return types — phase 1. `list_runs`, `run_rounds_history`, `compare_runs`, `memory_ledger` migrated from `dict` / `list[dict]` to Prefab `DataTable` (sortable + searchable) and `Column[LineChart, DataTable]` (history + comparison flows). Adds `fastmcp[apps]>=3.2` to the `agent` extras dep, which pulls in `prefab-ui` (~1.8 MiB wheel). FastMCP serializes the Prefab tree to `structuredContent` on the tool result so the model still reasons over the rows; the Claude UI renders the interactive widget in the conversation. `run_demo` + `run_real_training` keep `dict` returns — their nested run summaries don't map to a single component; revisit if AJ wants Card+Metric blocks for them. MCP cache-stability hash bumped from `2caab55…` to `bbddac0…` (intentional surface change).
 - **2026-05-22** — Nightly paper-attack scenarios on real MNIST. Extends the hermetic Gaussian-noise tests to a real-dataset matrix with each strategy paired against the attack model from its paper: Bulyan / GeometricMedian (RFA) vs label-flipping (Tolpegin et al. ESORICS 2020 + Pillutla et al. IEEE TSP 2022), Krum vs inner-product manipulation (Xie et al. 2019 "Fall of Empires"), ArKrum against all three (gradient-poisoning, data-poisoning, IPM). `tests/test_paper_attacks_nightly.py` + `--run-nightly` opt-in flag in `conftest.py` + `nightly` marker registered in pyproject.toml + new step in `.github/workflows/nightly.yml`. n=11 / f=2 satisfies every aggregator's minimum-bound; MIN_ACCURACY=0.70 over 8 rounds with Dirichlet(alpha=1.0) non-IID. Local run 2026-05-22: 6/6 pass in 2:11.
 - **2026-05-22** — Per-strategy paper-cited convergence tests. Every aggregator (FedAvg/FedMedian/TrimmedMean/Krum/MultiKrum/Bulyan/GeometricMedian/ArKrum) now has a hermetic test exercising its paper-cited Byzantine-robustness claim against the Krum-paper gradient-poisoning attack (large-magnitude Gaussian noise from the byzantines). Each test sets the minimum-bound client count from the paper (n ≥ 2f+3 for Krum, n ≥ 4f+3 for Bulyan, ≤ ⌊(n-1)/2⌋ for FedMedian/GeoMedian, etc.) and asserts the strategy recovers ≥0.80 accuracy on the Gaussian-blobs benchmark under attack. `_run_strategy` helper + `_byzantine_update` shared across tests. Lifts the test suite from kernel-grade to research-grade: each strategy is no longer just numerically correct, it provably defends against the threat model from its paper.
