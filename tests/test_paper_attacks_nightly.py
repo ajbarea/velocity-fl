@@ -19,9 +19,14 @@ Strategy ↔ attack pairings:
                       Fall of Empires — byzantine emits -ε·mean(honest)
                       so the malicious update lives near the honest
                       cluster in flat-Euclidean distance)
-    ArKrum          — three-attack matrix  (Yang et al., arXiv:2505.17226;
+    ArKrum          — full FLPoison matrix  (Yang et al., arXiv:2505.17226;
                       exercises the parameter-free f̂ estimator against
-                      gradient-poisoning + data-poisoning + IPM)
+                      every canonical attack family in
+                      ``velocity.paper_attacks``)
+
+Attack primitives are imported from :mod:`velocity.paper_attacks` (the
+same module the attack-arena dump script uses) so this suite and the
+arena data are byte-for-byte comparable.
 
 These tests download MNIST from Hugging Face and run real torch training
 through the Rust orchestrator. Each test takes 1-3 minutes; the suite is
@@ -36,24 +41,27 @@ to 0.10-0.30 — the gap is the defense, not the dataset.
 
 from __future__ import annotations
 
-import copy
-from collections.abc import Sequence
-
 import pytest
 
 torch = pytest.importorskip("torch")
 pytest.importorskip("datasets")
 
-from torch import Tensor, nn  # noqa: E402
+from torch import nn  # noqa: E402
 from torchvision import transforms  # noqa: E402
 from velocity import _core  # noqa: E402
-from velocity.data_attacks import make_label_flip_callback  # noqa: E402
 from velocity.datasets import load_federated  # noqa: E402
+from velocity.paper_attacks import (  # noqa: E402
+    alie_attack,
+    fang_krum_attack,
+    gaussian_byzantine,
+    inner_product_manipulation,
+    run_federated_round,
+    sign_flip_byzantine,
+)
 from velocity.training import (  # noqa: E402
     evaluate,
     layer_shapes,
     layers_to_state_dict,
-    local_train,
     state_dict_to_layers,
 )
 
@@ -105,88 +113,6 @@ def _load_mnist_federated():
     )
 
 
-def _local_train_round(
-    split,
-    global_state: dict,
-    *,
-    label_attack_for: tuple[int, ...] = (),
-) -> tuple[list, list[dict], list[int]]:
-    """Run one round of per-client local training.
-
-    Returns ``(updates, honest_states, honest_samples)`` — the IPM helper
-    needs the raw honest state dicts and per-client sample counts to
-    compute the weighted mean.
-    """
-    flip_cb = make_label_flip_callback(num_classes=NUM_CLASSES, seed=ATTACK_SEED)
-    flip_set = set(label_attack_for)
-    updates: list = []
-    honest_states: list[dict] = []
-    honest_samples: list[int] = []
-    for client_idx, client in enumerate(split.clients):
-        local_model = _make_model()
-        local_model.load_state_dict(copy.deepcopy(global_state))
-        label_attack = flip_cb if client_idx in flip_set else None
-        local_train(
-            local_model,
-            client.loader,
-            epochs=LOCAL_EPOCHS,
-            lr=LR,
-            label_attack=label_attack,
-        )
-        sd = local_model.state_dict()
-        updates.append(
-            _core.ClientUpdate(
-                num_samples=client.num_samples,
-                weights=state_dict_to_layers(sd),
-            )
-        )
-        if client_idx not in flip_set:
-            honest_states.append(sd)
-            honest_samples.append(client.num_samples)
-    return updates, honest_states, honest_samples
-
-
-def _inner_product_manipulation(
-    honest_states: Sequence[dict],
-    honest_samples: Sequence[int],
-    *,
-    epsilon: float = -1.0,
-    num_samples: int,
-):
-    """Xie et al. 2019 — byzantine emits ``-ε * mean(honest_updates)``.
-
-    With ``epsilon = -1.0`` the byzantine update is the *negation* of the
-    honest weighted mean, pulling the global model away from the
-    direction honest training is pushing. The magnitude stays in the
-    honest range (vs Gaussian-noise's ``scale=100``) so Euclidean
-    distance defenses can't filter on magnitude alone — that's the
-    "Fall of Empires" property.
-    """
-    total = sum(honest_samples)
-    mean: dict[str, Tensor] = {}
-    for state, n in zip(honest_states, honest_samples, strict=False):
-        weight = n / total
-        for k, v in state.items():
-            mean[k] = mean.get(k, torch.zeros_like(v)) + weight * v
-    poisoned = {name: (epsilon * t).flatten().tolist() for name, t in mean.items()}
-    return _core.ClientUpdate(num_samples=num_samples, weights=poisoned)
-
-
-def _gaussian_byzantine(template_state: dict, *, seed: int, num_samples: int):
-    """Krum/Bulyan-paper canonical gradient-poisoning byzantine.
-
-    Mirrors :func:`tests.test_convergence._byzantine_update` so the
-    nightly variant uses the same attack shape as the hermetic tests
-    for the third leg of ArKrum's three-attack matrix.
-    """
-    rng = torch.Generator().manual_seed(seed)
-    poisoned = {
-        name: (torch.randn(t.shape, generator=rng) * 100.0).flatten().tolist()
-        for name, t in template_state.items()
-    }
-    return _core.ClientUpdate(num_samples=num_samples, weights=poisoned)
-
-
 def _run(split, strategy, template_state: dict, *, attack: str) -> float:
     orch = _core.Orchestrator(
         model_id="mnist-mlp-128-64",
@@ -206,26 +132,56 @@ def _run(split, strategy, template_state: dict, *, attack: str) -> float:
         pre_eval.load_state_dict(global_state)
         pre_loss, _ = evaluate(pre_eval, split.test_loader)
 
+        updates, honest_states, honest_samples, attacker_states, _ = run_federated_round(
+            split,
+            global_state,
+            _make_model,
+            num_classes=NUM_CLASSES,
+            epochs=LOCAL_EPOCHS,
+            lr=LR,
+            attacker_ids=COMPROMISED_IDS,
+            apply_label_flip=(attack == "label_flip"),
+            label_attack_seed=ATTACK_SEED,
+        )
+
+        avg_samples = int(sum(c.num_samples for c in split.clients) / NUM_CLIENTS)
         if attack == "label_flip":
-            updates, _, _ = _local_train_round(
-                split, global_state, label_attack_for=COMPROMISED_IDS
-            )
+            pass  # label-flip injected during training above.
         elif attack == "ipm":
-            updates, honest_states, honest_samples = _local_train_round(split, global_state)
-            avg_samples = int(sum(c.num_samples for c in split.clients) / NUM_CLIENTS)
-            byzantine = _inner_product_manipulation(
+            byzantine = inner_product_manipulation(
                 honest_states, honest_samples, num_samples=avg_samples
             )
             for cid in COMPROMISED_IDS:
                 updates[cid] = byzantine
         elif attack == "gaussian":
-            updates, _, _ = _local_train_round(split, global_state)
             for cid in COMPROMISED_IDS:
-                updates[cid] = _gaussian_byzantine(
+                updates[cid] = gaussian_byzantine(
                     template_state,
                     seed=cid * 1000 + round_idx,
                     num_samples=split.clients[cid].num_samples,
                 )
+        elif attack == "sign_flip":
+            for cid, state in zip(COMPROMISED_IDS, attacker_states, strict=True):
+                updates[cid] = sign_flip_byzantine(
+                    state, num_samples=split.clients[cid].num_samples
+                )
+        elif attack == "alie":
+            byzantine = alie_attack(
+                honest_states,
+                num_clients=NUM_CLIENTS,
+                num_adv=NUM_COMPROMISED,
+                num_samples=avg_samples,
+            )
+            for cid in COMPROMISED_IDS:
+                updates[cid] = byzantine
+        elif attack == "fang_krum":
+            byzantine = fang_krum_attack(
+                attacker_states,
+                global_state=global_state,
+                num_samples=avg_samples,
+            )
+            for cid in COMPROMISED_IDS:
+                updates[cid] = byzantine
         else:
             raise ValueError(f"unknown attack: {attack!r}")
 
@@ -241,7 +197,7 @@ def test_bulyan_resists_label_flipping_mnist() -> None:
 
     Multi-Krum alone is known to degrade under label flipping in non-IID;
     Bulyan stacks Multi-Krum's selection with coordinate-wise trimmed
-    mean, recovering the defense. ``n=10``, ``f=2``.
+    mean, recovering the defense. ``n=11``, ``f=2``.
     """
     torch.manual_seed(SEED)
     split = _load_mnist_federated()
@@ -257,7 +213,7 @@ def test_geometric_median_resists_label_flipping_mnist() -> None:
 
     Geometric median (Weiszfeld iteration) minimizes geometric distance
     to all clients, so direction-twisted label-flip updates can't pull
-    the aggregator past the honest mass. ``n=10``, ``f=2``.
+    the aggregator past the honest mass. ``n=11``, ``f=2``.
     """
     torch.manual_seed(SEED)
     split = _load_mnist_federated()
@@ -274,7 +230,7 @@ def test_krum_resists_inner_product_manipulation_mnist() -> None:
     Byzantine emits ``-1.0 * mean(honest)``. Magnitude stays in the
     honest range, but the direction is anti-aligned with honest
     progress. Krum's distance-based selection should still pick from
-    the honest cluster as long as ``n ≥ 2f+3``. ``n=10``, ``f=2``.
+    the honest cluster as long as ``n ≥ 2f+3``. ``n=11``, ``f=2``.
     """
     torch.manual_seed(SEED)
     split = _load_mnist_federated()
@@ -283,19 +239,24 @@ def test_krum_resists_inner_product_manipulation_mnist() -> None:
     assert acc >= MIN_ACCURACY, f"Krum vs IPM on MNIST: final acc {acc:.3f} below {MIN_ACCURACY}"
 
 
-@pytest.mark.parametrize("attack", ["gaussian", "label_flip", "ipm"])
-def test_arkrum_three_attack_matrix_mnist(attack: str) -> None:
-    """Yang et al. arXiv:2505.17226 — ArKrum vs three Byzantine families.
+@pytest.mark.parametrize(
+    "attack", ["gaussian", "label_flip", "ipm", "sign_flip", "alie", "fang_krum"]
+)
+def test_arkrum_full_flpoison_matrix_mnist(attack: str) -> None:
+    """Yang et al. arXiv:2505.17226 — ArKrum vs the full FLPoison matrix.
 
     The parameter-free f̂ estimator (median outlier filter + change-point
-    detection) is the headline feature. Test it against all three
-    Byzantine-attack classes named in the paper:
+    detection) is the headline feature. Test it against every canonical
+    attack family in :mod:`velocity.paper_attacks`:
 
     * ``gaussian``    — gradient poisoning (Blanchard et al., NeurIPS 2017)
     * ``label_flip``  — data poisoning   (Tolpegin et al., ESORICS 2020)
     * ``ipm``         — inner-product    (Xie et al., 2019)
+    * ``sign_flip``   — sign-flipping    (Damaskinos et al., ICML 2018)
+    * ``alie``        — defense-evading  (Baruch et al., NeurIPS 2019)
+    * ``fang_krum``   — Krum-targeted    (Fang et al., USENIX Security 2020)
 
-    ``n=10``, ``f=2`` for the test; ArKrum discovers f̂ per round.
+    ``n=11``, ``f=2`` for the test; ArKrum discovers f̂ per round.
     """
     torch.manual_seed(SEED)
     split = _load_mnist_federated()

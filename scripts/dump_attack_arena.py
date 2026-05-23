@@ -16,44 +16,51 @@ FLPoison SoK (arXiv:2502.03801). Single-seed traces are no longer
 considered publishable for a Byzantine-FL comparison; this script
 follows the multi-seed norm.
 
-research(2026-05): the three attacks here (label_flip, ipm, gaussian)
-are vFL's curated paper-cited set — Tolpegin et al. ESORICS 2020 +
-Xie et al. "Fall of Empires" 2019 + Krum-paper Gaussian. They are a
-subset of the FLPoison canonical headliner set (which adds sign-flip,
-ALIE, Fang, BadNets); honest framing in the demo caption.
+research(2026-05): the six attacks here (label_flip, ipm, gaussian,
+sign_flip, alie, fang_krum) match the FLPoison canonical headliner set
+modulo the trigger/backdoor attacks (BadNets, DBA, NeuroToxin), which
+need an ASR (attack success rate) metric the arena does not yet
+report. Attack implementations consolidated into
+``velocity.paper_attacks`` (DRY against the nightly test suite).
 
 Usage:
     uv run python scripts/dump_attack_arena.py
         [--rounds 16] [--seeds 5] [--out out/attack_arena]
 
 Wall time: ~22s per (strategy, attack, seed) run on CPU; default
-matrix (5 strategies x 3 attacks x 5 seeds = 75 runs) ≈ 27 minutes
+matrix (5 strategies x 6 attacks x 5 seeds = 150 runs) ≈ 55 minutes
 sequential.
 """
 
 from __future__ import annotations
 
 import argparse
-import copy
 import csv
 import json
 import statistics
 import sys
 import time
-from collections.abc import Sequence
 from pathlib import Path
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torchvision import transforms
 from velocity import _core
-from velocity.data_attacks import make_label_flip_callback
 from velocity.datasets import load_federated
+from velocity.paper_attacks import (
+    ALL_ATTACKS,
+    alie_attack,
+    fang_krum_attack,
+    gaussian_byzantine,
+    inner_product_manipulation,
+    run_federated_round,
+    sign_flip_byzantine,
+)
 from velocity.training import (
     evaluate,
     layer_shapes,
     layers_to_state_dict,
-    local_train,
+    local_train,  # noqa: F401  (re-exported for back-compat — older notebooks import from here)
     state_dict_to_layers,
 )
 
@@ -67,7 +74,6 @@ DIRICHLET_ALPHA = 1.0
 LOCAL_EPOCHS = 1
 BATCH_SIZE = 64
 LR = 0.01
-ATTACK_SEED = 137
 
 MNIST_TRANSFORM = transforms.Compose(
     [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
@@ -98,67 +104,6 @@ def _load_mnist_federated(seed: int):
     )
 
 
-def _local_train_round(
-    split,
-    global_state: dict,
-    *,
-    label_attack_for: tuple[int, ...] = (),
-) -> tuple[list, list[dict], list[int]]:
-    flip_cb = make_label_flip_callback(num_classes=NUM_CLASSES, seed=ATTACK_SEED)
-    flip_set = set(label_attack_for)
-    updates: list = []
-    honest_states: list[dict] = []
-    honest_samples: list[int] = []
-    for client_idx, client in enumerate(split.clients):
-        local_model = _make_model()
-        local_model.load_state_dict(copy.deepcopy(global_state))
-        label_attack = flip_cb if client_idx in flip_set else None
-        local_train(
-            local_model,
-            client.loader,
-            epochs=LOCAL_EPOCHS,
-            lr=LR,
-            label_attack=label_attack,
-        )
-        sd = local_model.state_dict()
-        updates.append(
-            _core.ClientUpdate(
-                num_samples=client.num_samples,
-                weights=state_dict_to_layers(sd),
-            )
-        )
-        if client_idx not in flip_set:
-            honest_states.append(sd)
-            honest_samples.append(client.num_samples)
-    return updates, honest_states, honest_samples
-
-
-def _inner_product_manipulation(
-    honest_states: Sequence[dict],
-    honest_samples: Sequence[int],
-    *,
-    epsilon: float = -1.0,
-    num_samples: int,
-):
-    total = sum(honest_samples)
-    mean: dict[str, Tensor] = {}
-    for state, n in zip(honest_states, honest_samples, strict=False):
-        weight = n / total
-        for k, v in state.items():
-            mean[k] = mean.get(k, torch.zeros_like(v)) + weight * v
-    poisoned = {name: (epsilon * t).flatten().tolist() for name, t in mean.items()}
-    return _core.ClientUpdate(num_samples=num_samples, weights=poisoned)
-
-
-def _gaussian_byzantine(template_state: dict, *, seed: int, num_samples: int):
-    rng = torch.Generator().manual_seed(seed)
-    poisoned = {
-        name: (torch.randn(t.shape, generator=rng) * 100.0).flatten().tolist()
-        for name, t in template_state.items()
-    }
-    return _core.ClientUpdate(num_samples=num_samples, weights=poisoned)
-
-
 def _run_one(
     split,
     strategy_factory,
@@ -186,26 +131,59 @@ def _run_one(
         pre_eval.load_state_dict(global_state)
         pre_loss, _ = evaluate(pre_eval, split.test_loader)
 
+        # One training round serves every attack: classify by attacker_ids,
+        # train all clients (label-flipping the attackers only when the
+        # attack semantics require it). The honest-cluster stats power
+        # IPM/ALIE; attacker_states power Fang/sign-flip.
+        updates, honest_states, honest_samples, attacker_states, _ = run_federated_round(
+            split,
+            global_state,
+            _make_model,
+            num_classes=NUM_CLASSES,
+            epochs=LOCAL_EPOCHS,
+            lr=LR,
+            attacker_ids=COMPROMISED_IDS,
+            apply_label_flip=(attack == "label_flip"),
+        )
+
+        avg_samples = int(sum(c.num_samples for c in split.clients) / NUM_CLIENTS)
         if attack == "label_flip":
-            updates, _, _ = _local_train_round(
-                split, global_state, label_attack_for=COMPROMISED_IDS
-            )
+            pass  # label-flip was injected during training above.
         elif attack == "ipm":
-            updates, honest_states, honest_samples = _local_train_round(split, global_state)
-            avg_samples = int(sum(c.num_samples for c in split.clients) / NUM_CLIENTS)
-            byzantine = _inner_product_manipulation(
+            byzantine = inner_product_manipulation(
                 honest_states, honest_samples, num_samples=avg_samples
             )
             for cid in COMPROMISED_IDS:
                 updates[cid] = byzantine
         elif attack == "gaussian":
-            updates, _, _ = _local_train_round(split, global_state)
             for cid in COMPROMISED_IDS:
-                updates[cid] = _gaussian_byzantine(
+                updates[cid] = gaussian_byzantine(
                     template_state,
                     seed=cid * 1000 + round_idx,
                     num_samples=split.clients[cid].num_samples,
                 )
+        elif attack == "sign_flip":
+            for cid, state in zip(COMPROMISED_IDS, attacker_states, strict=True):
+                updates[cid] = sign_flip_byzantine(
+                    state, num_samples=split.clients[cid].num_samples
+                )
+        elif attack == "alie":
+            byzantine = alie_attack(
+                honest_states,
+                num_clients=NUM_CLIENTS,
+                num_adv=NUM_COMPROMISED,
+                num_samples=avg_samples,
+            )
+            for cid in COMPROMISED_IDS:
+                updates[cid] = byzantine
+        elif attack == "fang_krum":
+            byzantine = fang_krum_attack(
+                attacker_states,
+                global_state=global_state,
+                num_samples=avg_samples,
+            )
+            for cid in COMPROMISED_IDS:
+                updates[cid] = byzantine
         else:
             raise ValueError(f"unknown attack: {attack!r}")
 
@@ -227,7 +205,7 @@ STRATEGY_FACTORIES = {
     "ArKrum": lambda: _core.Strategy.ar_krum(),
 }
 
-ATTACKS = ("label_flip", "ipm", "gaussian")
+ATTACKS = ALL_ATTACKS
 
 
 def main() -> int:
@@ -252,7 +230,8 @@ def main() -> int:
     total = len(strategies) * len(attacks) * args.seeds
     print(
         f"plan: {len(strategies)} strategies x {len(attacks)} attacks x {args.seeds} seeds "
-        f"x {args.rounds} rounds = {total} runs"
+        f"x {args.rounds} rounds = {total} runs",
+        flush=True,
     )
     if args.dry_run:
         return 0
@@ -281,9 +260,14 @@ def main() -> int:
                 )
                 elapsed = time.perf_counter() - t0
                 final_acc = records[-1]["post_acc"]
+                # flush so `python ... | tee` / nohup logs see progress in
+                # real time across a 55-min sweep (Python defaults to block-
+                # buffering when stdout isn't a TTY, hiding progress until
+                # the process exits).
                 print(
                     f"  [{run_idx:>3}/{total}] {strategy:>9} x {attack:>10} · seed={seed} "
-                    f"· final_acc={final_acc:.3f} · {elapsed:.1f}s"
+                    f"· final_acc={final_acc:.3f} · {elapsed:.1f}s",
+                    flush=True,
                 )
                 all_runs.append(
                     {

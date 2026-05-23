@@ -7,8 +7,42 @@ arena dashboard (`attack_arena` MCP tool, Prefab phase 2).
 
 ```bash
 uv run python scripts/dump_attack_arena.py --rounds 16 --seeds 5
-# wall time: ~35 min on CPU
+# wall time: ~85 min on CPU (5 strategies × 6 attacks × 5 seeds = 150 runs)
 ```
+
+## Final-round results (round 16, mean ± std across 5 seeds)
+
+| Strategy   | gaussian    | ipm         | label_flip  | sign_flip   | alie        | fang_krum   |
+| ---        | ---         | ---         | ---         | ---         | ---         | ---         |
+| FedAvg     | 0.098±0.00  | 0.893±0.01  | 0.933±0.01  | 0.862±0.04  | 0.965±0.00  | 0.134±0.03  |
+| Krum       | 0.909±0.03  | 0.909±0.03  | 0.909±0.03  | 0.909±0.03  | 0.963±0.00  | 0.909±0.03  |
+| MultiKrum  | 0.938±0.01  | 0.938±0.01  | 0.938±0.01  | 0.938±0.01  | 0.957±0.00  | 0.938±0.01  |
+| Bulyan     | 0.957±0.00  | 0.957±0.00  | 0.957±0.00  | 0.957±0.00  | 0.960±0.00  | 0.957±0.00  |
+| ArKrum     | 0.962±0.00  | 0.958±0.00  | 0.962±0.00  | 0.945±0.01  | 0.964±0.00  | **0.096±0.01** |
+
+Headline findings:
+
+- **ArKrum cratered under Fang-Krum** (9.6% — random for MNIST). The
+  parameter-free f̂ estimator misidentifies the attacker set when the
+  attacker explicitly targets Krum-style selection geometry. This is the
+  most interesting empirical surprise in the sweep — ArKrum holds 94-96%
+  on every other attack class.
+- **FedAvg cratered under Gaussian and Fang-Krum**, held under
+  IPM/label_flip/sign_flip/ALIE. The Gaussian / Fang collapses are the
+  expected "no defense" baseline.
+- **Krum / MultiKrum / Bulyan held against everything** including Fang —
+  the Krum-aware attack still loses to the actual Krum selection when
+  ``num_adv=2`` and the cluster size is too small for Fang's binary
+  search to find a winning ``lambda``.
+- **ALIE was the weakest attack across the board** at this scale
+  (n=11/f=2 → z_max≈0.14, a very mild perturbation). Confirms the
+  Baruch et al. observation: ALIE's potency scales with cluster width
+  and attacker fraction.
+- **Krum's identical numbers across attacks** are not a bug: Krum's
+  deterministic selection picks the same honest update at a fixed seed
+  regardless of which clients got byzantine'd, so the final accuracy is
+  determined by the seed alone for any attack that doesn't fool the
+  selection criterion.
 
 ## Configuration
 
@@ -23,21 +57,40 @@ directly comparable to the nightly green-light:
 | Rounds | 16 |
 | Seeds | 5 per (strategy, attack) cell |
 | Strategies | FedAvg, Krum (f=2), MultiKrum (f=2, m=3), Bulyan (f=2), ArKrum |
-| Attacks | label_flip · ipm · gaussian (see below) |
+| Attacks | gaussian · ipm · label_flip · sign_flip · alie · fang_krum (see below) |
 
 ## Attacks
 
-Curated paper-cited set vFL implements today (subset of the FLPoison
-SoK canonical headliner set — ALIE / Fang / sign-flip / BadNets are
-out of scope until those land as native attacks):
+FLPoison canonical headliner set per Zhang, Liu, He, Wu, Cong, Huang,
+*SoK: Benchmarking Poisoning Attacks and Defenses in Federated Learning*,
+arXiv:2502.03801 (2025-02-06). Implementations live in
+`velocity.paper_attacks`; reference implementations:
+https://github.com/vio1etus/FLPoison .
 
+- **gaussian** — Blanchard et al., NeurIPS 2017 (Krum paper).
+  Byzantines emit `randn × 100.0`-scaled noise per layer.
+- **ipm** — Xie et al., UAI 2020, "Fall of Empires" (arXiv:1903.03936).
+  Byzantines emit `-1.0 × mean(honest)`, lives near the honest cluster
+  in Euclidean distance.
 - **label_flip** — Tolpegin et al., ESORICS 2020. Bijective class
   permutation on byzantine-client training data.
-- **ipm** — Xie et al. 2019, "Fall of Empires". Byzantines emit
-  `-1.0 × mean(honest)`, lives near the honest cluster in Euclidean
-  distance.
-- **gaussian** — Krum-paper canonical gradient poisoning. Byzantines
-  emit `randn × 100.0`-scaled noise per layer.
+- **sign_flip** — Damaskinos et al., ICML 2018. Each byzantine negates
+  its own honestly-trained state. The simplest model-poisoning floor
+  every robust aggregator must trivially clear.
+- **alie** — Baruch, Baruch, Goldberg, NeurIPS 2019, "A Little Is
+  Enough" (arXiv:1902.06156). Byzantines emit
+  `mean(honest) + z_max × std(honest)` with `z_max` chosen so the
+  perturbation stays within the honest-cluster envelope. Designed to
+  evade distance-based defenses.
+- **fang_krum** — Fang et al., USENIX Security 2020 (arXiv:1911.11815).
+  Aggregator-aware Krum-targeted attack. Binary-searches the lambda
+  such that `w_global - lambda × sign(direction)` is selected by Krum
+  over the honest cluster.
+
+The set covers six of the seven FLPoison headliner attacks; the
+seventh (BadNets-style backdoor) needs an ASR (attack success rate)
+metric the arena does not currently report and is out of scope until
+the dashboard gains a per-class breakdown.
 
 ## Output files
 
@@ -74,23 +127,23 @@ Krum,gaussian,16,5,0.9247,0.0083
 ## Citation framing for the LinkedIn demo
 
 > *Real MNIST, n=11 clients with f=2 byzantine, Dirichlet α=1.0
-> non-IID partitioning, 16 rounds, mean ± std over 5 seeds. Three
-> paper-cited attacks: Tolpegin 2020 label-flip + Xie 2019 IPM +
-> Krum-paper Gaussian. Reproducible via
-> `uv run python scripts/dump_attack_arena.py`.*
+> non-IID partitioning, 16 rounds, mean ± std over 5 seeds. Six
+> paper-cited attacks from the FLPoison SoK canonical set:
+> Blanchard 2017 Gaussian + Xie 2019 IPM + Tolpegin 2020 label-flip +
+> Damaskinos 2018 sign-flip + Baruch 2019 ALIE + Fang 2020 Krum-attack.
+> Reproducible via `uv run python scripts/dump_attack_arena.py`.*
 
 That sentence ships in the LinkedIn caption verbatim — every adjective
 traces to a source.
 
 ## What's not here yet
 
-- **ALIE / Fang / sign-flip / BadNets** — implementing these is
-  separate research scope (`velocity.attacks` / `velocity.data_attacks`
-  extension). They round out the FLPoison SoK canonical headliner
-  set; current corpus covers three of the seven.
-- **CIFAR-10 / CIFAR-100 corpus** — easier extension once the
-  Prefab arena consumes this CSV cleanly. MNIST first because the
-  nightly tests already passed there.
+- **BadNets / DBA / NeuroToxin** — trigger-based backdoor attacks. Out
+  of scope until the dashboard supports per-class ASR (attack success
+  rate) reporting; the current arena measures only clean-test accuracy.
+- **CIFAR-10 / CIFAR-100 corpus** — easier extension once the Prefab
+  arena consumes this CSV cleanly. MNIST first because the nightly
+  tests already passed there.
 - **Vertical-FL / `byzantine fraction > 2 / n` regimes** — Bulyan
   requires n ≥ 4f+3, which pins f=2 at n=11. Pushing f harder needs
   dropping Bulyan from the matrix.
