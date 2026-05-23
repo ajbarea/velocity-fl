@@ -68,11 +68,12 @@ gofastmcp.com)._
 
 ## Aggregation strategies
 
-vFL ships eight aggregation strategies as pure Rust kernels: `FedAvg`,
+vFL ships nine aggregation strategies as pure Rust kernels: `FedAvg`,
 `FedProx`, `FedMedian`, `TrimmedMean`, `Krum`, `MultiKrum`, `Bulyan`,
-`GeometricMedian`. Future work below covers variants and v2 strategies
-not yet implemented; phalanx-fl (`intellifl/simulation_strategies/`)
-remains the reference for any further ports.
+`GeometricMedian`, `ArKrum`. Future work below covers variants and v2
+strategies not yet implemented; phalanx-fl
+(`intellifl/simulation_strategies/`) remains the reference for any
+further ports.
 
 These kernels are load-bearing for the perf story, not just Byzantine
 coverage. FedAvg is O(n) in clients; Krum is O(n²); Bulyan stacks Krum
@@ -373,7 +374,8 @@ ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and 
 
 Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
 
-- **2026-05-23** — **FLPoison canonical headliner expansion** [#36]. Attack-arena matrix 3 → 6 paper-cited attacks: adds sign-flip (Damaskinos ICML 2018), ALIE (Baruch NeurIPS 2019 / arXiv:1902.06156), Fang-Krum (Fang USENIX 2020 / arXiv:1911.11815). Attack primitives consolidated into `python/velocity/paper_attacks.py`. **Empirical surprise**: ArKrum craters under Fang-Krum (9.6% acc vs 94-96% on other attacks) — parameter-free f̂ estimator misidentifies the attacker set under aggregator-aware Krum-targeted geometry. Documented as known limitation; queued ArKrum-vs-Fang follow-up.
+- **2026-05-23** — **ArKrum-vs-Fang follow-up — documented as known weakness, not patched.** Web-search (2026-05) confirmed no parameter-free fix preserves Krum's score function: adding a non-zero minimum f̂ defeats "parameter-free"; aggregator-aware detection is a separate algorithm (SpectralKrum arXiv:2512.11760), not a patch. SpectralKrum itself acknowledges *"limited advantage…under min-max perturbations where malicious updates remain spectrally indistinguishable from benign ones"* — Fang is min-max perturbation. `docs/strategies.md` expanded with a *Known weaknesses* subsection on ArKrum and a Fang-robust row in the decision-guide table pointing to `GeometricMedian()` / `Bulyan()`. Honest documentation > workaround on a fundamentally-Krum-family limitation.
+- **2026-05-23** — **FLPoison canonical headliner expansion** [#36]. Attack-arena matrix 3 → 6 paper-cited attacks: adds sign-flip (Damaskinos ICML 2018), ALIE (Baruch NeurIPS 2019 / arXiv:1902.06156), Fang-Krum (Fang USENIX 2020 / arXiv:1911.11815). Attack primitives consolidated into `python/velocity/paper_attacks.py`. **Empirical surprise**: ArKrum craters under Fang-Krum (9.6% acc vs 94-96% on other attacks) — parameter-free f̂ estimator misidentifies the attacker set under aggregator-aware Krum-targeted geometry. Documented as known limitation; queued ArKrum-vs-Fang follow-up (resolved 2026-05-23, see entry above).
 - **2026-05-23** — **ToolResult dual-content across all six Prefab tools** [#35]. Every Prefab-returning MCP tool returns `ToolResult` bundling a compact text summary (~100-200 tokens, model-visible) with the rendered Prefab tree (`structured_content`). Keeps the model's reasoning window lean; the Claude UI renders the widget. May 2026 best practice per gofastmcp.com/apps/prefab.
 - **2026-05-23** — **Prefab attack-arena dashboard + GenerativeUI provider** [#34]. `attack_arena()` Tabs widget + `attack_arena_leaderboard()` Grid + `mcp.add_provider(GenerativeUI())`. Pinned `prefab-ui>=0.19,<0.20` (pre-1.0 patch releases break component APIs). `docs/mcp-apps.md` guide added.
 - **2026-05-23** — **Attack-arena MNIST sweep** [#33]. `scripts/dump_attack_arena.py` matrix runner; `out/attack_arena/{runs.json, aggregated.csv, README.md}`. Real HF MNIST, n=11/f=2/Dirichlet α=1.0, mean ± std over 5 seeds — NeurIPS 2026 MLRC norm.
