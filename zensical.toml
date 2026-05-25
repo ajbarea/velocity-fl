@@ -2,9 +2,9 @@
 site_name = "VelocityFL"
 site_description = "The uv of Federated Learning — Rust-backed orchestration with Python ergonomics"
 site_author = "AJ Barea"
-site_url = "https://ajbarea.github.io/vFL/"
-repo_url = "https://github.com/ajbarea/vFL"
-repo_name = "ajbarea/vFL"
+site_url = "https://ajbarea.github.io/velocity-fl/"
+repo_url = "https://github.com/ajbarea/velocity-fl"
+repo_name = "ajbarea/velocity-fl"
 copyright = "AJ Barea · 2026"
 
 nav = [
@@ -86,5 +86,5 @@ generator = false
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
-link = "https://github.com/ajbarea/vFL"
+link = "https://github.com/ajbarea/velocity-fl"
 name = "VelocityFL on GitHub"

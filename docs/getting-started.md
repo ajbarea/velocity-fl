@@ -22,7 +22,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/ajbarea/vFL.git
+git clone https://github.com/ajbarea/velocity-fl.git
 cd vFL
 
 uv sync                  # resolves the Python env

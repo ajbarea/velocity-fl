@@ -265,7 +265,7 @@ Both `attack_arena()` and `attack_arena_leaderboard()` read
 | Wall time | ~55 minutes on CPU |
 
 Full provenance + the reproducibility caption template are in
-[`out/attack_arena/README.md`](https://github.com/ajbarea/vFL/blob/main/out/attack_arena/README.md).
+[`out/attack_arena/README.md`](https://github.com/ajbarea/velocity-fl/blob/main/out/attack_arena/README.md).
 The corpus follows the NeurIPS 2026 MLRC-track convention of mean +
 std bands across multiple seeds; single-seed traces are not the
 2026 standard for Byzantine-FL comparisons.
@@ -284,7 +284,7 @@ std bands across multiple seeds; single-seed traces are not the
   tool descriptions + schemas). Adding a tool or amending a
   description triggers `test_mcp_cache_stability::test_tool_surface_stable`;
   update `EXPECTED_SURFACE_HASH` in
-  [`tests/test_mcp_cache_stability.py`](https://github.com/ajbarea/vFL/blob/main/tests/test_mcp_cache_stability.py)
+  [`tests/test_mcp_cache_stability.py`](https://github.com/ajbarea/velocity-fl/blob/main/tests/test_mcp_cache_stability.py)
   when the change is intentional.
 - **Prefab API naming inconsistency.** `LineChart` accepts the
   snake_case attribute (`x_axis`, `show_dots`) at construction;
@@ -338,5 +338,5 @@ are the most complete examples; `list_runs` is the simplest.
   sandbox + streaming renderer details.
 - [Prefab component catalog](https://prefab.prefect.io/docs/welcome) ·
   100+ components.
-- [`out/attack_arena/README.md`](https://github.com/ajbarea/vFL/blob/main/out/attack_arena/README.md) ·
+- [`out/attack_arena/README.md`](https://github.com/ajbarea/velocity-fl/blob/main/out/attack_arena/README.md) ·
   dataset provenance + caption template for the LinkedIn demo.
