@@ -31,7 +31,7 @@ dependencies = [
 
 [project.optional-dependencies]
 hf = [
-    "transformers>=4.40",
+    "transformers>=5.9.0",
     "peft>=0.10",
     # datasets 2.x pulls ancient pyarrow/pandas APIs that break against
     # modern transitive pins. 3.x is the current schema baseline.
