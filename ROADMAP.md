@@ -333,6 +333,21 @@ ECOSYSTEM.md audit findings still open:
 - **Prefect as hard runtime dep — revisit trigger** — `velocity.flows` imports `prefect` at module scope (~50 MB baseline). Move to a `[prefect]` extra with conditional import only if a user asks for a non-Prefect orchestration path; pre-emptive extras add real cognitive cost.
 - **Checkpoint I/O (unblocks re-adding `safetensors`)** — the Rust `safetensors = "0.4"` dep was removed because nothing imported it. When `velocity.checkpoint` lands (warm-start + fine-tune resume), re-add the Rust dep with the feature that actually uses it.
 
+## Naming
+
+Brand display name standardized to **Velocity-FL** (matches the already-dashed
+`velocity-fl` PyPI distribution and the `phalanx-fl` sister shape). Done 2026-05-25:
+README prose + the portfolio's Research Ecosystem card. Deliberate remainder:
+
+- **Repo-slug rename `vFL` → `velocity-fl`.** GitHub auto-redirects old URLs/clones,
+  but it touches `~/.claude/techne.toml`, the local `~/ajsoftworks/vFL` dir, README
+  badge/clone/docs-site URLs (`/vFL`), and cross-sister links. Do as one deliberate pass.
+- **Cross-sister README prose** ("VelocityFL" in phalanx-fl / kourai-khryseai / ldqis) —
+  sweep to "Velocity-FL".
+- **Do NOT dash code identifiers.** The Rust crate `vfl-core`, the `velocity` import/CLI,
+  and any `VelocityFL` PascalCase types are valid identifiers where a dash is illegal —
+  only display/brand prose becomes "Velocity-FL". (The distribution is already `velocity-fl`.)
+
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.

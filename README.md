@@ -1,19 +1,19 @@
-# ⚡ VelocityFL (vFL)
+# ⚡ Velocity-FL (vFL)
 
-![VelocityFL](docs/assets/velocity-hero.png)
+![Velocity-FL](docs/assets/velocity-hero.png)
 
 [![Tests](https://github.com/ajbarea/vFL/actions/workflows/tests.yml/badge.svg)](https://github.com/ajbarea/vFL/actions/workflows/tests.yml)
 [![Documentation](https://github.com/ajbarea/vFL/actions/workflows/docs.yml/badge.svg)](https://github.com/ajbarea/vFL/actions/workflows/docs.yml)
 [![Codecov](https://codecov.io/gh/ajbarea/vFL/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/vFL)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/ajbarea/vFL?utm_source=badge)
 
-VelocityFL is a federated learning orchestration project with a Rust core and a Python-first interface.
+Velocity-FL is a federated learning orchestration project with a Rust core and a Python-first interface.
 
 ---
 
 ## What is this? 🧭
 
-VelocityFL provides:
+Velocity-FL provides:
 - 🦀 **Rust core (`vfl-core`)** for aggregation, attack simulation, and round orchestration
 - 🐍 **Python package (`python/velocity`)** for researcher-facing APIs and a fallback pure-Python orchestrator
 - 🖥️ **Typer CLI (`velocity`)** for local experimentation and quick capability inspection
