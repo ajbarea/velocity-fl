@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.5,<2.0"]
+requires = ["maturin>=1.13.3,<2.0"]
 build-backend = "maturin"
 
 [project]
@@ -23,10 +23,10 @@ dependencies = [
     # Python float lists. Float wheels are ~15 MB so the footprint cost
     # is negligible; the benefit is O(layers) marshaling instead of
     # O(params). See IMPL.md and docs/benchmarks.md.
-    "numpy>=1.26",
-    "prefect>=3.0",
-    "pydantic>=2.0",
-    "typer>=0.12",
+    "numpy>=2.4.6",
+    "prefect>=3.7.2",
+    "pydantic>=2.13.4",
+    "typer>=0.25.1",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +39,7 @@ hf = [
     "safetensors>=0.4",
 ]
 torch = [
-    "torch>=2.0",
+    "torch>=2.12.0",
     "torchvision>=0.15",
 ]
 # Agentic surface: FastMCP server exposing vFL tools over MCP.
@@ -53,7 +53,7 @@ torch = [
 # transitive constraint and you'll get bitten on a Bulyan-scale dep update.
 agent = [
     "fastmcp[apps]>=3.2",
-    "prefab-ui>=0.19,<0.20",
+    "prefab-ui>=0.20.1,<0.21",
 ]
 all = [
     "velocity-fl[hf,torch]",
@@ -61,17 +61,17 @@ all = [
 
 [dependency-groups]
 dev = [
-    "maturin>=1.5,<2.0",
+    "maturin>=1.13.3,<2.0",
     "pytest>=9.0.3",
     "pytest-asyncio>=0.23",
     "pytest-benchmark>=4.0",
     "pytest-cov>=5.0",
-    "hypothesis>=6.100",
-    "ruff>=0.9",
-    "ty>=0.0.25,<0.1",
+    "hypothesis>=6.152.9",
+    "ruff>=0.15.14",
+    "ty>=0.0.39,<0.1",
     "zensical",
     "fastmcp[apps]>=3.2",
-    "prefab-ui>=0.19,<0.20",
+    "prefab-ui>=0.20.1,<0.21",
     "pytest-codspeed>=5.0.3",
 ]
 
