@@ -155,10 +155,15 @@ plus column aliases — MNIST and CIFAR-10 are live in
 rewriting the loader. phalanx-fl has working versions of each under
 `intellifl/dataset_loaders/image_transformers/` and its text loaders.
 
-- **CIFAR-100 / MedMNIST 2D** — already free via the existing loader;
-  the only missing piece is per-dataset normalisation constants in a
-  small lookup table (phalanx has these in its image-transformer
-  files). No perf story; a one-line test matrix extension.
+- **CIFAR-100** — shipped 2026-05-25. Resolves free via the existing loader
+  (`img` + `fine_label` aliases, auto `num_classes`); added `NORMALIZATION_STATS`
+  + an opt-in `normalized_transform(name)` (loader stays normalisation-agnostic;
+  callers opt in via `transform=`) and a CIFAR-100 load test.
+- **MedMNIST 2D** — still free via the loader, but it's a 12-dataset *family*
+  with per-variant channel counts (1 vs 3) + class counts, normalised uniformly to
+  [-1,1] (mean/std 0.5) per the official MedMNIST convention rather than per-channel
+  constants. Add a `medmnist` entry + variant handling when a MedMNIST benchmark is
+  actually run; pick the HF mirror then (phalanx uses `albertvillanova/medmnist-v2`).
 - **FEMNIST natural partition** — FEMNIST ships with a writer-id field
   that defines the federated partition (each writer ≈ one client).
   Needs `velocity.partition.natural(labels, group_ids)` — an O(n)
@@ -351,5 +356,7 @@ README prose + the portfolio's Research Ecosystem card. Deliberate remainder:
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-25 — **Dataset normalisation constants + CIFAR-100.** `NORMALIZATION_STATS` (mnist/cifar10/cifar100, per-channel mean/std) + opt-in `normalized_transform(name)` in `velocity.datasets`; the loader stays normalisation-agnostic (default `ToTensor`), callers opt in via `transform=`. CIFAR-100 load test added. research(2026-05): CIFAR mean/std from the standard pytorch-cifar reference.
 
 - 2026-05-25 — **GitHub Actions SHA-pinned (supply-chain hardening).** All `uses:` refs across the 4 workflows pinned to full commit SHAs (`# tag` comment kept) — including `dtolnay/rust-toolchain@stable`, a mutable *branch* ref. Dependabot `github-actions` gains a 7-day cooldown; freshness via the existing version updates. Fleet convention + rationale in techne `docs/conventions.md`. research(2026-05): GitHub "Secure use reference"; CNCF GH-Actions CI-deps recipe.

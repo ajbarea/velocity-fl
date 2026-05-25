@@ -10,7 +10,11 @@ execution lives here.
 
 ## In flight
 
-_Nothing currently open._
+Shipping **dataset normalisation + CIFAR-100** — `NORMALIZATION_STATS` +
+opt-in `normalized_transform(name)` in `velocity.datasets` (loader stays
+normalisation-agnostic; opt in via `transform=`), plus a CIFAR-100 load test.
+Collapses to ROADMAP Completed on merge. MedMNIST stays in ROADMAP (12-variant
+family / channel variance).
 
 ## Next up (queued, not active)
 

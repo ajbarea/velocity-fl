@@ -36,7 +36,7 @@ except ImportError as exc:  # pragma: no cover
 from velocity import partition as _partition
 from velocity.training import ClientData
 
-__all__ = ["FederatedSplit", "load_federated"]
+__all__ = ["NORMALIZATION_STATS", "FederatedSplit", "load_federated", "normalized_transform"]
 
 PartitionKind = Literal["iid", "dirichlet", "shard"]
 
@@ -45,6 +45,17 @@ PartitionKind = Literal["iid", "dirichlet", "shard"]
 # niche "picture" some community datasets use.
 _IMAGE_ALIASES = ("pixel_values", "image", "img", "picture")
 _LABEL_ALIASES = ("labels", "label", "fine_label", "target")
+
+# Per-channel (mean, std) normalisation constants for the canonical vision
+# datasets, surfaced so runs normalise reproducibly. The loader itself stays
+# normalisation-agnostic — opt in by passing ``normalized_transform(name)`` as the
+# ``transform=`` argument. research(2026-05): CIFAR mean/std from the standard
+# pytorch-cifar reference; MNIST from torchvision's documented stats.
+NORMALIZATION_STATS: dict[str, tuple[tuple[float, ...], tuple[float, ...]]] = {
+    "mnist": ((0.1307,), (0.3081,)),
+    "cifar10": ((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+    "cifar100": ((0.5071, 0.4865, 0.4409), (0.2673, 0.2564, 0.2762)),
+}
 
 
 @dataclass(frozen=True)
@@ -110,6 +121,24 @@ def load_federated(
         test_loader=test_loader,
         num_classes=_num_classes(train_ds, label_col, train_labels),
     )
+
+
+def normalized_transform(name: str) -> Callable[[Any], torch.Tensor]:
+    """Opt-in ``ToTensor`` + ``Normalize`` for a known dataset; bare ``ToTensor`` otherwise.
+
+    The loader stays normalisation-agnostic (its default is ``ToTensor``); pass this
+    as ``transform=`` for reproducible per-dataset normalisation. The key is matched
+    case-insensitively against the trailing path segment, so HF ids like
+    ``"uoft-cs/cifar100"`` resolve to ``"cifar100"``. Unknown names fall back to
+    ``ToTensor`` (range ``[0, 1]``) — same as the loader default, so a typo never
+    silently yields un-normalised tensors a caller didn't expect.
+    """
+    from torchvision.transforms import Compose, Normalize, ToTensor
+
+    stats = NORMALIZATION_STATS.get(name.rsplit("/", 1)[-1].lower())
+    if stats is None:
+        return ToTensor()
+    return Compose([ToTensor(), Normalize(*stats)])
 
 
 # ---------------------------------------------------------------------------
