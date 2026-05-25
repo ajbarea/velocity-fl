@@ -336,3 +336,5 @@ ECOSYSTEM.md audit findings still open:
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-25 — **GitHub Actions SHA-pinned (supply-chain hardening).** All `uses:` refs across the 4 workflows pinned to full commit SHAs (`# tag` comment kept) — including `dtolnay/rust-toolchain@stable`, a mutable *branch* ref. Dependabot `github-actions` gains a 7-day cooldown; freshness via the existing version updates. Fleet convention + rationale in techne `docs/conventions.md`. research(2026-05): GitHub "Secure use reference"; CNCF GH-Actions CI-deps recipe.
