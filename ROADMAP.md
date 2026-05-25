@@ -13,35 +13,6 @@ Session-by-session execution (the "what are we doing this PR") lives in
 
 ## Agent stack
 
-- ~~**Real (non-mock) training tool, confirmation-gated**~~ — shipped
-  2026-05-22 (see Completed). `run_real_training` runs MNIST FedAvg
-  through `velocity.training` primitives, gated on MCP elicitation
-  (`ctx.elicit(response_type=RealTrainingConfirm)`), capped at
-  `MAX_REAL_ROUNDS=5` + `MAX_REAL_CLIENTS=10`, with
-  `meta={"anthropic/maxResultSizeChars": 500_000}` on the decorator.
-- ~~**Prefab return types — phase 1**~~ — shipped 2026-05-23.
-  `list_runs` returns `DataTable`, `run_rounds_history` and
-  `compare_runs` return `Column[LineChart, DataTable]`, `memory_ledger`
-  returns `DataTable`. FastMCP serializes the Prefab tree to
-  `structuredContent` on the tool result so the model still reasons
-  over the rows; the Claude UI renders the interactive widget in the
-  conversation. `run_demo` and `run_real_training` deliberately keep
-  their `dict` return — their nested run summaries don't map to a
-  single component; revisit if AJ wants Card+Metric blocks for them.
-- ~~**Attack-arena dashboard (Prefab phase 2 — LinkedIn demo lane)**~~ —
-  shipped 2026-05-23 (#34). 6-tab dashboard over the full FLPoison
-  canonical matrix; see Completed.
-- ~~**Generative-UI provider**~~ — shipped 2026-05-23 (#34) alongside
-  the attack-arena dashboard; see Completed.
-- ~~**Memory compaction**~~ — shipped 2026-05-21 (see Completed).
-  `velocity.memory.compact_entry()` + `compact_memory` MCP tool bound
-  `recent_runs.md` (or any writable memory file) by keeping the last N
-  H2 blocks and leaving a dated compaction marker. The audit ledger and
-  the structured run DB remain the queryable history.
-- ~~**`_meta["anthropic/maxResultSizeChars"]` on high-volume MCP tools**~~ —
-  shipped 2026-05-22 as part of `run_real_training`. Pattern remains
-  worth applying to future leaderboard-dump tools.
-
 A2A specialist agents (convergence auditor, robustness auditor, etc.)
 are scoped under [Live experiment leaderboard](#live-experiment-leaderboard)
 rather than duplicated here — they're the analysis layer over the
@@ -53,18 +24,11 @@ leaderboard data, not standalone infra.
 
 ## CI
 
-_No open CI work today. The 2026-05 stale-assumption audit retired the
-"CPU-only torch extra" item — it was a stale roadmap claim. See
-Completed for the audit verdict and the now-correct state._
+_No open CI work today._
 
 ## Docs
 
-_No open Docs work today. The "Claude Desktop wiring guide" was
-shipped 2026-05-21 (see Completed) — `docs/configuration.md` now has
-a full "MCP server" section covering stdio + HTTP transports, the
-`fastmcp install claude-desktop` automated wiring path, and the
-manual `mcpServers` JSON block (web-search-verified May 2026 against
-gofastmcp.com)._
+_No open Docs work today._
 
 ## Aggregation strategies
 
@@ -357,14 +321,13 @@ below are wider than they are today.
 
 > Source: 2026-05-21 audit-of-audits review "Insights worth keeping". Mirror items live in the matching ROADMAP for the other active sisters.
 
-- ✅ **`## Sister ecosystem` block in README — shipped 2026-05-21.** README.md:207 names Kourai Khryseai / Phalanx-FL / ajbarea.github.io / techne / LDQIS with one-line roles + links.
 - **Cite Project Glasswing posture in README security framing** — Anthropic's April 2026 trustworthy-software initiative ([anthropic.com/glasswing](https://www.anthropic.com/glasswing)) is the 2026 frame for Byzantine-robust + privacy-aware FL work. vFL's Rust core ("auditable aggregation, no token-stealing prompts or hallucinations") fits this narrative cleanly.
 - **Stale-assumption audit (whenever the FL ecosystem or MCP/A2A spec moves)** — the FastMCP `_meta` annotation pattern, the Prefect Horizon deploy path, the `pyo3` 0.21-shaped Rust bindings, the A2A specialist-agent contracts in `## Live experiment leaderboard` (convergence auditor, robustness auditor) — each encodes assumptions about what the surrounding ecosystem couldn't do at the time it was written. When MCP / FastMCP / pyo3 / aggregation-paper publications / Flower majors land, audit which scaffolding exists to compensate for a now-closed gap and collapse what no longer earns its keep. **Inverse of speculative-generality YAGNI:** polices existing code as the ecosystem moves, not new code being written. `research(2026-05)`: pattern from [Anthropic engineering, Managed Agents](https://www.anthropic.com/engineering/managed-agents) (*"harnesses encode assumptions ... that can go stale"*); mirrored cross-sister from kourai-khryseai's M22-M25 sweep.
 - **Subagent contract discipline (Anthropic 4-part)** for vFL's A2A specialist agents — each agent in `## Live experiment leaderboard` (convergence auditor, robustness auditor, future drift/Pareto auditors) must declare (1) objective, (2) output format, (3) guidance on which tools / sources to use, (4) clear task boundaries. Anthropic's "How we built our multi-agent research system" calls out *"missing any of these causes the subagent to drift"*; the LLM equivalent of an under-specified `pyfunction` signature. Audit pending — file when the auditor agents move from spec to implementation. `research(2026-05)`: [Anthropic engineering, multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system); mirrored cross-sister from kourai-khryseai.
 
 ## Dependency hygiene
 
-ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and rand 0.8→0.10 all shipped — see Completed).
+ECOSYSTEM.md audit findings still open:
 
 - **`[agent]` extra split into `[mcp]` + `[ui]`** — today `[agent]` holds only `fastmcp`. When a UI surface (Prefab or successor) lands, give it a separate `[ui]` extra rather than rejoining `[agent]`; different upgrade cadences. `[agent]` becomes a meta-extra pulling `[mcp,ui]`, matching `[all]`.
 - **Prefect as hard runtime dep — revisit trigger** — `velocity.flows` imports `prefect` at module scope (~50 MB baseline). Move to a `[prefect]` extra with conditional import only if a user asks for a non-Prefect orchestration path; pre-emptive extras add real cognitive cost.
@@ -372,32 +335,4 @@ ECOSYSTEM.md audit findings still open (the obvious wins, pyo3 0.21→0.23, and 
 
 ## Completed
 
-Dated one-liners for shipped roadmap-scale work. Most recent first. The commit history, `docs/benchmarks.md`, and `docs/convergence.md` are the authoritative records; this log is the human index into them.
-
-- **2026-05-25** — **Hugging Face major adoption** — transformers 4.57→5.9 and datasets 3.6→4.8 in the `[hf]` extra. transformers is unused in vFL code (dormant peft peer + future text-FL surface), so v5's API rewrite is moot — resolution-only. datasets removed the deliberate `<4.0` cap; v4 dropped loading scripts but vFL loads canonical Parquet mirrors (`ylecun/mnist`, `cifar10`) — verified both load on 4.8.5 with the exact API `velocity/datasets.py` uses (`train_test_split`, `ClassLabel.num_classes`, image/label columns). Cascaded huggingface-hub 0.36→1.16 (transformers 5 requires hub 1.x); `uv lock` resolved 189 packages clean.
-- **2026-05-25** — **Dependabot dependency automation**. `.github/dependabot.yml` on the canonical fleet shape (techne `templates/dependabot.yml.example`): uv + cargo + github-actions, minor/patch grouped one-PR-per-ecosystem. cargo covers the `vfl-core` workspace at root; native `uv` ecosystem (GA 2025-03-13) over `pip`. research(2026-05): Dependabot over Renovate (native, no Mend-app gate).
-- **2026-05-25** — **CodSpeed continuous performance testing** [#45]. Perf-regression CI across both surfaces: Rust `divan` via the `codspeed-divan-compat` shim (`cargo codspeed build/run`) and the Python `pytest-benchmark` suite via `pytest-codspeed` (drop-in, no test changes). `.github/workflows/codspeed.yml`, OIDC auth (`id-token: write`, no stored token), and a `tests/bench/conftest.py` that shadows the session Prefect harness so benches skip the server. **Mode = simulation, not walltime** (web-search-verified against CodSpeed's docs): walltime is scoped to *async* timing, but these are sync CPU-bound aggregation benches, so simulation runs deterministically on free runners and still catches algorithmic (O(n²)) regressions. Walltime on consistent macro runners (the glibc-on-GHA CPU-assignment noise fix) is a post-funding upgrade for the crowd-scale tier. **Tuned in a same-day follow-up:** the Python simulation run hit ~1h32m on the setup PR (the 10M-param pure-Python `test_python_aggregate[large]` cell under Valgrind), so it's now path-filtered to code-only PRs (`paths:` on push/PR — safe because no CodSpeed check is required in branch protection) and scoped with `-k "not python_aggregate"` (the pure-Python baseline is a manual docs measurement, not a per-PR regression target), bringing per-PR to ~15min. Kept per-PR rather than nightly so CodSpeed's inline PR-diff comments stay — that's the reason to run it at all. Set up by the CodSpeed wizard, reviewed for correctness pre-merge.
-- **2026-05-23** — **ArKrum-vs-Fang follow-up — documented as known weakness, not patched.** Web-search (2026-05) confirmed no parameter-free fix preserves Krum's score function: adding a non-zero minimum f̂ defeats "parameter-free"; aggregator-aware detection is a separate algorithm (SpectralKrum arXiv:2512.11760), not a patch. SpectralKrum itself acknowledges *"limited advantage…under min-max perturbations where malicious updates remain spectrally indistinguishable from benign ones"* — Fang is min-max perturbation. `docs/strategies.md` expanded with a *Known weaknesses* subsection on ArKrum and a Fang-robust row in the decision-guide table pointing to `GeometricMedian()` / `Bulyan()`. Honest documentation > workaround on a fundamentally-Krum-family limitation.
-- **2026-05-23** — **FLPoison canonical headliner expansion** [#36]. Attack-arena matrix 3 → 6 paper-cited attacks: adds sign-flip (Damaskinos ICML 2018), ALIE (Baruch NeurIPS 2019 / arXiv:1902.06156), Fang-Krum (Fang USENIX 2020 / arXiv:1911.11815). Attack primitives consolidated into `python/velocity/paper_attacks.py`. **Empirical surprise**: ArKrum craters under Fang-Krum (9.6% acc vs 94-96% on other attacks) — parameter-free f̂ estimator misidentifies the attacker set under aggregator-aware Krum-targeted geometry. Documented as known limitation; queued ArKrum-vs-Fang follow-up (resolved 2026-05-23, see entry above).
-- **2026-05-23** — **ToolResult dual-content across all six Prefab tools** [#35]. Every Prefab-returning MCP tool returns `ToolResult` bundling a compact text summary (~100-200 tokens, model-visible) with the rendered Prefab tree (`structured_content`). Keeps the model's reasoning window lean; the Claude UI renders the widget. May 2026 best practice per gofastmcp.com/apps/prefab.
-- **2026-05-23** — **Prefab attack-arena dashboard + GenerativeUI provider** [#34]. `attack_arena()` Tabs widget + `attack_arena_leaderboard()` Grid + `mcp.add_provider(GenerativeUI())`. Pinned `prefab-ui>=0.19,<0.20` (pre-1.0 patch releases break component APIs). `docs/mcp-apps.md` guide added.
-- **2026-05-23** — **Attack-arena MNIST sweep** [#33]. `scripts/dump_attack_arena.py` matrix runner; `out/attack_arena/{runs.json, aggregated.csv, README.md}`. Real HF MNIST, n=11/f=2/Dirichlet α=1.0, mean ± std over 5 seeds — NeurIPS 2026 MLRC norm.
-- **2026-05-23** — **Prefab return types phase 1**. `list_runs`, `run_rounds_history`, `compare_runs`, `memory_ledger` migrated from dict / list[dict] to Prefab `DataTable` + `Column[LineChart, DataTable]`. `fastmcp[apps]>=3.2` added to `agent` extras. `run_demo` + `run_real_training` keep dict returns (nested run summaries don't map to a single component); revisit if Card+Metric blocks become useful.
-- **2026-05-22** — **Nightly paper-attack scenarios on real MNIST**. Each strategy paired against the attack model from its paper: Bulyan / GeoMedian vs label-flipping (Tolpegin ESORICS 2020 + Pillutla IEEE TSP 2022), Krum vs inner-product manipulation (Xie 2019 "Fall of Empires"), ArKrum against all three. `tests/test_paper_attacks_nightly.py` + `--run-nightly` flag + new step in `nightly.yml`. n=11 / f=2 satisfies every aggregator's minimum-bound; MIN_ACCURACY=0.70 over 8 rounds with Dirichlet(α=1.0).
-- **2026-05-22** — **Per-strategy paper-cited convergence tests** (kernel-grade → research-grade). Every aggregator now has a hermetic test exercising its paper-cited Byzantine-robustness claim against Krum-paper gradient-poisoning. Each test sets the minimum-bound client count from the paper (Krum n ≥ 2f+3, Bulyan n ≥ 4f+3, FedMedian/GeoMedian ≤ ⌊(n-1)/2⌋, etc.) and asserts ≥0.80 accuracy under attack.
-- **2026-05-22** — **ArKrum** (arXiv:2505.17226, Yang et al. 2025) — parameter-free Byzantine-robust aggregator. Estimates `f̂` per round via median filter (`τ = median + (median − min)`) + change-point detection on the sorted-distance vector (5× gap-ratio AND 10× magnitude-ratio together — pure SSE-min biases to interior splits on noise, per Killick et al. 2012 PELT). Final step averages `(n − f̂*)` updates closest to the lowest-score client. Removes Krum's "must know f" constraint. **Known limitation**: colluding byzantines with tighter intra-cluster spread than honest beat Krum-class scoring (inherited from rKrum/Krum) — and Fang-Krum tier exposes a second one (see 2026-05-23 #36).
-- **2026-05-22** — **`run_real_training` strategy + partition kwargs**. Tool accepts `strategy: dict | None` (via `velocity.strategy.parse_strategy`) and `partition: str = "iid"` + `partition_kwargs: dict | None`. Both validated before elicitation; FedProx threads `mu` into `local_train`'s proximal term.
-- **2026-05-22** — **Confirmation-gated `run_real_training` MCP tool**. MNIST FedAvg through the real training primitives, gated on MCP elicitation (June-2025 spec, FastMCP 3.2), scope-capped at 5 rounds × 10 clients, `meta={"anthropic/maxResultSizeChars": 500_000}`.
-- **2026-05-21** — Memory compaction: `velocity.memory.compact_entry(user_id, file, keep_last_n)` bounds H2-delimited memory files; surfaced as the `compact_memory` MCP tool. Audit trail in `.events.jsonl` and structured run snapshots in DB are the canonical history.
-- **2026-05-21** — Claude Desktop / MCP wiring guide in `docs/configuration.md` (stdio + HTTP transports, `fastmcp install claude-desktop`, manual `mcpServers` JSON, per-OS path matrix, `VFL_USER_ID` override).
-- **2026-05-21** — `rand` 0.8 → 0.10 + `rand_distr` 0.4 → 0.6 (web-search showed 0.10.1 as current stable, jumped both majors in one PR). Touched `vfl-core/src/security.rs` only (`thread_rng()` → `rng()`, `gen::<T>()` → `random::<T>()`, `gen_range` → `random_range`).
-- **2026-05-21** — Stale-assumption audit retired the "CPU-only torch extra" CI item. `tests.yml` already runs `uv sync --extra hf --extra torch`; `pyproject.toml` routes `torch` / `torchvision` through PyTorch's `+cpu` wheel index. Hermetic Gaussian-blobs convergence proof runs per-PR.
-- **2026-04-25** — Geometric Median (RFA, Pillutla et al. IEEE TSP 2022) via Weiszfeld iteration, 8th `Strategy`. ~50% Byzantine breakdown without explicit thresholding.
-- **2026-04-23** — Bulyan (`Strategy::Bulyan { f, m }`) as thin orchestration over Multi-Krum (Phase 1 survivor selection) + TrimmedMean (Phase 2 trimmed mean over survivors). Refactored `krum_select` to expose `krum_select_indices` for reuse. Validates `n ≥ 4f + 3` breakdown bound.
-- **2026-04-22** — Zero-copy numpy buffer-protocol across the PyO3 boundary. `Orchestrator.global_weights` getter 425 ms → 6.6 ms (64×) at `large` tier (10M params); realistic round cost 459 → 56.3 ms (8×); FedAvg speedup vs Python 11× → 91×. Bumped pyo3 + numpy 0.21 → 0.23.
-- **2026-04-20** — TrimmedMean (`Strategy::TrimmedMean { k }`) — dimension-independent k-partial sort per coordinate. Cheaper than FedMedian, simpler than Bulyan.
-- **2026-04-20** — Krum + Multi-Krum + shared `krum_select` Rust kernel, dataclass-strategy migration, `RoundSummary.selected_client_ids`.
-- **2026-04-20** — Real HF dataset loader (`velocity.datasets.load_federated`) with column aliasing, canonical split preference, partition dispatch. MNIST + CIFAR-10 convergence demos in `docs/convergence.md`.
-- **2026-04-18** — Dirichlet-α partitioner alongside IID and McMahan-shard, all under a framework-independent `velocity.partition` module.
-- **2026-04-18** — Pure-Python FedAvg baseline at `large` tier so future Rust speedup claims have a same-workload reference.
-- **2026-04-18** — Real end-to-end FedAvg through PyO3: client-side PyTorch local training, Rust aggregation, honest per-round eval. MNIST demo + hermetic Gaussian-blobs convergence test gated on nightly CI.
+Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
