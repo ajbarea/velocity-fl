@@ -19,7 +19,7 @@ rand_distr = "0.6"
 
 [dev-dependencies]
 approx = "0.5"
-divan = "0.1"
+divan = { package = "codspeed-divan-compat", version = "4" }
 proptest = "1"
 
 [[bench]]
