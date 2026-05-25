@@ -35,7 +35,7 @@ hf = [
     "peft>=0.10",
     # datasets 2.x pulls ancient pyarrow/pandas APIs that break against
     # modern transitive pins. 3.x is the current schema baseline.
-    "datasets>=3.0,<4.0",
+    "datasets>=4.8.5,<5.0",
     "safetensors>=0.4",
 ]
 torch = [
