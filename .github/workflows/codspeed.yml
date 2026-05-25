@@ -1,10 +1,32 @@
 name: CodSpeed
 
 on:
+  # research(2026-05): safe to path-filter only because vFL has no required
+  # CodSpeed check. A path-skipped *required* check hangs at "waiting for
+  # status" and blocks merge (GH community #44490). Triggers are limited to
+  # code that can actually move a benchmark, so docs/config PRs skip the run.
   push:
     branches: [main]
+    paths:
+      - "vfl-core/**"
+      - "python/**"
+      - "tests/bench/**"
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/codspeed.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "vfl-core/**"
+      - "python/**"
+      - "tests/bench/**"
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/codspeed.yml"
   # `workflow_dispatch` allows CodSpeed to trigger backtest
   # performance analysis in order to generate initial data.
   workflow_dispatch:
@@ -79,4 +101,10 @@ jobs:
         uses: CodSpeedHQ/action@v4.15.1
         with:
           mode: simulation
-          run: uv run pytest tests/bench/ --codspeed
+          # research(2026-05): exclude the pure-Python `test_python_aggregate`
+          # cells. They're the Rust-vs-Python baseline for docs/benchmarks.md
+          # (a periodic walltime number), not a per-PR regression target, and
+          # the 10M-param `large` cell under Valgrind simulation is what pushed
+          # this job to ~1h32m. The Rust path (PyO3 aggregate + global-weights
+          # readout) stays tracked at every tier.
+          run: uv run pytest tests/bench/ --codspeed -k "not python_aggregate"
