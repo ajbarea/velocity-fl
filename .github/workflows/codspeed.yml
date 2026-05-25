@@ -1,0 +1,82 @@
+name: CodSpeed
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # `workflow_dispatch` allows CodSpeed to trigger backtest
+  # performance analysis in order to generate initial data.
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rust-benchmarks:
+    name: Rust benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2.9.1
+
+      - name: Set up uv (with Python)
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Install cargo-codspeed
+        run: cargo install cargo-codspeed --locked
+
+      - name: Build benchmarks
+        run: cargo codspeed build -p vfl-core
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v4.15.1
+        with:
+          mode: simulation
+          run: cargo codspeed run
+
+  python-benchmarks:
+    name: Python benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2.9.1
+
+      - name: Set up uv (with Python)
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Build Rust extension
+        run: uv run maturin develop --release
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v4.15.1
+        with:
+          mode: simulation
+          run: uv run pytest tests/bench/ --codspeed
