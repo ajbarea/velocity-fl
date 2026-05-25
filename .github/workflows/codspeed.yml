@@ -101,10 +101,12 @@ jobs:
         uses: CodSpeedHQ/action@v4.15.1
         with:
           mode: simulation
-          # research(2026-05): exclude the pure-Python `test_python_aggregate`
-          # cells. They're the Rust-vs-Python baseline for docs/benchmarks.md
-          # (a periodic walltime number), not a per-PR regression target, and
-          # the 10M-param `large` cell under Valgrind simulation is what pushed
-          # this job to ~1h32m. The Rust path (PyO3 aggregate + global-weights
-          # readout) stays tracked at every tier.
-          run: uv run pytest tests/bench/ --codspeed -k "not python_aggregate"
+          # research(2026-05): per-PR is a fast SMOKE SUBSET (Rust hot path at
+          # tiny+medium). The `large` 10M tier + pure-Python baseline are
+          # excluded: regressions already show at medium, and those cells exist
+          # for the docs/benchmarks.md speedup numbers, not as a PR gate (they
+          # are the ~1h32m Valgrind-simulation sink). Walltime would run them
+          # fast, but CodSpeed Macro Runners are GitHub-org-only and vFL is a
+          # personal repo, so simulation is the only option. Refresh docs
+          # numbers on demand via `make bench` / workflow_dispatch (full suite).
+          run: uv run pytest tests/bench/ --codspeed -k "not large and not python_aggregate"
