@@ -340,18 +340,15 @@ ECOSYSTEM.md audit findings still open:
 
 ## Naming
 
-Brand display name standardized to **Velocity-FL** (matches the already-dashed
-`velocity-fl` PyPI distribution and the `phalanx-fl` sister shape). Done 2026-05-25:
-README prose + the portfolio's Research Ecosystem card. Deliberate remainder:
+Brand display name standardized to **Velocity-FL** (matches the `velocity-fl` PyPI
+distribution and the `phalanx-fl` sister shape) and the **repo slug renamed `vFL` →
+`velocity-fl`** — both shipped 2026-05-25 (README/docs prose, the portfolio Research
+Ecosystem card, cross-sister links, `techne.toml`, local dir, badge/docs URLs; GitHub
+redirects the old slug).
 
-- **Repo-slug rename `vFL` → `velocity-fl`.** GitHub auto-redirects old URLs/clones,
-  but it touches `~/.claude/techne.toml`, the local `~/ajsoftworks/vFL` dir, README
-  badge/clone/docs-site URLs (`/vFL`), and cross-sister links. Do as one deliberate pass.
-- **Cross-sister README prose** ("VelocityFL" in phalanx-fl / kourai-khryseai / ldqis) —
-  sweep to "Velocity-FL".
-- **Do NOT dash code identifiers.** The Rust crate `vfl-core`, the `velocity` import/CLI,
-  and any `VelocityFL` PascalCase types are valid identifiers where a dash is illegal —
-  only display/brand prose becomes "Velocity-FL". (The distribution is already `velocity-fl`.)
+Standing rule: **do not dash code identifiers** — the `vfl-core` Rust crate, the
+`velocity` import/CLI, and any `VelocityFL` PascalCase types are valid identifiers where
+a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 ## Completed
 
