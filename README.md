@@ -2,10 +2,10 @@
 
 ![Velocity-FL](docs/assets/velocity-hero.png)
 
-[![Tests](https://github.com/ajbarea/vFL/actions/workflows/tests.yml/badge.svg)](https://github.com/ajbarea/vFL/actions/workflows/tests.yml)
-[![Documentation](https://github.com/ajbarea/vFL/actions/workflows/docs.yml/badge.svg)](https://github.com/ajbarea/vFL/actions/workflows/docs.yml)
-[![Codecov](https://codecov.io/gh/ajbarea/vFL/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/vFL)
-[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/ajbarea/vFL?utm_source=badge)
+[![Tests](https://github.com/ajbarea/velocity-fl/actions/workflows/tests.yml/badge.svg)](https://github.com/ajbarea/velocity-fl/actions/workflows/tests.yml)
+[![Documentation](https://github.com/ajbarea/velocity-fl/actions/workflows/docs.yml/badge.svg)](https://github.com/ajbarea/velocity-fl/actions/workflows/docs.yml)
+[![Codecov](https://codecov.io/gh/ajbarea/velocity-fl/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/velocity-fl)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/ajbarea/velocity-fl?utm_source=badge)
 
 Velocity-FL is a federated learning orchestration project with a Rust core and a Python-first interface.
 
@@ -53,7 +53,7 @@ algorithms and unit-test fixtures derived from each paper.
 ### 1) Clone and install
 
 ```bash
-git clone https://github.com/ajbarea/vFL.git
+git clone https://github.com/ajbarea/velocity-fl.git
 cd vFL
 
 uv sync
@@ -157,7 +157,7 @@ uv run zensical build --clean
 - Docs workflow: [`.github/workflows/docs.yml`](.github/workflows/docs.yml)
 - Test + coverage workflow: [`.github/workflows/tests.yml`](.github/workflows/tests.yml)
 
-Published site: https://ajbarea.github.io/vFL/
+Published site: https://ajbarea.github.io/velocity-fl/
 
 ---
 
@@ -207,11 +207,11 @@ in [`docs/convergence.md`](docs/convergence.md). Reproduce with
 
 ## Coverage 📈
 
-[![Codecov](https://codecov.io/gh/ajbarea/vFL/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/vFL)
+[![Codecov](https://codecov.io/gh/ajbarea/velocity-fl/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/velocity-fl)
 
-![Sunburst](https://codecov.io/gh/ajbarea/vFL/graphs/sunburst.svg?token=rcYwirIHWk)
-![Grid](https://codecov.io/gh/ajbarea/vFL/graphs/tree.svg?token=rcYwirIHWk)
-![Icicle](https://codecov.io/gh/ajbarea/vFL/graphs/icicle.svg?token=rcYwirIHWk)
+![Sunburst](https://codecov.io/gh/ajbarea/velocity-fl/graphs/sunburst.svg?token=rcYwirIHWk)
+![Grid](https://codecov.io/gh/ajbarea/velocity-fl/graphs/tree.svg?token=rcYwirIHWk)
+![Icicle](https://codecov.io/gh/ajbarea/velocity-fl/graphs/icicle.svg?token=rcYwirIHWk)
 
 ---
 
