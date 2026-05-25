@@ -31,11 +31,13 @@ dependencies = [
 
 [project.optional-dependencies]
 hf = [
-    "transformers>=4.40",
+    "transformers>=5.0",
     "peft>=0.10",
-    # datasets 2.x pulls ancient pyarrow/pandas APIs that break against
-    # modern transitive pins. 3.x is the current schema baseline.
-    "datasets>=3.0,<4.0",
+    # datasets 4.x dropped loading-script datasets for Parquet-backed
+    # standard formats; vFL loads canonical Parquet mirrors (ylecun/mnist,
+    # uoft-cs/cifar10) so the removal doesn't bite. 4.x also rides the
+    # huggingface-hub 1.x line that transformers 5 requires.
+    "datasets>=4.0",
     "safetensors>=0.4",
 ]
 torch = [
