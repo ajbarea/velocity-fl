@@ -15,6 +15,7 @@ import pytest
 # datasets + torch are optional in the base install; gate at import.
 torch = pytest.importorskip("torch")
 pytest.importorskip("datasets")
+pytest.importorskip("torchvision")
 
 from datasets import ClassLabel, Dataset, DatasetDict, Features, Sequence, Value  # noqa: E402
 from velocity.datasets import FederatedSplit, load_federated  # noqa: E402
@@ -218,3 +219,49 @@ def test_num_classes_falls_back_to_max_label(monkeypatch: pytest.MonkeyPatch) ->
 
     split = load_federated("fake/ds", num_clients=2, partition="iid", transform=_passthrough)
     assert split.num_classes == 3
+
+
+# ---------------------------------------------------------------------------
+# Dataset breadth + normalisation
+# ---------------------------------------------------------------------------
+
+
+def test_loads_cifar100_shaped_dataset(monkeypatch: pytest.MonkeyPatch) -> None:
+    """CIFAR-100 ships ``img`` + ``fine_label`` (100 classes); existing aliases resolve it."""
+    ds = _fake_classification_ds(n=200, num_classes=100)
+    ds = ds.rename_column("image", "img").rename_column("label", "fine_label")
+    _patch_loader(monkeypatch, DatasetDict({"train": ds, "test": ds}))
+
+    split = load_federated(
+        "uoft-cs/cifar100", num_clients=4, partition="iid", batch_size=16, transform=_passthrough
+    )
+    assert split.num_classes == 100
+    assert len(split.clients) == 4
+
+
+def test_normalization_stats_match_reference_constants() -> None:
+    from velocity.datasets import NORMALIZATION_STATS
+
+    assert NORMALIZATION_STATS["cifar100"] == (
+        (0.5071, 0.4865, 0.4409),
+        (0.2673, 0.2564, 0.2762),
+    )
+    assert NORMALIZATION_STATS["cifar10"][0] == (0.4914, 0.4822, 0.4465)
+    assert NORMALIZATION_STATS["mnist"] == ((0.1307,), (0.3081,))
+
+
+def test_normalized_transform_known_dataset_adds_normalize() -> None:
+    from torchvision.transforms import Compose, Normalize
+    from velocity.datasets import normalized_transform
+
+    # HF id with an org prefix still resolves via the trailing path segment.
+    t = normalized_transform("uoft-cs/cifar100")
+    assert isinstance(t, Compose)
+    assert any(isinstance(step, Normalize) for step in t.transforms)
+
+
+def test_normalized_transform_unknown_falls_back_to_totensor() -> None:
+    from torchvision.transforms import ToTensor
+    from velocity.datasets import normalized_transform
+
+    assert isinstance(normalized_transform("fake/unknown-dataset"), ToTensor)
