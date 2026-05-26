@@ -1,6 +1,6 @@
 # Attacks
 
-VelocityFL splits the attack surface into two honest families that operate at
+Velocity-FL splits the attack surface into two honest families that operate at
 different layers of the stack:
 
 - **Round-level attacks** live in the Rust core and run during the

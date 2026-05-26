@@ -1,6 +1,6 @@
 # Contributing
 
-VelocityFL is a solo project; there's no contributor queue, no review rota, no issue triage. If you're reading this because GitHub linked you here from a PR: thanks for the interest, but drive-by patches may sit unreviewed.
+Velocity-FL is a solo project; there's no contributor queue, no review rota, no issue triage. If you're reading this because GitHub linked you here from a PR: thanks for the interest, but drive-by patches may sit unreviewed.
 
 If you do want to send one anyway:
 

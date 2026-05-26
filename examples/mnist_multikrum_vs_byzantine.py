@@ -151,7 +151,7 @@ def main() -> None:
     template_state = make_model().state_dict()
 
     print(
-        f"VelocityFL Byzantine-robust demo — {NUM_CLIENTS} clients "
+        f"Velocity-FL Byzantine-robust demo — {NUM_CLIENTS} clients "
         f"({NUM_BYZANTINE} Byzantine, boost={BOOST_FACTOR}x), {ROUNDS} rounds"
     )
     print(f"Per-client sample counts: {[c.num_samples for c in split.clients]}")

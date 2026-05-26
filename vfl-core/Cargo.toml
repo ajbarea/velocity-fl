@@ -2,7 +2,7 @@
 name = "vfl-core"
 version = "0.1.0"
 edition = "2021"
-description = "High-performance Rust core for VelocityFL federated learning orchestration"
+description = "High-performance Rust core for Velocity-FL federated learning orchestration"
 license = "MIT"
 
 [lib]

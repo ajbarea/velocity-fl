@@ -1,6 +1,6 @@
 # Strategies
 
-VelocityFL ships nine aggregation strategies. All nine are implemented in Rust and exposed as frozen Python dataclasses in `velocity.strategy`. Pick one based on your threat model and client heterogeneity.
+Velocity-FL ships nine aggregation strategies. All nine are implemented in Rust and exposed as frozen Python dataclasses in `velocity.strategy`. Pick one based on your threat model and client heterogeneity.
 
 ## Decision guide
 

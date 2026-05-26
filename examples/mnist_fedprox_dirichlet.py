@@ -102,7 +102,7 @@ def main() -> None:
     orch.set_global_weights(state_dict_to_layers(template_state))
 
     print(
-        f"VelocityFL MNIST FedProx(mu={MU}) demo - Dirichlet(alpha={ALPHA}), "
+        f"Velocity-FL MNIST FedProx(mu={MU}) demo - Dirichlet(alpha={ALPHA}), "
         f"{NUM_CLIENTS} clients, {ROUNDS} rounds"
     )
     print(f"Per-client sample counts: {[c.num_samples for c in split.clients]}")

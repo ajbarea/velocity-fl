@@ -1,6 +1,6 @@
 # CLI Reference
 
-VelocityFL ships a [Typer](https://typer.tiangolo.com/)-based CLI called `velocity`. After `uv sync` the command is available via `uv run velocity`, or directly on your `PATH` when the venv is activated.
+Velocity-FL ships a [Typer](https://typer.tiangolo.com/)-based CLI called `velocity`. After `uv sync` the command is available via `uv run velocity`, or directly on your `PATH` when the venv is activated.
 
 ```bash
 uv run velocity --help

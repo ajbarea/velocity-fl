@@ -1,6 +1,6 @@
 # Benchmarks
 
-VelocityFL's pitch is "the uv of Federated Learning" — a Rust core under a
+Velocity-FL's pitch is "the uv of Federated Learning" — a Rust core under a
 Python API. That's a performance claim, and it should be measured, not
 marketed. This page documents the measurement methodology and shows the
 current numbers.

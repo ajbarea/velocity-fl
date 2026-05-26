@@ -54,7 +54,7 @@ algorithms and unit-test fixtures derived from each paper.
 
 ```bash
 git clone https://github.com/ajbarea/velocity-fl.git
-cd vFL
+cd velocity-fl
 
 uv sync
 uv run maturin develop
@@ -164,7 +164,7 @@ Published site: https://ajbarea.github.io/velocity-fl/
 ## Repository layout 🗂️
 
 ```text
-vFL/
+velocity-fl/
 ├── vfl-core/                 # Rust crate and PyO3 bindings
 ├── python/velocity/          # Python package + CLI
 ├── examples/                 # End-to-end demos (e.g. MNIST FedAvg)

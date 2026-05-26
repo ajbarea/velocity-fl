@@ -1,4 +1,4 @@
-"""velocity — Python interface for VelocityFL.
+"""velocity — Python interface for Velocity-FL.
 
 High-performance federated learning orchestration backed by a Rust engine.
 """

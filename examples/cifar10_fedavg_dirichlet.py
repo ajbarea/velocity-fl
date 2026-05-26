@@ -107,7 +107,7 @@ def main() -> None:
     orch.set_global_weights(state_dict_to_layers(template_state))
 
     print(
-        f"VelocityFL CIFAR-10 Dirichlet(alpha={ALPHA}) FedAvg demo — "
+        f"Velocity-FL CIFAR-10 Dirichlet(alpha={ALPHA}) FedAvg demo — "
         f"{NUM_CLIENTS} clients, {ROUNDS} rounds"
     )
     print(f"Per-client sample counts: {[c.num_samples for c in split.clients]}")

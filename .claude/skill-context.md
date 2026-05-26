@@ -101,5 +101,5 @@ Subagent scan-area split:
 - css_files: check `zensical.toml` for current `extra_css` list
 - js_files: check `zensical.toml` for current `extra_javascript` list
 - build_command: `uv run zensical build --clean`
-- site_url: `https://<owner>.github.io/vFL/`
+- site_url: `https://<owner>.github.io/velocity-fl/`
 - benchmarks live here: `docs/benchmarks.md` (cross-reference with `slop_ground_truth`)
