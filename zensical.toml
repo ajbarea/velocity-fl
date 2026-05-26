@@ -5,7 +5,7 @@ site_author = "AJ Barea"
 site_url = "https://ajbarea.github.io/velocity-fl/"
 repo_url = "https://github.com/ajbarea/velocity-fl"
 repo_name = "ajbarea/velocity-fl"
-copyright = "AJ Barea · 2026"
+copyright = "AJ Barea"
 
 nav = [
   { "Home" = "index.md" },
