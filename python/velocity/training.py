@@ -1,4 +1,4 @@
-"""Real federated training utilities for VelocityFL.
+"""Real federated training utilities for Velocity-FL.
 
 The Rust core (`velocity._core.Orchestrator`) only sees flat layer weights —
 it does not know about models, datasets, or losses. This module provides the

@@ -23,13 +23,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```bash
 git clone https://github.com/ajbarea/velocity-fl.git
-cd vFL
+cd velocity-fl
 
 uv sync                  # resolves the Python env
 uv run maturin develop   # compiles the Rust core into .venv
 ```
 
-`maturin develop` places the native `velocity._core` module inside your uv-managed venv. If you skip it, VelocityFL still runs — it just falls back to a pure-Python simulation path (useful for docs builds and CI smoke tests, slow for real experiments).
+`maturin develop` places the native `velocity._core` module inside your uv-managed venv. If you skip it, Velocity-FL still runs — it just falls back to a pure-Python simulation path (useful for docs builds and CI smoke tests, slow for real experiments).
 
 ## 2. Smoke-test the CLI
 

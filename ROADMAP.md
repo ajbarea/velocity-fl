@@ -1,6 +1,6 @@
 # vFL Roadmap
 
-The living long-horizon plan for VelocityFL. Each section names work still
+The living long-horizon plan for Velocity-FL. Each section names work still
 ahead, with enough context that anyone — including us in three weeks — can
 pick it up cold. Items we've decided against don't belong here.
 

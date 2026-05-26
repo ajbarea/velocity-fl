@@ -1,4 +1,4 @@
-//! vfl-core: Rust core for VelocityFL.
+//! vfl-core: Rust core for Velocity-FL.
 //!
 //! FL orchestration, aggregation strategies, and attack simulation,
 //! exposed to Python via PyO3 bindings.
@@ -400,7 +400,7 @@ fn apply_gaussian_noise(
 // Module
 // ---------------------------------------------------------------------------
 
-/// velocity._core — Rust-backed VelocityFL engine.
+/// velocity._core — Rust-backed Velocity-FL engine.
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyStrategy>()?;

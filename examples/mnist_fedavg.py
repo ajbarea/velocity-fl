@@ -6,7 +6,7 @@ Averaging through the Rust orchestrator. Every round, the server evaluates
 the aggregated global model on the held-out test set and reports real loss
 + real accuracy.
 
-This is the proof that VelocityFL does federated learning, not just the
+This is the proof that Velocity-FL does federated learning, not just the
 math inside one round of it.
 
 Run::
@@ -96,7 +96,7 @@ def main() -> None:
     )
     orch.set_global_weights(state_dict_to_layers(template_state))
 
-    print(f"VelocityFL MNIST FedAvg demo — {NUM_CLIENTS} clients, non-IID, {ROUNDS} rounds")
+    print(f"Velocity-FL MNIST FedAvg demo — {NUM_CLIENTS} clients, non-IID, {ROUNDS} rounds")
     print(f"Per-client sample counts: {[c.num_samples for c in split.clients]}")
     print(f"{'round':>5} | {'pre-loss':>9} | {'post-loss':>9} | {'post-acc':>8} | {'sec':>6}")
     print("-" * 56)

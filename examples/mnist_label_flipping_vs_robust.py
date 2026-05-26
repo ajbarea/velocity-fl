@@ -190,7 +190,7 @@ def main() -> None:
     template_state = make_model().state_dict()
 
     print(
-        f"VelocityFL data-poisoning matrix - {NUM_CLIENTS} clients "
+        f"Velocity-FL data-poisoning matrix - {NUM_CLIENTS} clients "
         f"({NUM_COMPROMISED} label-flipped), Dirichlet(alpha={ALPHA}), {ROUNDS} rounds"
     )
     print(f"Per-client sample counts: {[c.num_samples for c in split.clients]}")

@@ -1,4 +1,4 @@
-"""VelocityFL command-line interface."""
+"""Velocity-FL command-line interface."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from velocity.strategy import ALL_STRATEGIES, Strategy, parse_strategy
 
 app = typer.Typer(
     name="velocity",
-    help="VelocityFL CLI — run federated experiments and inspect capabilities.",
+    help="Velocity-FL CLI — run federated experiments and inspect capabilities.",
     no_args_is_help=True,
 )
 
@@ -69,7 +69,7 @@ def _coerce_scalar(raw: str) -> Any:
 
 @app.command()
 def version() -> None:
-    """Show VelocityFL version."""
+    """Show Velocity-FL version."""
     typer.echo(__version__)
 
 

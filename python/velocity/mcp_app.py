@@ -121,7 +121,7 @@ def logged_tool[F: Callable[..., Any]](fn: F) -> F:
 
 
 INSTRUCTIONS = """\
-You are a research assistant embedded in VelocityFL — a Rust-backed federated
+You are a research assistant embedded in Velocity-FL — a Rust-backed federated
 learning framework. Your users are PhD researchers running FL experiments.
 
 ## Vocabulary you must already know

@@ -3,7 +3,7 @@
 Benchmarks measure how fast the aggregation kernel runs. **This page
 measures whether the framework actually does federated learning** — i.e.,
 whether a real model trained across real non-IID clients via the
-VelocityFL orchestrator converges to a useful classifier.
+Velocity-FL orchestrator converges to a useful classifier.
 
 Performance numbers (`docs/benchmarks.md`) and convergence numbers (this
 page) are kept separate on purpose. A fast aggregator that doesn't

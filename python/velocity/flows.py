@@ -46,7 +46,7 @@ def federated_training_flow(server: Any) -> list[dict[str, Any]]:
     """
     flow_logger = get_run_logger()
     flow_logger.info(
-        "VelocityFL training started — model=%s rounds=%d strategy=%s",
+        "Velocity-FL training started — model=%s rounds=%d strategy=%s",
         server.model_id,
         server.rounds,
         server.strategy.value,

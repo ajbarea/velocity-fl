@@ -24,7 +24,7 @@ VelocityServer(
 
 ### Default `layer_shapes`
 
-When you don't pass `layer_shapes`, VelocityFL uses a tiny two-layer demo net — enough to exercise aggregation end-to-end in tests:
+When you don't pass `layer_shapes`, Velocity-FL uses a tiny two-layer demo net — enough to exercise aggregation end-to-end in tests:
 
 ```python
 {
@@ -136,7 +136,7 @@ The `fastmcp install` CLI detects the `mcp` object in `mcp_app.py`, generates th
         "--with", "fastmcp",
         "fastmcp",
         "run",
-        "/absolute/path/to/vFL/python/velocity/mcp_app.py"
+        "/absolute/path/to/velocity-fl/python/velocity/mcp_app.py"
       ],
       "env": {
         "VFL_USER_ID": "your_user_id"

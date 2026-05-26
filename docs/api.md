@@ -1,6 +1,6 @@
 # API Reference
 
-The public surface of VelocityFL — Python package and Rust-exposed module.
+The public surface of Velocity-FL — Python package and Rust-exposed module.
 
 ---
 

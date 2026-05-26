@@ -1,5 +1,5 @@
 [project]
-site_name = "VelocityFL"
+site_name = "Velocity-FL"
 site_description = "The uv of Federated Learning — Rust-backed orchestration with Python ergonomics"
 site_author = "AJ Barea"
 site_url = "https://ajbarea.github.io/velocity-fl/"
@@ -87,4 +87,4 @@ generator = false
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
 link = "https://github.com/ajbarea/velocity-fl"
-name = "VelocityFL on GitHub"
+name = "Velocity-FL on GitHub"

@@ -1,6 +1,6 @@
 # Architecture
 
-VelocityFL splits federated learning into three tightly-scoped layers: a Rust core that owns every hot loop, a PyO3 bridge that makes those types feel native in Python, and a researcher-facing Python package that handles orchestration and ergonomics.
+Velocity-FL splits federated learning into three tightly-scoped layers: a Rust core that owns every hot loop, a PyO3 bridge that makes those types feel native in Python, and a researcher-facing Python package that handles orchestration and ergonomics.
 
 ## Layer map
 
@@ -54,7 +54,7 @@ The package imports `velocity._core` lazily. When the native module isn't presen
 ## Module map
 
 ```text
-vFL/
+velocity-fl/
 ├── vfl-core/               # Rust crate
 │   ├── src/
 │   │   ├── lib.rs          # PyO3 module definition

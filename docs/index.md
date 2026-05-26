@@ -8,7 +8,7 @@ hide:
 
 <div class="hero" markdown>
 
-# VelocityFL
+# Velocity-FL
 
 **The uv of Federated Learning — Rust speed, Python ergonomics.**
 { .hero-subtitle }
@@ -35,8 +35,8 @@ hide:
 
 <section class="landing-section landing-section--intro">
   <div class="section-inner">
-    <h2 class="section-title">What Is VelocityFL?</h2>
-    <p class="section-lead">VelocityFL is a federated learning orchestration framework with a <strong>Rust core</strong> for hot-path aggregation and attack simulation, wrapped in a <strong>Python-first API</strong> for researchers using Hugging Face, PEFT, and PyTorch. Configure a server, run rounds, inspect metrics &mdash; every hot loop runs in compiled code.</p>
+    <h2 class="section-title">What Is Velocity-FL?</h2>
+    <p class="section-lead">Velocity-FL is a federated learning orchestration framework with a <strong>Rust core</strong> for hot-path aggregation and attack simulation, wrapped in a <strong>Python-first API</strong> for researchers using Hugging Face, PEFT, and PyTorch. Configure a server, run rounds, inspect metrics &mdash; every hot loop runs in compiled code.</p>
   </div>
 </section>
 
