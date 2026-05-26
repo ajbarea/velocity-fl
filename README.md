@@ -215,6 +215,10 @@ in [`docs/convergence.md`](docs/convergence.md). Reproduce with
 
 ---
 
+## Why "velocity"
+
+Latin velocitas: speed. The whole reason the framework exists — a Rust core under a Python-first API, so the hot loops of federated aggregation run at compiled speed, not Python's.
+
 ## License
 
 [MIT](LICENSE)
