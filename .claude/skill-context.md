@@ -1,4 +1,4 @@
-# skill-context — vFL
+# skill-context — velocity-fl
 
 Repo-specific facts for canonical skills under `~/.claude/skills/`. Injected
 into each skill at invocation via `!cat .claude/skill-context.md`. Update on
@@ -6,10 +6,10 @@ toolchain / path / tooling changes.
 
 ## repo
 
-- name: vFL (velocity FL)
+- name: velocity-fl (brand: Velocity-FL; `vFL` = prose abbreviation only)
 - package_root: `python/velocity/` (Python package) + `vfl-core/` (Rust crate exposed as `velocity._core`)
 - language: Python + Rust
-- cli_entrypoint: `scripts/dev.py` (invoked directly; no dedicated CLI binary)
+- cli_entrypoint: `velocity` — user-facing Typer CLI (`velocity.cli:app` console script, commands: version / strategies / run / simulate-attack). `scripts/dev.py` is the separate dev-workflow runner behind the make targets.
 - runner_module: `scripts/dev.py`
 - has: Rust crate, PyO3/maturin native extension; no docker, no frontend
 
