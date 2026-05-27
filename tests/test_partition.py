@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from math import log
 
 import pytest
-from velocity.partition import dirichlet, iid, shard
+from velocity.partition import dirichlet, iid, natural, shard
 
 
 def _per_client_class_entropy(
@@ -158,3 +158,58 @@ class TestShard:
         # 20 shards requested, only 10 samples.
         with pytest.raises(ValueError, match="Need at least"):
             shard([0] * 10, 5, shards_per_client=4)
+
+
+class TestNatural:
+    # Writer-keyed (natural) partition: every group's samples stay on one
+    # client; whole groups pack together when clients are fewer than groups.
+
+    def test_covers_all_samples_exactly_once(self) -> None:
+        group_ids = [f"w{i % 7}" for i in range(70)]
+        parts = natural(group_ids, 3, seed=0)
+        flat = sorted(i for p in parts for i in p)
+        assert flat == list(range(70))
+
+    def test_each_group_stays_within_one_client(self) -> None:
+        group_ids = ["w0", "w0", "w1", "w1", "w1", "w2", "w3", "w3", "w4", "w4"]
+        parts = natural(group_ids, 2, seed=0)
+        for w in set(group_ids):
+            owning = {ci for ci, p in enumerate(parts) for i in p if group_ids[i] == w}
+            assert len(owning) == 1, f"group {w} split across clients {owning}"
+
+    def test_one_client_per_group_when_counts_match(self) -> None:
+        group_ids = ["w0", "w0", "w1", "w2", "w2", "w2", "w3"]  # 4 groups
+        parts = natural(group_ids, 4, seed=0)
+        assert len(parts) == 4
+        for p in parts:
+            assert len({group_ids[i] for i in p}) == 1
+
+    def test_packs_whole_groups_when_fewer_clients(self) -> None:
+        group_ids = [f"w{i // 5}" for i in range(50)]  # 10 groups of 5 samples
+        parts = natural(group_ids, 2, seed=0)
+        assert len(parts) == 2
+        for p in parts:
+            assert len({group_ids[i] for i in p}) == 5  # 10 groups / 2 clients
+
+    def test_does_not_balance_sample_counts(self) -> None:
+        # 3 groups of distinct sizes, one client each → client sizes equal the
+        # group sizes. A balanced partition would even them; natural must not.
+        group_ids = ["a"] + ["b"] * 9 + ["c"] * 5
+        parts = natural(group_ids, 3, seed=0)
+        assert sorted(len(p) for p in parts) == [1, 5, 9]
+
+    def test_determinism_same_seed(self) -> None:
+        group_ids = [f"w{i % 20}" for i in range(200)]
+        assert natural(group_ids, 3, seed=7) == natural(group_ids, 3, seed=7)
+
+    def test_different_seeds_differ(self) -> None:
+        group_ids = [f"w{i % 20}" for i in range(200)]
+        assert natural(group_ids, 3, seed=1) != natural(group_ids, 3, seed=2)
+
+    def test_rejects_zero_clients(self) -> None:
+        with pytest.raises(ValueError, match="num_clients"):
+            natural(["a", "b"], 0)
+
+    def test_rejects_more_clients_than_groups(self) -> None:
+        with pytest.raises(ValueError, match="distinct groups"):
+            natural(["a", "a", "b"], 5)

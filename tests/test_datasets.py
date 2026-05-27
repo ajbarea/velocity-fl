@@ -41,6 +41,33 @@ def _fake_classification_ds(*, n: int, num_classes: int, dim: int = 4) -> Datase
     )
 
 
+def _fake_femnist_ds(writer_sizes: list[int], *, num_classes: int = 62, dim: int = 4) -> Dataset:
+    """FEMNIST-shaped dataset: ``image`` + ``character`` label + ``writer_id`` group.
+
+    ``writer_sizes[w]`` is how many samples writer ``w`` contributes.
+    """
+    images: list[list[float]] = []
+    characters: list[int] = []
+    writer_ids: list[str] = []
+    k = 0
+    for w, n in enumerate(writer_sizes):
+        for _ in range(n):
+            images.append([float(k + d) for d in range(dim)])
+            characters.append(k % num_classes)
+            writer_ids.append(f"f{w:04d}")
+            k += 1
+    return Dataset.from_dict(
+        {"image": images, "character": characters, "writer_id": writer_ids},
+        features=Features(
+            {
+                "image": Sequence(Value("float32")),
+                "character": ClassLabel(num_classes=num_classes),
+                "writer_id": Value("string"),
+            }
+        ),
+    )
+
+
 def _patch_loader(monkeypatch: pytest.MonkeyPatch, payload: Dataset | DatasetDict) -> None:
     monkeypatch.setattr("velocity.datasets.load_dataset", lambda _name: payload)
 
@@ -265,3 +292,51 @@ def test_normalized_transform_unknown_falls_back_to_totensor() -> None:
     from velocity.datasets import normalized_transform
 
     assert isinstance(normalized_transform("fake/unknown-dataset"), ToTensor)
+
+
+# ---------------------------------------------------------------------------
+# Natural (writer-keyed) partition — FEMNIST
+# ---------------------------------------------------------------------------
+
+
+def test_resolves_character_label_column(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FEMNIST's label lives in ``character`` (62 classes); the alias resolves it."""
+    ds = _fake_classification_ds(n=40, num_classes=62).rename_column("label", "character")
+    _patch_loader(monkeypatch, DatasetDict({"train": ds, "test": ds}))
+
+    split = load_federated("x/femnist", num_clients=2, partition="iid", transform=_passthrough)
+    assert split.num_classes == 62
+
+
+def test_loads_femnist_natural_partition_keys_on_writer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``natural`` splits on writer_id: 4 distinct-size writers → 4 clients sized to match."""
+    ds = _fake_femnist_ds([5, 10, 15, 20])
+    _patch_loader(monkeypatch, DatasetDict({"train": ds, "test": ds}))
+
+    split = load_federated(
+        "flwrlabs/femnist", num_clients=4, partition="natural", transform=_passthrough
+    )
+    assert split.num_classes == 62
+    # One writer per client (counts match) → client sizes equal writer sizes,
+    # which an iid/random split (~12-13 each) would never produce.
+    assert sorted(c.num_samples for c in split.clients) == [5, 10, 15, 20]
+
+
+def test_natural_partition_respects_explicit_group_by(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A non-aliased group column is honored via ``group_by=``."""
+    ds = _fake_femnist_ds([4, 8]).rename_column("writer_id", "scribe")
+    _patch_loader(monkeypatch, DatasetDict({"train": ds, "test": ds}))
+
+    split = load_federated(
+        "x/ds", num_clients=2, partition="natural", group_by="scribe", transform=_passthrough
+    )
+    assert sorted(c.num_samples for c in split.clients) == [4, 8]
+
+
+def test_natural_partition_requires_group_column(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``natural`` with no resolvable writer/group column errors, not silently falls back."""
+    ds = _fake_classification_ds(n=40, num_classes=4)  # image + label only
+    _patch_loader(monkeypatch, DatasetDict({"train": ds, "test": ds}))
+
+    with pytest.raises(ValueError, match="group"):
+        load_federated("x/ds", num_clients=2, partition="natural", transform=_passthrough)

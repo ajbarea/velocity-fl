@@ -23,9 +23,9 @@ profiling justifies it.
 from __future__ import annotations
 
 import random
-from collections.abc import Sequence
+from collections.abc import Hashable, Sequence
 
-__all__ = ["dirichlet", "iid", "shard"]
+__all__ = ["dirichlet", "iid", "natural", "shard"]
 
 
 def iid(num_samples: int, num_clients: int, *, seed: int = 0) -> list[list[int]]:
@@ -161,6 +161,62 @@ def shard(
     parts: list[list[int]] = [[] for _ in range(num_clients)]
     for shard_idx, target in enumerate(deal_order):
         parts[target % num_clients].extend(shards[shard_idx])
+    return parts
+
+
+def natural(
+    group_ids: Sequence[Hashable],
+    num_clients: int,
+    *,
+    seed: int = 0,
+) -> list[list[int]]:
+    """Natural (group-keyed) partition — every group lands wholly on one client.
+
+    Groups sample indices by ``group_ids`` (e.g. FEMNIST's ``writer_id``), then
+    deals the distinct groups across ``num_clients`` clients so a group is never
+    split — the realistic non-IID FL setup where one writer ≈ one client
+    (Caldas et al. 2018, "LEAF"). Distinct groups are taken in first-appearance
+    order, shuffled by ``seed``, and dealt into ``num_clients`` even chunks (the
+    first ``#groups % num_clients`` clients get one extra group); each client is
+    the union of its groups' indices.
+
+    ``num_clients == #groups`` gives one group per client; fewer packs whole
+    groups together; ``num_clients > #groups`` raises (a natural partition can't
+    split a group). Client sample counts are deliberately *not* balanced —
+    uneven clients reflect real per-group volume and are the point.
+
+    research(2026-05): mirrors Flower Datasets' ``NaturalIdPartitioner`` (one id
+    per partition) and ``GroupedNaturalIdPartitioner`` (ids packed into a fixed
+    count); keyed on ``num_clients`` to match this module's API, with a seeded
+    group-order shuffle rather than Flower's sorted default so packed clients
+    don't inherit id adjacency. Canonical dataset: ``flwrlabs/femnist``.
+    """
+    if num_clients <= 0:
+        raise ValueError(f"num_clients must be positive, got {num_clients}")
+
+    groups: dict[Hashable, list[int]] = {}
+    for idx, gid in enumerate(group_ids):
+        groups.setdefault(gid, []).append(idx)
+
+    unique = list(groups)  # first-appearance order — deterministic, sort-free
+    if num_clients > len(unique):
+        raise ValueError(
+            f"num_clients ({num_clients}) exceeds the {len(unique)} distinct groups; "
+            "a natural partition cannot split a group across clients. "
+            "Lower num_clients or pick a different partition."
+        )
+
+    rng = random.Random(seed)
+    rng.shuffle(unique)
+
+    base, remainder = divmod(len(unique), num_clients)
+    parts: list[list[int]] = []
+    offset = 0
+    for i in range(num_clients):
+        size = base + (1 if i < remainder else 0)
+        chunk = unique[offset : offset + size]
+        offset += size
+        parts.append([idx for gid in chunk for idx in groups[gid]])
     return parts
 
 

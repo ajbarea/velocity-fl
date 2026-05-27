@@ -164,12 +164,6 @@ rewriting the loader. phalanx-fl has working versions of each under
   [-1,1] (mean/std 0.5) per the official MedMNIST convention rather than per-channel
   constants. Add a `medmnist` entry + variant handling when a MedMNIST benchmark is
   actually run; pick the HF mirror then (phalanx uses `albertvillanova/medmnist-v2`).
-- **FEMNIST natural partition** — FEMNIST ships with a writer-id field
-  that defines the federated partition (each writer ≈ one client).
-  Needs `velocity.partition.natural(labels, group_ids)` — an O(n)
-  groupby pass, pure Python is fine. Adds the canonical non-IID FL
-  benchmark dataset; currently the first thing missing to make the
-  leaderboard honest across "real" FL benchmarks.
 - **Text-classification path** — AG News, MedQuAD, generic HF text
   datasets (phalanx has both). Requires a tokenisation step and an
   embedding layer in the reference model, not just a new transform.
@@ -353,6 +347,8 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-27 — **FEMNIST natural (writer-keyed) partition.** `velocity.partition.natural(group_ids, num_clients)` deals whole groups (writers) across clients so a writer never splits — the canonical non-IID benchmark where one writer ≈ one client. Threaded through `load_federated(partition="natural", group_by=...)`, with `writer_id` group aliases and `character` added to the label aliases, so `flwrlabs/femnist` loads end-to-end. Stdlib-only (Rust-portable, like the other partitioners). Deliberately deferred (no leaderboard consumer yet): MCP `run_experiment` exposure, a FEMNIST `NORMALIZATION_STATS` entry, a runnable example. research(2026-05): mirrors Flower Datasets' `NaturalIdPartitioner` / `GroupedNaturalIdPartitioner`, keyed on `num_clients` to match this module's API.
 
 - 2026-05-25 — **Dataset normalisation constants + CIFAR-100.** `NORMALIZATION_STATS` (mnist/cifar10/cifar100, per-channel mean/std) + opt-in `normalized_transform(name)` in `velocity.datasets`; the loader stays normalisation-agnostic (default `ToTensor`), callers opt in via `transform=`. CIFAR-100 load test added. research(2026-05): CIFAR mean/std from the standard pytorch-cifar reference.
 

@@ -38,13 +38,15 @@ from velocity.training import ClientData
 
 __all__ = ["NORMALIZATION_STATS", "FederatedSplit", "load_federated", "normalized_transform"]
 
-PartitionKind = Literal["iid", "dirichlet", "shard"]
+PartitionKind = Literal["iid", "dirichlet", "shard", "natural"]
 
 # Canonical column aliases — first match wins. Covers MNIST ("image"),
 # CIFAR-10 ("img"), pre-normalised datasets ("pixel_values"), and the
 # niche "picture" some community datasets use.
 _IMAGE_ALIASES = ("pixel_values", "image", "img", "picture")
-_LABEL_ALIASES = ("labels", "label", "fine_label", "target")
+_LABEL_ALIASES = ("labels", "label", "fine_label", "character", "target")
+# Natural-partition group key — first match wins. FEMNIST keys on "writer_id".
+_GROUP_ALIASES = ("writer_id", "user_id", "client_id", "group_id")
 
 # Per-channel (mean, std) normalisation constants for the canonical vision
 # datasets, surfaced so runs normalise reproducibly. The loader itself stays
@@ -76,6 +78,7 @@ def load_federated(
     train_fraction: float = 0.9,
     seed: int = 0,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    group_by: str | None = None,
     **partition_kwargs: Any,
 ) -> FederatedSplit:
     """Load an HF dataset, split across ``num_clients``, return ready DataLoaders.
@@ -83,9 +86,12 @@ def load_federated(
     Args:
         name: Hugging Face dataset identifier (e.g. ``"ylecun/mnist"``, ``"cifar10"``).
         num_clients: Number of federated clients to partition the train set across.
-        partition: One of ``"iid"``, ``"dirichlet"``, ``"shard"``. Extra keyword
-            arguments (``alpha=``, ``shards_per_client=``, ``min_partition_size=``)
-            pass through to the :mod:`velocity.partition` function.
+        partition: One of ``"iid"``, ``"dirichlet"``, ``"shard"``, ``"natural"``.
+            Extra keyword arguments (``alpha=``, ``shards_per_client=``,
+            ``min_partition_size=``) pass through to the :mod:`velocity.partition`
+            function. ``"natural"`` keys the split on a group column (see
+            ``group_by``) so each group's samples stay on one client — the
+            realistic FEMNIST writer-per-client benchmark.
         batch_size: Per-client train loader batch size. The test loader uses
             ``max(8 * batch_size, 256)``.
         train_fraction: Only consulted when the dataset ships a single split;
@@ -94,18 +100,30 @@ def load_federated(
         transform: Callable applied to each raw sample. Defaults to
             :class:`torchvision.transforms.ToTensor`; pass your own to add
             normalisation or augmentation.
+        group_by: Column naming the natural-partition group (e.g. ``"writer_id"``).
+            Only consulted when ``partition="natural"``; when omitted the column is
+            auto-resolved from common writer/user/client id aliases.
     """
     train_ds, test_ds = _resolve_splits(name, train_fraction=train_fraction, seed=seed)
 
     image_col = _pick(train_ds.column_names, _IMAGE_ALIASES, kind="image")
     label_col = _pick(train_ds.column_names, _LABEL_ALIASES, kind="label")
+    group_ids = None
+    if partition == "natural":
+        group_col = group_by or _pick(train_ds.column_names, _GROUP_ALIASES, kind="group")
+        group_ids = list(train_ds[group_col])
 
     to_tensor = transform or _default_transform()
     train_set, train_labels = _materialise(train_ds, image_col, label_col, to_tensor)
     test_set, _ = _materialise(test_ds, image_col, label_col, to_tensor)
 
     client_indices = _partition_dispatch(
-        partition, train_labels, num_clients=num_clients, seed=seed, kwargs=partition_kwargs
+        partition,
+        train_labels,
+        num_clients=num_clients,
+        seed=seed,
+        kwargs=partition_kwargs,
+        group_ids=group_ids,
     )
 
     clients = [
@@ -218,6 +236,7 @@ def _partition_dispatch(
     num_clients: int,
     seed: int,
     kwargs: dict[str, Any],
+    group_ids: Sequence[Any] | None = None,
 ) -> list[list[int]]:
     if kind == "iid":
         _reject_unknown(kind, kwargs, allowed=())
@@ -230,7 +249,15 @@ def _partition_dispatch(
     if kind == "shard":
         _reject_unknown(kind, kwargs, allowed=("shards_per_client",))
         return _partition.shard(labels, num_clients, seed=seed, **kwargs)
-    raise ValueError(f"partition must be one of iid|dirichlet|shard, got {kind!r}")
+    if kind == "natural":
+        if group_ids is None:
+            raise ValueError(
+                "partition='natural' needs a group column (e.g. writer_id); none "
+                "was found or passed via group_by=."
+            )
+        _reject_unknown(kind, kwargs, allowed=())
+        return _partition.natural(group_ids, num_clients, seed=seed)
+    raise ValueError(f"partition must be one of iid|dirichlet|shard|natural, got {kind!r}")
 
 
 def _reject_unknown(kind: str, kwargs: dict[str, Any], *, allowed: Sequence[str]) -> None:
