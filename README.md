@@ -185,9 +185,9 @@ owns. Client-side local training is PyTorch's territory; we don't time
 it and we don't claim to speed it up.
 
 On a 1M-parameter model with 10 clients, the Rust aggregation kernel
-runs **~92× faster** than the pure-Python fallback through the Python
-API (4.75 ms vs 438 ms, `FedAvg`). At 10M params, Rust stays at ~49 ms
-per aggregation; pure Python becomes impractical to measure.
+runs **~135× faster** than the pure-Python fallback (4.0 ms vs 545 ms,
+`FedAvg`). At 10M params, Rust aggregates in ~42 ms versus pure
+Python's ~5.8 s (~138×).
 
 End-to-end, this matters less than the raw ratio suggests: on the
 [MNIST FedAvg demo](examples/mnist_fedavg.py) (5 clients, ~109K params),
