@@ -13,6 +13,7 @@ Separation of concerns:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -20,6 +21,7 @@ import threading
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS runs (
     min_clients  INTEGER,
     rounds       INTEGER,
     config_json  TEXT,
+    config_fingerprint TEXT,
     status       TEXT NOT NULL DEFAULT 'running',
     started_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
@@ -107,11 +110,29 @@ def _ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Idempotent column adds for DBs created before a schema column existed.
+
+    ``CREATE TABLE IF NOT EXISTS`` never alters an existing table, so a column
+    added to ``SCHEMA`` won't reach a pre-existing DB without an explicit
+    ALTER. The fingerprint index lives here rather than in ``SCHEMA`` because
+    it references a column that may need migrating in first — running it after
+    the ALTER keeps both fresh and legacy DBs on the same final shape.
+    """
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(runs)")}
+    if "config_fingerprint" not in cols:
+        conn.execute("ALTER TABLE runs ADD COLUMN config_fingerprint TEXT")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_runs_fingerprint ON runs(user_id, config_fingerprint)"
+    )
+
+
 def init_db(path: Path | None = None) -> Path:
     path = path or db_path()
     _ensure_parent(path)
     with sqlite3.connect(path) as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)
     return path
 
 
@@ -133,6 +154,7 @@ def _shared_connection() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
+    _migrate(conn)
     _LOCAL.conn = conn
     return conn
 
@@ -146,6 +168,7 @@ def connect(path: Path | None = None) -> Iterator[sqlite3.Connection]:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         conn.executescript(SCHEMA)
+        _migrate(conn)
         try:
             yield conn
             conn.commit()
@@ -171,14 +194,55 @@ def ensure_user(user_id: str, display_name: str | None = None) -> None:
         )
 
 
+# Keys excluded from the experiment-identity fingerprint: ``seed`` varies
+# across repeats of the *same* experiment (the arena aggregates mean±std over
+# seeds, so repeats must share a fingerprint), and ``git_sha`` is per-commit
+# instance provenance — ``vfl_version`` is the code identity that belongs in
+# the hash, and it lives in its own column too.
+_FINGERPRINT_EXCLUDE = frozenset({"seed", "git_sha"})
+
+
+def _vfl_version() -> str:
+    try:
+        return importlib_metadata.version("velocity-fl")
+    except importlib_metadata.PackageNotFoundError:  # running from an uninstalled tree
+        return "unknown"
+
+
+def config_fingerprint(config: dict[str, Any]) -> str:
+    """Stable 16-hex experiment-identity hash over a run config.
+
+    Two runs that differ only in ``seed`` (or per-commit ``git_sha``) share a
+    fingerprint, so the leaderboard can group repeats and report mean±std the
+    way ``scripts/dump_attack_arena.py`` already does across seeds. Everything
+    else — dataset, partition, strategy, attack, their params, ``vfl_version``
+    — is identity and participates in the hash.
+
+    research(2026-05): RFC 8785 (JSON Canonicalization Scheme) → SHA-256 is the
+    cross-language standard for content-addressing JSON. This fingerprint is
+    internal (never crosses a language/runtime boundary), so we use stdlib
+    canonical JSON (sorted keys, no whitespace) instead of pulling in a JCS
+    dependency — JCS's value-add is cross-runtime number normalization we don't
+    need, and an extra dep cuts against the project's dependency-hygiene rule.
+    16 hex (64 bits) mirrors git short-SHA ergonomics; collision-safe at
+    experiment scale.
+    """
+    identity = {k: v for k, v in config.items() if k not in _FINGERPRINT_EXCLUDE}
+    canonical = json.dumps(identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+
 def start_run(user_id: str, config: dict[str, Any]) -> str:
     run_id = f"run-{uuid.uuid4().hex[:12]}"
     ensure_user(user_id)
+    config = {**config, "vfl_version": _vfl_version()}
+    fingerprint = config_fingerprint(config)
     with connect() as c:
         c.execute(
             """INSERT INTO runs(run_id, user_id, git_sha, strategy, model_id,
-                                dataset, seed, min_clients, rounds, config_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                dataset, seed, min_clients, rounds, config_json,
+                                config_fingerprint)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 run_id,
                 user_id,
@@ -190,6 +254,7 @@ def start_run(user_id: str, config: dict[str, Any]) -> str:
                 config.get("min_clients"),
                 config.get("rounds"),
                 json.dumps(config),
+                fingerprint,
             ),
         )
     return run_id

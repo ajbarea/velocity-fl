@@ -7,6 +7,7 @@ threading.local; we reset it per-test so `VFL_DB_PATH` actually takes effect.
 from __future__ import annotations
 
 import contextlib
+import json
 import sqlite3
 
 import pytest
@@ -190,3 +191,98 @@ def test_connect_rolls_back_on_exception():
         raise RuntimeError("boom")
     with db.connect() as c:
         assert c.execute("SELECT COUNT(*) FROM users WHERE user_id = 'temp'").fetchone()[0] == 0
+
+
+# ---------------------------------------------------------------------------
+# Config fingerprint — stable experiment-identity hash for leaderboard grouping
+# ---------------------------------------------------------------------------
+
+
+def test_config_fingerprint_is_stable_16_hex():
+    cfg = {"strategy": "FedAvg", "dataset": "mnist", "lr": 0.01}
+    fp = db.config_fingerprint(cfg)
+    assert isinstance(fp, str)
+    assert len(fp) == 16
+    assert all(ch in "0123456789abcdef" for ch in fp)
+    assert fp == db.config_fingerprint(dict(cfg))  # deterministic across calls
+
+
+def test_config_fingerprint_ignores_key_order():
+    a = db.config_fingerprint({"strategy": "Krum", "dataset": "mnist", "lr": 0.01})
+    b = db.config_fingerprint({"lr": 0.01, "dataset": "mnist", "strategy": "Krum"})
+    assert a == b
+
+
+def test_config_fingerprint_excludes_seed():
+    base = {"strategy": "FedAvg", "dataset": "mnist", "lr": 0.01}
+    assert db.config_fingerprint({**base, "seed": 1}) == db.config_fingerprint(
+        {**base, "seed": 999}
+    )
+
+
+def test_config_fingerprint_excludes_git_sha():
+    base = {"strategy": "FedAvg", "dataset": "mnist"}
+    assert db.config_fingerprint({**base, "git_sha": "aaa"}) == db.config_fingerprint(
+        {**base, "git_sha": "bbb"}
+    )
+
+
+def test_config_fingerprint_sensitive_to_real_params():
+    base = {"strategy": "FedAvg", "dataset": "mnist", "lr": 0.01}
+    assert db.config_fingerprint(base) != db.config_fingerprint({**base, "strategy": "Krum"})
+    assert db.config_fingerprint(base) != db.config_fingerprint({**base, "lr": 0.02})
+
+
+def test_config_fingerprint_nested_params_order_invariant():
+    a = db.config_fingerprint(
+        {"strategy": "FedAvg", "partition_kwargs": {"alpha": 1.0, "min_size": 50}}
+    )
+    b = db.config_fingerprint(
+        {"strategy": "FedAvg", "partition_kwargs": {"min_size": 50, "alpha": 1.0}}
+    )
+    assert a == b
+
+
+def test_start_run_persists_fingerprint_and_groups_across_seeds():
+    base = {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist", "lr": 0.01}
+    r1 = db.start_run("alice", {**base, "seed": 1})
+    r2 = db.start_run("alice", {**base, "seed": 2})
+    with db.connect() as c:
+        rows = {
+            row["run_id"]: row["config_fingerprint"]
+            for row in c.execute("SELECT run_id, config_fingerprint FROM runs").fetchall()
+        }
+    assert rows[r1] is not None
+    assert rows[r1] == rows[r2]  # same experiment, different seed → same fingerprint
+
+
+def test_start_run_records_vfl_version_for_cross_version_comparability():
+    run_id = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m"})
+    with db.connect() as c:
+        row = c.execute("SELECT config_json FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+    assert "vfl_version" in json.loads(row["config_json"])
+
+
+def test_init_db_migrates_legacy_runs_table(tmp_path):
+    # A pre-fingerprint DB: the full old runs schema, missing only config_fingerprint.
+    legacy = tmp_path / "legacy.db"
+    with sqlite3.connect(legacy) as conn:
+        conn.executescript(
+            """
+            CREATE TABLE runs (
+                run_id TEXT PRIMARY KEY, user_id TEXT, git_sha TEXT, strategy TEXT,
+                model_id TEXT, dataset TEXT, seed INTEGER, min_clients INTEGER,
+                rounds INTEGER, config_json TEXT, status TEXT DEFAULT 'running',
+                started_at TIMESTAMP, completed_at TIMESTAMP
+            );
+            INSERT INTO runs(run_id, user_id, strategy, model_id)
+                VALUES ('old', 'alice', 'FedAvg', 'm');
+            """
+        )
+    db.init_db(legacy)
+    with sqlite3.connect(legacy) as conn:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(runs)")}
+        # Existing rows survive the migration (new column defaults to NULL).
+        survivors = conn.execute("SELECT run_id FROM runs").fetchall()
+    assert "config_fingerprint" in cols
+    assert survivors == [("old",)]
