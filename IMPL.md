@@ -11,13 +11,12 @@ execution lives here.
 ## In flight
 
 Nothing open. Shipped 2026-05-28 (see ROADMAP → Completed): **experiment config
-fingerprint** + **live-store accuracy leaderboard** (`db.accuracy_leaderboard`
-groups completed runs by `config_fingerprint`, ranks final-round accuracy
-mean±std+n — the first per-axis ranking over the live store, sibling to the
-arena's dumped CSV; also fixed a data-loss gap where `global_accuracy` was
-computed then dropped at `record_round`), surfaced via the `velocity
-leaderboard` CLI command. Prior: FEMNIST natural partition + client-side DP
-(2026-05-27).
+fingerprint**, **live-store accuracy leaderboard** (+ persisting the
+`global_accuracy` that `record_round` was dropping), and the **rounds-to-target
+convergence-speed axis** — two per-axis rankings over the live store
+(`db.accuracy_leaderboard` / `db.rounds_to_target_leaderboard`), both surfaced
+via `velocity leaderboard [--metric ...]`. Prior: FEMNIST natural partition +
+client-side DP (2026-05-27).
 
 ## Next up (queued, not active)
 
@@ -28,14 +27,16 @@ future work; all three Live-experiment-leaderboard prerequisites are in fact
 met, and the first ranking axis (accuracy) now reads the live store. Corrected
 priorities:
 
-1. **More leaderboard axes + surfacing** (ROADMAP → Live experiment leaderboard)
-   — extend the live ranking past accuracy: rounds-to-target, wall-clock,
-   Byzantine robustness delta (accuracy drop under attack vs matched baseline),
-   then the Pareto frontier per (dataset × attack). The `velocity leaderboard`
-   CLI surface ships; an MCP tool + the Zensical page remain. Each axis is its
-   own small slice. Note the robustness/wall-clock axes are *also* blocked on
-   the live-run producer recording attack + `duration_ms` (run_real_training
-   records neither today) — instrumenting the producer is the real unblock.
+1. **Instrument the live-run producer** (the real unblock for more axes) —
+   `run_real_training` records neither `duration_ms` nor attacked runs, so the
+   wall-clock and Byzantine-robustness-delta axes can't be built over the live
+   store. Two axes already ship (accuracy + rounds-to-target) because they only
+   need the per-round `global_accuracy` now persisted. Recording `duration_ms`
+   (cheap: time the round loop) unblocks wall-clock; an attacked live-run path
+   unblocks robustness-delta. Then: Pareto frontier per (dataset × attack), and
+   the MCP tool + Zensical page surfaces (the CLI surface already ships). Caveat:
+   `run_real_training` lives in `mcp_app.py` and is torch-gated, so it's not
+   cleanly unit-testable in a bare env — verify via CI.
 2. **Server-side DP-FedAvg in Rust core** (ROADMAP → Privacy, research-tier) — the
    novel sibling to the shipped client-side DP; only once the perf story has
    headroom and the Rust-vs-Python DP comparison can be honest.
