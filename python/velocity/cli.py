@@ -104,8 +104,10 @@ def leaderboard(
     from velocity import db
     from velocity.memory import default_user_id
 
-    if metric not in {"accuracy", "rounds-to-target", "wall-clock"}:
-        raise typer.BadParameter("metric must be 'accuracy', 'rounds-to-target', or 'wall-clock'")
+    if metric not in {"accuracy", "rounds-to-target", "wall-clock", "pareto"}:
+        raise typer.BadParameter(
+            "metric must be 'accuracy', 'rounds-to-target', 'wall-clock', or 'pareto'"
+        )
 
     user_id = user or default_user_id()
 
@@ -152,6 +154,29 @@ def leaderboard(
             typer.echo(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_wall_clock_ms']:>10.0f}  {std:>8}"
+            )
+        return
+
+    if metric == "pareto":
+        board = db.pareto_frontier(user_id, min_runs=min_runs)
+        if json_out:
+            typer.echo(json.dumps(board))
+            return
+        if not board:
+            typer.echo(
+                f"No completed runs measured on both accuracy and wall-clock "
+                f"for user {user_id!r} yet."
+            )
+            return
+        typer.echo(f"Pareto frontier — accuracy vs wall-clock (user: {user_id})")
+        typer.echo(
+            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_acc':>8}  {'mean_ms':>10}"
+        )
+        for rank, row in enumerate(board, start=1):
+            dataset = row["dataset"] or "-"
+            typer.echo(
+                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+                f"{row['mean_accuracy']:>8.4f}  {row['mean_wall_clock_ms']:>10.0f}"
             )
         return
 

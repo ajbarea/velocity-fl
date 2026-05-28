@@ -529,3 +529,53 @@ def test_wall_clock_is_user_scoped():
     board = db.wall_clock_leaderboard("alice")
     assert len(board) == 1
     assert board[0]["mean_wall_clock_ms"] == pytest.approx(100)
+
+
+# ---------------------------------------------------------------------------
+# pareto_frontier — non-dominated set across accuracy (max) vs wall-clock (min)
+# ---------------------------------------------------------------------------
+
+
+def _completed_run_full(user_id: str, config: dict, rounds: list[tuple[float, int]]) -> str:
+    """rounds: list of (global_accuracy, duration_ms) per round."""
+    run_id = db.start_run(user_id, config)
+    for i, (acc, dur) in enumerate(rounds, start=1):
+        db.record_round(
+            run_id, {"round": i, "global_accuracy": acc, "duration_ms": dur, "num_clients": 3}
+        )
+    db.complete_run(run_id)
+    return run_id
+
+
+def test_pareto_keeps_non_dominated_and_drops_dominated():
+    # Krum: best accuracy; FedAvg: fastest; Bulyan: worse on both -> dominated.
+    _completed_run_full("alice", {"strategy": "Krum", "model_id": "m", "seed": 1}, [(0.95, 500)])
+    _completed_run_full("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [(0.90, 100)])
+    _completed_run_full("alice", {"strategy": "Bulyan", "model_id": "m", "seed": 1}, [(0.85, 600)])
+    frontier = db.pareto_frontier("alice")
+    strategies = {r["strategy"] for r in frontier}
+    assert strategies == {"Krum", "FedAvg"}  # Bulyan dominated by both
+    # sorted by accuracy descending
+    assert [r["strategy"] for r in frontier] == ["Krum", "FedAvg"]
+
+
+def test_pareto_excludes_configs_without_timing():
+    _completed_run_full("alice", {"strategy": "Krum", "model_id": "m", "seed": 1}, [(0.95, 500)])
+    # FedAvg has accuracy but no duration -> not placeable on the wall-clock axis
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.99])
+    frontier = db.pareto_frontier("alice")
+    assert [r["strategy"] for r in frontier] == ["Krum"]
+
+
+def test_pareto_is_user_scoped():
+    _completed_run_full("alice", {"strategy": "Krum", "model_id": "m", "seed": 1}, [(0.95, 500)])
+    _completed_run_full("bob", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [(0.99, 100)])
+    frontier = db.pareto_frontier("alice")
+    assert [r["strategy"] for r in frontier] == ["Krum"]
+
+
+def test_pareto_row_carries_both_axes():
+    _completed_run_full("alice", {"strategy": "Krum", "model_id": "m", "seed": 1}, [(0.95, 500)])
+    row = db.pareto_frontier("alice")[0]
+    assert row["mean_accuracy"] == pytest.approx(0.95)
+    assert row["mean_wall_clock_ms"] == pytest.approx(500)

@@ -516,6 +516,55 @@ def wall_clock_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str,
     return board
 
 
+def pareto_frontier(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """Non-dominated experiments across accuracy (max) vs total wall-clock (min).
+
+    The honest answer to "what should I use": rather than a single winner, the
+    set of experiments where you can't gain accuracy without spending more
+    wall-clock (or vice versa). Reuses `accuracy_leaderboard` +
+    `wall_clock_leaderboard`, joined per `config_fingerprint` (only configs
+    measured on both axes qualify), returning the non-dominated set ordered by
+    accuracy descending.
+
+    research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL
+    multi-objective tradeoff framing (resource-efficiency + fast-convergence work,
+    MDPI Sensors 2024); per-axis leaderboards bury the tradeoff a frontier shows.
+    First cut is 2-axis (accuracy / wall-clock); rounds-to-target + robustness
+    delta join the frontier once robustness ships.
+    """
+    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
+    wc = {r["config_fingerprint"]: r for r in wall_clock_leaderboard(user_id, min_runs=min_runs)}
+    points = [
+        {
+            "config_fingerprint": fp,
+            "strategy": acc[fp]["strategy"],
+            "dataset": acc[fp]["dataset"],
+            "n_runs": acc[fp]["n_runs"],
+            "mean_accuracy": acc[fp]["mean_accuracy"],
+            "mean_wall_clock_ms": wc[fp]["mean_wall_clock_ms"],
+        }
+        for fp in acc.keys() & wc.keys()
+    ]
+
+    def _dominated(p: dict[str, Any]) -> bool:
+        # q dominates p if q is no worse on both axes and strictly better on one
+        # (accuracy maximised, wall-clock minimised).
+        return any(
+            q is not p
+            and q["mean_accuracy"] >= p["mean_accuracy"]
+            and q["mean_wall_clock_ms"] <= p["mean_wall_clock_ms"]
+            and (
+                q["mean_accuracy"] > p["mean_accuracy"]
+                or q["mean_wall_clock_ms"] < p["mean_wall_clock_ms"]
+            )
+            for q in points
+        )
+
+    frontier = [p for p in points if not _dominated(p)]
+    frontier.sort(key=lambda r: r["mean_accuracy"], reverse=True)
+    return frontier
+
+
 def active_hypotheses(user_id: str) -> list[dict[str, Any]]:
     with connect() as c:
         rows = c.execute(

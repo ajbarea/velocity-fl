@@ -284,3 +284,30 @@ def test_cli_leaderboard_wall_clock_json(_isolated_db):
     payload = json.loads(result.stdout)
     assert payload[0]["strategy"] == "FedAvg"
     assert payload[0]["mean_wall_clock_ms"] == 250
+
+
+def _seed_run_full(db, user: str, config: dict, acc: float, dur: int) -> None:
+    run_id = db.start_run(user, config)
+    db.record_round(
+        run_id, {"round": 1, "global_accuracy": acc, "duration_ms": dur, "num_clients": 3}
+    )
+    db.complete_run(run_id)
+
+
+def test_cli_leaderboard_pareto(_isolated_db):
+    _seed_run_full(
+        _isolated_db, "alice", {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}, 0.95, 500
+    )
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "pareto"])
+    assert result.exit_code == 0, result.stdout
+    assert "Pareto" in result.stdout
+    assert "Krum" in result.stdout
+
+
+def test_cli_leaderboard_pareto_json(_isolated_db):
+    _seed_run_full(_isolated_db, "alice", {"strategy": "FedAvg", "model_id": "m"}, 0.9, 100)
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "pareto", "--json"])
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload[0]["strategy"] == "FedAvg"
+    assert payload[0]["mean_accuracy"] == pytest.approx(0.9)
