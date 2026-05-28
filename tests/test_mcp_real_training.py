@@ -271,3 +271,30 @@ def test_unknown_strategy_rejected_before_elicit(stub_execute: AsyncMock) -> Non
             )
         )
     stub_execute.assert_not_awaited()
+
+
+def test_attacked_update_dispatches_all_types():
+    """_attacked_update builds a valid poisoned ClientUpdate for each attack."""
+    torch = pytest.importorskip("torch")
+    from velocity import _core
+
+    def toy_state(scale: float) -> dict:
+        return {"fc.weight": torch.ones(2, 3) * scale, "fc.bias": torch.zeros(2) + scale}
+
+    template = toy_state(0.0)
+    honest = [toy_state(1.0), toy_state(1.1)]
+    attacker = toy_state(2.0)
+    for attack in ("gaussian_noise", "ipm", "sign_flip", "alie"):
+        upd = mcp_app._attacked_update(
+            attack,
+            template_state=template,
+            honest_states=honest,
+            honest_samples=[10, 10],
+            attacker_state=attacker,
+            num_clients=3,
+            num_samples=10,
+            seed=0,
+            round_idx=0,
+        )
+        assert isinstance(upd, _core.ClientUpdate), attack
+        assert upd.num_samples == 10, attack

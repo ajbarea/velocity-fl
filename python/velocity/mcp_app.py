@@ -855,8 +855,10 @@ async def run_real_training(
     strat = parse_strategy(strategy) if strategy is not None else parse_strategy("FedAvg")
     if partition not in ("iid", "dirichlet", "shard"):
         raise ValueError(f"partition must be one of iid|dirichlet|shard, got {partition!r}")
-    if attack is not None and attack != "gaussian_noise":
-        raise ValueError(f"attack must be None or 'gaussian_noise', got {attack!r}")
+    if attack is not None and attack not in _REAL_TRAINING_ATTACKS:
+        raise ValueError(
+            f"attack must be None or one of {sorted(_REAL_TRAINING_ATTACKS)}, got {attack!r}"
+        )
     p_kwargs = partition_kwargs or {}
 
     strat_label = strategy_name(strat)
@@ -985,6 +987,51 @@ def _map_strategy_to_rust(strategy: Any) -> Any:
     raise ValueError(f"Unsupported strategy: {strategy!r}")
 
 
+# Attacks the real-training producer can inject (one malicious client). Each maps
+# to a paper_attacks primitive; the robustness-delta leaderboard reads the result.
+_REAL_TRAINING_ATTACKS = frozenset({"gaussian_noise", "ipm", "sign_flip", "alie"})
+
+
+def _attacked_update(
+    attack: str,
+    *,
+    template_state: dict[str, Any],
+    honest_states: list[dict[str, Any]],
+    honest_samples: list[int],
+    attacker_state: dict[str, Any] | None,
+    num_clients: int,
+    num_samples: int,
+    seed: int,
+    round_idx: int,
+) -> Any:
+    """Build the malicious client's poisoned ``ClientUpdate`` for ``attack``.
+
+    Dispatches to the hermetically-tested `velocity.paper_attacks` primitives,
+    one malicious client. ``gaussian_noise`` needs only the model template;
+    ``sign_flip`` flips the attacker's own trained state; ``ipm`` / ``alie`` craft
+    from the honest cluster's trained states.
+    """
+    from velocity.paper_attacks import (
+        alie_attack,
+        gaussian_byzantine,
+        inner_product_manipulation,
+        sign_flip_byzantine,
+    )
+
+    if attack == "gaussian_noise":
+        return gaussian_byzantine(template_state, seed=seed + round_idx, num_samples=num_samples)
+    if attack == "sign_flip":
+        assert attacker_state is not None  # the caller's loop sets it for client 0
+        return sign_flip_byzantine(attacker_state, num_samples=num_samples)
+    if attack == "ipm":
+        return inner_product_manipulation(honest_states, honest_samples, num_samples=num_samples)
+    if attack == "alie":
+        return alie_attack(
+            honest_states, num_clients=num_clients, num_adv=1, num_samples=num_samples
+        )
+    raise ValueError(f"unknown attack {attack!r}")
+
+
 def _run_real_training_sync(
     *,
     user_id: str,
@@ -1088,7 +1135,10 @@ def _run_real_training_sync(
         pre_loss, _ = evaluate(pre_eval, split.test_loader)
 
         client_updates = []
-        for client in split.clients:
+        honest_states: list[dict[str, Any]] = []
+        honest_samples: list[int] = []
+        attacker_state: dict[str, Any] | None = None
+        for cid, client in enumerate(split.clients):
             local_model = make_model()
             local_model.load_state_dict(copy.deepcopy(global_state))
             local_train(
@@ -1098,23 +1148,34 @@ def _run_real_training_sync(
                 lr=lr,
                 proximal_mu=proximal_mu,
             )
+            sd = local_model.state_dict()
             client_updates.append(
                 _core.ClientUpdate(
                     num_samples=client.num_samples,
-                    weights=state_dict_to_layers(local_model.state_dict()),
+                    weights=state_dict_to_layers(sd),
                 )
             )
+            # Client 0 is the malicious one; collect the honest cluster's trained
+            # states (some attacks craft from them) and the attacker's own state.
+            if attack and cid == 0:
+                attacker_state = sd
+            elif attack:
+                honest_states.append(sd)
+                honest_samples.append(client.num_samples)
 
-        if attack == "gaussian_noise" and client_updates:
-            # Replace one client's update with Gaussian noise (the canonical
-            # baseline model-poisoning attack) so robustness-delta can compare the
-            # attacked run against its matched no-attack baseline.
-            from velocity.paper_attacks import gaussian_byzantine
-
-            client_updates[0] = gaussian_byzantine(
-                template_state,
-                seed=seed + _round_idx,
+        if attack and client_updates:
+            # Replace the malicious client's update so robustness-delta can compare
+            # the attacked run against its matched no-attack baseline.
+            client_updates[0] = _attacked_update(
+                attack,
+                template_state=template_state,
+                honest_states=honest_states,
+                honest_samples=honest_samples,
+                attacker_state=attacker_state,
+                num_clients=len(split.clients),
                 num_samples=split.clients[0].num_samples,
+                seed=seed,
+                round_idx=_round_idx,
             )
 
         summary_obj = orch.run_round(client_updates, reported_loss=pre_loss)
