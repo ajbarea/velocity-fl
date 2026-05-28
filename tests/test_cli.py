@@ -164,3 +164,58 @@ def test_cli_run_krum_shorthand_surfaces_insufficient_clients():
     )
     # Non-zero exit because aggregation raises; the shorthand itself parsed.
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# leaderboard command — surfaces db.accuracy_leaderboard over the live store
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def _isolated_db(tmp_path, monkeypatch):
+    monkeypatch.setenv("VFL_DB_PATH", str(tmp_path / "experiments.db"))
+    from velocity import db
+
+    def _reset() -> None:
+        if hasattr(db._LOCAL, "conn"):
+            db._LOCAL.conn.close()
+            del db._LOCAL.conn
+
+    _reset()
+    yield db
+    _reset()
+
+
+def _seed_run(db, user: str, config: dict, final_acc: float) -> None:
+    run_id = db.start_run(user, config)
+    db.record_round(run_id, {"round": 1, "global_accuracy": final_acc, "num_clients": 3})
+    db.complete_run(run_id)
+
+
+def test_cli_leaderboard_ranks_by_accuracy(_isolated_db):
+    base = {"model_id": "m", "dataset": "mnist", "seed": 1}
+    _seed_run(_isolated_db, "alice", {**base, "strategy": "Krum"}, 0.95)
+    _seed_run(_isolated_db, "alice", {**base, "strategy": "FedAvg"}, 0.70)
+    result = runner.invoke(app, ["leaderboard", "--user", "alice"])
+    assert result.exit_code == 0, result.stdout
+    out = result.stdout
+    assert "Krum" in out and "FedAvg" in out
+    assert out.index("Krum") < out.index("FedAvg")  # ranked by mean accuracy desc
+
+
+def test_cli_leaderboard_json(_isolated_db):
+    _seed_run(
+        _isolated_db, "alice", {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist"}, 0.88
+    )
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--json"])
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert isinstance(payload, list)
+    assert payload[0]["strategy"] == "FedAvg"
+    assert payload[0]["mean_accuracy"] == pytest.approx(0.88)
+
+
+def test_cli_leaderboard_empty_is_friendly(_isolated_db):
+    result = runner.invoke(app, ["leaderboard", "--user", "nobody"])
+    assert result.exit_code == 0
+    assert "No completed runs" in result.stdout

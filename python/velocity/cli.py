@@ -81,6 +81,43 @@ def strategies() -> None:
 
 
 @app.command()
+def leaderboard(
+    user: str = typer.Option(
+        None, help="User id (default: $VFL_USER_ID, then the current OS user)."
+    ),
+    min_runs: int = typer.Option(1, min=1, help="Drop experiments with fewer than N runs."),
+    json_out: bool = typer.Option(False, "--json", help="Emit JSON instead of a table."),
+) -> None:
+    """Rank stored experiments by mean final-round accuracy across seeds.
+
+    Reads the live experiment store (`velocity.db`), grouping completed runs by
+    config fingerprint so seed-repeats collapse into one ranked row.
+    """
+    from velocity import db
+    from velocity.memory import default_user_id
+
+    user_id = user or default_user_id()
+    board = db.accuracy_leaderboard(user_id, min_runs=min_runs)
+    if json_out:
+        typer.echo(json.dumps(board))
+        return
+    if not board:
+        typer.echo(f"No completed runs with accuracy for user {user_id!r} yet.")
+        return
+    typer.echo(f"Accuracy leaderboard (user: {user_id})")
+    typer.echo(
+        f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_acc':>8}  {'std_acc':>8}"
+    )
+    for rank, row in enumerate(board, start=1):
+        std = "n/a" if row["std_accuracy"] is None else f"{row['std_accuracy']:.4f}"
+        dataset = row["dataset"] or "-"
+        typer.echo(
+            f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+            f"{row['mean_accuracy']:>8.4f}  {std:>8}"
+        )
+
+
+@app.command()
 def run(
     model_id: str = typer.Option(..., help="Hugging Face model identifier."),
     dataset: str = typer.Option(..., help="Dataset name or path (HF Hub or local)."),
