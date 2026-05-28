@@ -460,6 +460,62 @@ def rounds_to_target_leaderboard(
     return board
 
 
+def wall_clock_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """Total run wall-clock ranked per experiment (faster first).
+
+    For each *completed* run, the sum of its per-round `duration_ms` is the run's
+    total wall-clock; runs with no timing data are excluded. Grouped by
+    `config_fingerprint`, aggregated mean ± sample-std across the group, ordered
+    ascending (faster first). `std` is `None` for a single run; groups below
+    `min_runs` are dropped.
+
+    research(2026-05): wall-clock training time is a standard FL systems-benchmark
+    axis (FedScale), reported mean ± std over seeds and kept distinct from round
+    count (per-round time varies). Third live-store axis after accuracy and
+    rounds-to-target; fed by the `duration_ms` recorded in `run_real_training`.
+    """
+    with connect() as c:
+        rows = c.execute(
+            """
+            SELECT r.config_fingerprint AS fp, r.strategy, r.dataset,
+                   (SELECT SUM(duration_ms) FROM rounds WHERE run_id = r.run_id) AS total_ms
+            FROM runs r
+            WHERE r.user_id = ?
+              AND r.status = 'complete'
+              AND r.config_fingerprint IS NOT NULL
+            """,
+            (user_id,),
+        ).fetchall()
+
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if row["total_ms"] is None:
+            continue  # no per-round timing recorded
+        g = groups.setdefault(
+            row["fp"],
+            {
+                "config_fingerprint": row["fp"],
+                "strategy": row["strategy"],
+                "dataset": row["dataset"],
+                "_totals": [],
+            },
+        )
+        g["_totals"].append(row["total_ms"])
+
+    board: list[dict[str, Any]] = []
+    for g in groups.values():
+        totals = g.pop("_totals")
+        if len(totals) < min_runs:
+            continue
+        g["n_runs"] = len(totals)
+        g["mean_wall_clock_ms"] = statistics.fmean(totals)
+        g["std_wall_clock_ms"] = statistics.stdev(totals) if len(totals) > 1 else None
+        board.append(g)
+
+    board.sort(key=lambda r: r["mean_wall_clock_ms"])  # ascending: faster first
+    return board
+
+
 def active_hypotheses(user_id: str) -> list[dict[str, Any]]:
     with connect() as c:
         rows = c.execute(

@@ -104,8 +104,8 @@ def leaderboard(
     from velocity import db
     from velocity.memory import default_user_id
 
-    if metric not in {"accuracy", "rounds-to-target"}:
-        raise typer.BadParameter("metric must be 'accuracy' or 'rounds-to-target'")
+    if metric not in {"accuracy", "rounds-to-target", "wall-clock"}:
+        raise typer.BadParameter("metric must be 'accuracy', 'rounds-to-target', or 'wall-clock'")
 
     user_id = user or default_user_id()
 
@@ -131,6 +131,27 @@ def leaderboard(
             typer.echo(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_reached']:>3}  "
                 f"{row['mean_rounds_to_target']:>11.2f}  {std:>6}"
+            )
+        return
+
+    if metric == "wall-clock":
+        board = db.wall_clock_leaderboard(user_id, min_runs=min_runs)
+        if json_out:
+            typer.echo(json.dumps(board))
+            return
+        if not board:
+            typer.echo(f"No completed runs with timing for user {user_id!r} yet.")
+            return
+        typer.echo(f"Wall-clock leaderboard (user: {user_id})")
+        typer.echo(
+            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_ms':>10}  {'std_ms':>8}"
+        )
+        for rank, row in enumerate(board, start=1):
+            std = "n/a" if row["std_wall_clock_ms"] is None else f"{row['std_wall_clock_ms']:.0f}"
+            dataset = row["dataset"] or "-"
+            typer.echo(
+                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+                f"{row['mean_wall_clock_ms']:>10.0f}  {std:>8}"
             )
         return
 

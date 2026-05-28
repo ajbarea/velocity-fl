@@ -459,3 +459,73 @@ def test_rounds_to_target_single_run_std_none():
     row = db.rounds_to_target_leaderboard("alice", target=0.9)[0]
     assert row["n_reached"] == 1
     assert row["std_rounds_to_target"] is None
+
+
+# ---------------------------------------------------------------------------
+# wall_clock_leaderboard — total run wall-clock ranked per experiment
+# ---------------------------------------------------------------------------
+
+
+def _completed_run_durations(user_id: str, config: dict, durations_ms: list[int]) -> str:
+    run_id = db.start_run(user_id, config)
+    for i, d in enumerate(durations_ms, start=1):
+        db.record_round(run_id, {"round": i, "duration_ms": d, "num_clients": 3})
+    db.complete_run(run_id)
+    return run_id
+
+
+def test_wall_clock_ranks_faster_first():
+    fast = {"strategy": "Krum", "model_id": "m", "dataset": "mnist", "seed": 1}
+    slow = {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist", "seed": 1}
+    _completed_run_durations("alice", fast, [100, 100])  # total 200ms
+    _completed_run_durations("alice", slow, [300, 400])  # total 700ms
+    board = db.wall_clock_leaderboard("alice")
+    assert [r["strategy"] for r in board] == ["Krum", "FedAvg"]
+    assert board[0]["mean_wall_clock_ms"] == pytest.approx(200)
+
+
+def test_wall_clock_groups_seeds_with_mean_std():
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _completed_run_durations("alice", {**base, "seed": 1}, [100, 100])  # 200
+    _completed_run_durations("alice", {**base, "seed": 2}, [200, 200])  # 400
+    board = db.wall_clock_leaderboard("alice")
+    assert len(board) == 1
+    assert board[0]["n_runs"] == 2
+    assert board[0]["mean_wall_clock_ms"] == pytest.approx(300)  # (200+400)/2
+    assert board[0]["std_wall_clock_ms"] == pytest.approx(141.42136, abs=1e-3)  # stdev([200,400])
+
+
+def test_wall_clock_excludes_runs_without_duration():
+    rid = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1})
+    db.record_round(rid, {"round": 1, "global_accuracy": 0.9, "num_clients": 3})  # no duration_ms
+    db.complete_run(rid)
+    assert db.wall_clock_leaderboard("alice") == []
+
+
+def test_wall_clock_min_runs_filter():
+    _completed_run_durations("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [100])
+    assert db.wall_clock_leaderboard("alice", min_runs=2) == []
+
+
+def test_wall_clock_excludes_incomplete_runs():
+    rid = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1})
+    db.record_round(rid, {"round": 1, "duration_ms": 100, "num_clients": 3})
+    # never completed → still 'running'
+    assert db.wall_clock_leaderboard("alice") == []
+
+
+def test_wall_clock_single_run_std_none():
+    _completed_run_durations(
+        "alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [100, 200]
+    )
+    row = db.wall_clock_leaderboard("alice")[0]
+    assert row["n_runs"] == 1
+    assert row["std_wall_clock_ms"] is None
+
+
+def test_wall_clock_is_user_scoped():
+    _completed_run_durations("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [100])
+    _completed_run_durations("bob", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [999])
+    board = db.wall_clock_leaderboard("alice")
+    assert len(board) == 1
+    assert board[0]["mean_wall_clock_ms"] == pytest.approx(100)

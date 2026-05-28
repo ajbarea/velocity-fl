@@ -257,3 +257,30 @@ def test_cli_leaderboard_rounds_to_target_json(_isolated_db):
 def test_cli_leaderboard_rejects_unknown_metric(_isolated_db):
     result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "bogus"])
     assert result.exit_code != 0
+
+
+def _seed_run_duration(db, user: str, config: dict, duration_ms: int) -> None:
+    run_id = db.start_run(user, config)
+    db.record_round(run_id, {"round": 1, "duration_ms": duration_ms, "num_clients": 3})
+    db.complete_run(run_id)
+
+
+def test_cli_leaderboard_wall_clock(_isolated_db):
+    _seed_run_duration(
+        _isolated_db, "alice", {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}, 250
+    )
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "wall-clock"])
+    assert result.exit_code == 0, result.stdout
+    assert "Wall-clock" in result.stdout
+    assert "Krum" in result.stdout
+
+
+def test_cli_leaderboard_wall_clock_json(_isolated_db):
+    _seed_run_duration(_isolated_db, "alice", {"strategy": "FedAvg", "model_id": "m"}, 250)
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "wall-clock", "--json"]
+    )
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload[0]["strategy"] == "FedAvg"
+    assert payload[0]["mean_wall_clock_ms"] == 250

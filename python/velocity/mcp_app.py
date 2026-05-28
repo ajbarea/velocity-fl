@@ -1073,6 +1073,7 @@ def _run_real_training_sync(
 
     summaries: list[dict[str, Any]] = []
     for _round_idx in range(rounds):
+        round_start = time.perf_counter()
         global_state = layers_to_state_dict(orch.global_weights(), template_state)
         pre_eval = make_model()
         pre_eval.load_state_dict(global_state)
@@ -1106,6 +1107,7 @@ def _run_real_training_sync(
             "num_clients": summary_obj.num_clients,
             "global_loss": float(post_loss),
             "global_accuracy": float(post_acc),
+            "duration_ms": int((time.perf_counter() - round_start) * 1000),
             "attack_results": [],
             "selected_client_ids": summary_obj.selected_client_ids,
         }
