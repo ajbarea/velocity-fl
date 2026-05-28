@@ -315,6 +315,51 @@ def list_runs(user_id: str, limit: int = 10) -> ToolResult:
 
 @mcp.tool
 @logged_tool
+def leaderboard(
+    user_id: str,
+    metric: str = "accuracy",
+    target: float = 0.9,
+    min_runs: int = 1,
+) -> ToolResult:
+    """Rank stored experiments across seeds by a leaderboard metric.
+
+    ``metric`` is one of ``accuracy`` (final-round), ``rounds-to-target``
+    (rounds to reach ``target`` accuracy), ``wall-clock`` (total run time),
+    ``robustness`` (accuracy drop under attack vs the matched no-attack
+    baseline), or ``pareto`` (non-dominated accuracy-vs-wall-clock set). Runs are
+    grouped by config fingerprint so seed-repeats collapse into one row.
+
+    The model reads a compact text summary; the user sees the rendered
+    DataTable. May 2026 best practice (gofastmcp.com/servers/tools): text in
+    ``content``, structured rows in ``structured_content``.
+    """
+    boards = {
+        "accuracy": lambda: db.accuracy_leaderboard(user_id, min_runs=min_runs),
+        "rounds-to-target": lambda: db.rounds_to_target_leaderboard(
+            user_id, target=target, min_runs=min_runs
+        ),
+        "wall-clock": lambda: db.wall_clock_leaderboard(user_id, min_runs=min_runs),
+        "robustness": lambda: db.robustness_delta_leaderboard(user_id, min_runs=min_runs),
+        "pareto": lambda: db.pareto_frontier(user_id, min_runs=min_runs),
+    }
+    if metric not in boards:
+        raise ValueError(f"metric must be one of {sorted(boards)}, got {metric!r}")
+    rows = boards[metric]()
+    if not rows:
+        return ToolResult(
+            content=f"No {metric} leaderboard data for {user_id} yet.",
+            structured_content={"metric": metric, "rows": []},
+        )
+    columns = [DataTableColumn(key=k, header=k, sortable=True) for k in rows[0]]
+    table = DataTable(columns=columns, rows=rows, search=True)  # ty: ignore[invalid-argument-type]
+    summary_lines = [f"{metric} leaderboard for {user_id} ({len(rows)} rows, top 5):"]
+    for r in rows[:5]:
+        summary_lines.append("  " + " | ".join(f"{k}={r[k]}" for k in rows[0]))
+    return ToolResult(content="\n".join(summary_lines), structured_content=table.to_json())
+
+
+@mcp.tool
+@logged_tool
 def run_rounds_history(run_id: str) -> ToolResult:
     """Return per-round (round_num, global_loss, num_clients) for a run.
 

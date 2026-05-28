@@ -273,6 +273,31 @@ def test_unknown_strategy_rejected_before_elicit(stub_execute: AsyncMock) -> Non
     stub_execute.assert_not_awaited()
 
 
+def test_leaderboard_tool_ranks_and_summarizes(isolated_db: Path) -> None:
+    """The leaderboard tool returns a ranked text summary + structured rows."""
+    base = {"model_id": "m", "dataset": "mnist"}
+    for strat, acc in (("Krum", 0.95), ("FedAvg", 0.70)):
+        rid = db.start_run("u", {**base, "strategy": strat})
+        db.record_round(rid, {"round": 1, "global_accuracy": acc, "num_clients": 3})
+        db.complete_run(rid)
+    res = mcp_app.leaderboard(user_id="u", metric="accuracy")
+    text = res.content[0].text
+    assert "accuracy leaderboard" in text.lower()
+    assert "Krum" in text
+    # Krum (0.95) ranks above FedAvg (0.70)
+    assert text.index("Krum") < text.index("FedAvg")
+
+
+def test_leaderboard_tool_rejects_bad_metric(isolated_db: Path) -> None:
+    with pytest.raises(ValueError, match="metric must be one of"):
+        mcp_app.leaderboard(user_id="u", metric="bogus")
+
+
+def test_leaderboard_tool_empty_is_friendly(isolated_db: Path) -> None:
+    res = mcp_app.leaderboard(user_id="nobody", metric="accuracy")
+    assert "No accuracy leaderboard data" in res.content[0].text
+
+
 def test_attacked_update_dispatches_all_types():
     """_attacked_update builds a valid poisoned ClientUpdate for each attack."""
     torch = pytest.importorskip("torch")
