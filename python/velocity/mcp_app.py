@@ -25,7 +25,6 @@ import inspect
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, cast
 
 from fastmcp import Context, FastMCP
@@ -57,6 +56,13 @@ from prefab_ui.components.charts import ChartSeries, LineChart, Sparkline
 
 from velocity import db
 from velocity import memory as mem
+from velocity.arena import (
+    ARENA_ATTACKS,
+    ARENA_LABELS,
+    ARENA_STRATEGIES,
+    load_arena_corpus,
+    worst_case_leaderboard,
+)
 
 
 def logged_tool[F: Callable[..., Any]](fn: F) -> F:
@@ -460,50 +466,11 @@ def compare_runs(run_id_a: str, run_id_b: str) -> ToolResult:
 # leaderboard ordering in the dashboard.
 # ---------------------------------------------------------------------------
 
-_ARENA_STRATEGIES = ("FedAvg", "Krum", "MultiKrum", "Bulyan", "ArKrum")
-_ARENA_ATTACKS = ("gaussian", "ipm", "label_flip", "sign_flip", "alie", "fang_krum")
-_ARENA_LABELS = {
-    "gaussian": "Gaussian (Krum-paper)",
-    "ipm": "IPM (Fall of Empires)",
-    "label_flip": "Label flip (Tolpegin 2020)",
-    "sign_flip": "Sign flip (Damaskinos 2018)",
-    "alie": "ALIE (Baruch 2019)",
-    "fang_krum": "Fang-Krum (Fang 2020)",
-}
-
-
-def _load_arena_corpus() -> dict[str, list[dict[str, Any]]] | None:
-    """Load `out/attack_arena/aggregated.csv` reshaped per attack.
-
-    Returns ``None`` when the corpus is absent (the tool surface stays
-    cacheable; the tool itself raises a clear ``ValueError`` if invoked
-    against an empty corpus). The script that produces the file is
-    documented at ``out/attack_arena/README.md``.
-
-    Shape: ``{attack -> [{round, FedAvg, Krum, …, _FedAvg_std, …}, …]}``
-    where each round-row carries the per-strategy mean accuracy + std
-    keyed by ``_{strategy}_std`` (the underscore-prefix keeps the
-    LineChart's ``series=[ChartSeries(dataKey=strategy)]`` resolution
-    clean).
-    """
-    import csv
-
-    path = Path(__file__).resolve().parents[2] / "out" / "attack_arena" / "aggregated.csv"
-    if not path.exists():
-        return None
-    by_attack: dict[str, dict[int, dict[str, Any]]] = {}
-    with path.open() as fh:
-        for row in csv.DictReader(fh):
-            attack = row["attack"]
-            rnd = int(row["round"])
-            strategy = row["strategy"]
-            slot = by_attack.setdefault(attack, {}).setdefault(rnd, {"round": rnd})
-            slot[strategy] = float(row["mean_acc"])
-            slot[f"_{strategy}_std"] = float(row["std_acc"])
-    return {a: [d for _, d in sorted(by_round.items())] for a, by_round in by_attack.items()}
-
-
-_ARENA = _load_arena_corpus()
+# Strategy/attack ordering drives the dashboard's Tab + leaderboard ordering.
+# The pure corpus load + ranking live in `velocity.arena` (no FastMCP import) so
+# the static leaderboard-page generator (scripts/dump_leaderboard_page.py) shares
+# the same implementation.
+_ARENA = load_arena_corpus()
 
 
 def _arena_strategy_card(strategy: str, mean_acc: float, std_acc: float) -> Card:
@@ -556,7 +523,7 @@ def _arena_attack_panel(attack: str) -> Column:
     summary_row = Row(
         gap=4,
         children=[
-            _arena_strategy_card(s, finals[s], finals[f"_{s}_std"]) for s in _ARENA_STRATEGIES
+            _arena_strategy_card(s, finals[s], finals[f"_{s}_std"]) for s in ARENA_STRATEGIES
         ],
     )
     chart = Card(
@@ -564,7 +531,7 @@ def _arena_attack_panel(attack: str) -> Column:
             CardHeader(
                 children=[
                     CardTitle(
-                        f"{_ARENA_LABELS[attack]} · convergence over 16 rounds "
+                        f"{ARENA_LABELS[attack]} · convergence over 16 rounds "
                         f"(mean over 5 seeds · n=11 / f=2 / MNIST · Dirichlet alpha=1.0)"
                     )
                 ]
@@ -574,7 +541,7 @@ def _arena_attack_panel(attack: str) -> Column:
                     LineChart(
                         data=rows,
                         x_axis="round",
-                        series=[ChartSeries(dataKey=s, label=s) for s in _ARENA_STRATEGIES],
+                        series=[ChartSeries(dataKey=s, label=s) for s in ARENA_STRATEGIES],
                         height=380,
                         curve="smooth",
                         show_dots=True,
@@ -585,7 +552,7 @@ def _arena_attack_panel(attack: str) -> Column:
     )
     table_rows: list[dict[str, Any]] = []
     for r in rows:
-        for strategy in _ARENA_STRATEGIES:
+        for strategy in ARENA_STRATEGIES:
             table_rows.append(
                 {
                     "round": r["round"],
@@ -608,37 +575,12 @@ def _arena_attack_panel(attack: str) -> Column:
 
 
 def _arena_worst_case_leaderboard() -> list[dict[str, Any]]:
-    """Strategies sorted by worst-case (min) final accuracy across attacks.
+    """Worst-case (min) final accuracy across attacks, per strategy.
 
-    For each strategy, finds the attack that produced the lowest final
-    accuracy (its weakest case) and the convergence curve under that
-    attack. Returns the list pre-sorted best-to-worst by that worst-case
-    number — the "if I have to pick one strategy without knowing the
-    attack, which is safest?" leaderboard shape.
+    Thin binding of the loaded corpus to ``velocity.arena.worst_case_leaderboard``
+    (the pure ranking, shared with the static page generator).
     """
-    if _ARENA is None:
-        return []
-    finals: dict[str, dict[str, float]] = {}
-    curves: dict[str, dict[str, list[float]]] = {}
-    for attack in _ARENA_ATTACKS:
-        rows = _ARENA[attack]
-        for strategy in _ARENA_STRATEGIES:
-            finals.setdefault(strategy, {})[attack] = rows[-1][strategy]
-            curves.setdefault(strategy, {})[attack] = [r[strategy] for r in rows]
-    out: list[dict[str, Any]] = []
-    for strategy in _ARENA_STRATEGIES:
-        worst_attack = min(finals[strategy], key=lambda a: finals[strategy][a])
-        out.append(
-            {
-                "strategy": strategy,
-                "worst": finals[strategy][worst_attack],
-                "worst_attack": worst_attack,
-                "worst_attack_label": _ARENA_LABELS[worst_attack],
-                "curve": curves[strategy][worst_attack],
-            }
-        )
-    out.sort(key=lambda r: r["worst"], reverse=True)
-    return out
+    return worst_case_leaderboard(_ARENA)
 
 
 @mcp.tool
@@ -784,19 +726,18 @@ def attack_arena() -> ToolResult:
     tree = Tabs(
         value="gaussian",
         children=[
-            Tab(_ARENA_LABELS[a], value=a, children=[_arena_attack_panel(a)])
-            for a in _ARENA_ATTACKS
+            Tab(ARENA_LABELS[a], value=a, children=[_arena_attack_panel(a)]) for a in ARENA_ATTACKS
         ],
     )
     if _ARENA is None:
         summary = "Attack-arena corpus empty. Run scripts/dump_attack_arena.py first."
     else:
         lines = ["Byzantine-FL attack arena (real MNIST, 5 seeds, 16 rounds):"]
-        for attack in _ARENA_ATTACKS:
+        for attack in ARENA_ATTACKS:
             finals = _ARENA[attack][-1]
-            ranked = sorted(_ARENA_STRATEGIES, key=lambda s: finals[s], reverse=True)
+            ranked = sorted(ARENA_STRATEGIES, key=lambda s: finals[s], reverse=True)
             lines.append(
-                f"  {_ARENA_LABELS[attack]}: " + ", ".join(f"{s}={finals[s]:.1%}" for s in ranked)
+                f"  {ARENA_LABELS[attack]}: " + ", ".join(f"{s}={finals[s]:.1%}" for s in ranked)
             )
         summary = "\n".join(lines)
     return ToolResult(content=summary, structured_content=tree.to_json())

@@ -19,6 +19,7 @@ nav = [
   { "API Reference" = "api.md" },
   { "Convergence" = "convergence.md" },
   { "Benchmarks" = "benchmarks.md" },
+  { "Leaderboard" = "leaderboard.md" },
   { "Skills" = "skills.md" },
 ]
 
