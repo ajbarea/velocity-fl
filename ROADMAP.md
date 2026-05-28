@@ -236,12 +236,14 @@ rather than the curated, dumped arena CSV the first cut renders.
   (`db.robustness_delta_leaderboard` — accuracy drop under attack vs the matched
   no-attack baseline). All surfaced via `velocity leaderboard [--metric ...]`.
   The producer was instrumented for both timing (`duration_ms`) and an
-  *attacked* live-run path (`run_real_training(attack=…)`, one malicious client,
-  via the `_attacked_update` dispatch over `paper_attacks`: `gaussian_noise`,
-  `ipm`, `sign_flip`, `alie`, plus `label_flip` (training-time, via a
-  `local_train` label callback). Remaining attack type: `fang_krum` (needs ≥2
-  malicious → a `num_malicious` param). Remaining axis: sample efficiency
-  (accuracy per total client sample). Per-axis because any weighted combination buries the tradeoffs
+  *attacked* live-run path (`run_real_training(attack=…, num_malicious=…)`) over
+  the full FLPoison headliner set — `gaussian_noise`, `ipm`, `sign_flip`, `alie`,
+  `fang_krum`, plus training-time `label_flip` — via the shared
+  `paper_attacks.craft_byzantine_updates` dispatch (N malicious slots; per-client
+  for gaussian/sign_flip, one craft tiled across slots for ipm/alie/fang_krum).
+  `fang_krum` requires `num_malicious >= 2` (Fang's binary search) and is rejected
+  at config time otherwise. Remaining axis: sample efficiency (accuracy per total
+  client sample). Per-axis because any weighted combination buries the tradeoffs
   that make the comparison interesting.
 - **Pareto frontier** — rather than a single "winner," surface the
   non-dominated set across axes. _First cut shipped 2026-05-28:_
@@ -374,6 +376,7 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-05-28 — **`fang_krum` live producer path (6th attack) + multi-malicious generalization.** `run_real_training` gained `num_malicious` (default 1; validated `1 <= num_malicious < num_clients` before elicitation, and `>= 2` for `fang_krum` per Fang's binary search). The producer loop now poisons the first `num_malicious` client slots, completing the FLPoison headliner set on the live robustness axis. **DRY:** the producer's per-attack tiling and the arena's (`scripts/dump_attack_arena.py`) were near-identical loops — both now share `paper_attacks.craft_byzantine_updates` (per-slot gaussian/sign_flip; one craft tiled across slots for ipm/alie/fang_krum). The arena passes `base_seed=0`, preserving its exact `cid*1000+round_idx` gaussian seeding (behavior-identical). `num_malicious` is recorded in the run config only when an attack is set (clean-run fingerprints unchanged) and is stripped alongside `attack` in `robustness_delta_leaderboard`'s base-fingerprint match so any attacker count pairs with the clean baseline. Verified end-to-end on real MNIST: `fang_krum` with 2/4 malicious collapses FedAvg 0.96→0.10 and the run pairs with its baseline (delta 0.86). MCP surface hash re-pinned (the `num_malicious` param is a deliberate surface change). research(2026-05): Fang et al., *Local Model Poisoning Attacks to Byzantine-Robust FL*, USENIX Security 2020 (arXiv:1911.11815); identical-supporters tiling per the FLPoison SoK reference impl.
 - 2026-05-28 — **MCP `leaderboard` tool (agent access to all 5 views).** `@mcp.tool leaderboard(user_id, metric, target, min_runs)` dispatches the five db leaderboard functions (accuracy / rounds-to-target / wall-clock / robustness / pareto) and returns a `ToolResult` with a compact text summary in `content` (model-facing) + a `DataTable` in `structured_content` (client-facing), mirroring `list_runs`. The whole MCP server exists for agent access; the leaderboard was CLI-only until now. MCP surface hash updated (new tool). research(2026-05): MCP 6/18 structured-content spec + FastMCP guidance — text in `content` for the model, structured rows in `structured_content` for the client. Only the Zensical web page surface remains — self-verifiable via headless Windows Chrome (serve on WSL localhost + `--screenshot`/`--dump-dom`).
 - 2026-05-28 — **Robustness attack coverage broadened.** The attacked producer now covers five `paper_attacks` types, one malicious client: `gaussian_noise`, `ipm`, `sign_flip`, `alie` via the `_attacked_update` dispatch (update replacement; `_run_real_training_sync` collects the honest cluster's + attacker's trained states so ipm/alie can craft from them), plus `label_flip` (training-time, via a `make_label_flip_callback` on the malicious client's `local_train`). Dispatch unit-tested (toy states); ipm + label_flip verified end-to-end on real runs. `fang_krum` (needs ≥2 malicious → a `num_malicious` param) remains.
 - 2026-05-28 — **Byzantine robustness-delta axis (+ attacked producer path).** `db.robustness_delta_leaderboard(user_id, min_runs=1)` matches each attacked run against its no-attack baseline by *base fingerprint* (`config_fingerprint` over config minus `attack`) and ranks by accuracy drop = `mean(baseline) - mean(attacked)`, most-robust first. Producer: `run_real_training(attack="gaussian_noise")` injects a Gaussian-noise client (reusing `paper_attacks.gaussian_byzantine`) and records `attack` in the run config; first attack type, more to follow. Surfaced via `velocity leaderboard --metric robustness`. Verified end-to-end on a real MNIST run (baseline 0.836 vs gaussian-attacked 0.097 → delta 0.739). The MCP tool-surface hash was updated (the `attack` param is a deliberate surface change). research(2026-05): matched attacked-vs-clean accuracy delta is the standard FL robustness measure (FLPoison SoK arXiv:2502.03801). Completes the per-axis engine (4 ranking axes + Pareto).

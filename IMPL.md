@@ -16,7 +16,10 @@ Nothing open. The live-experiment **leaderboard is feature-complete** as of
 frontier, all surfaced via `velocity leaderboard
 [--metric accuracy|rounds-to-target|wall-clock|pareto|robustness]`. The producer
 (`run_real_training`) was instrumented for per-round `duration_ms` and an
-attacked path (`attack="gaussian_noise"`), both verified on real MNIST runs.
+attacked path that now covers the **full FLPoison headliner set** —
+`gaussian_noise`, `ipm`, `sign_flip`, `alie`, `fang_krum`, `label_flip` — over a
+`num_malicious` parameter, via the shared `paper_attacks.craft_byzantine_updates`
+dispatch (de-duplicated with the arena). Verified on real MNIST runs.
 Prior: FEMNIST natural partition + client-side DP (2026-05-27).
 
 ## Next up (queued, not active)
@@ -24,12 +27,12 @@ Prior: FEMNIST natural partition + client-side DP (2026-05-27).
 The leaderboard read/CLI side is now complete (4 axes + Pareto + robustness).
 What remains builds on it:
 
-1. **Broaden + surface the leaderboard.** The robustness producer now covers
-   `gaussian_noise`, `ipm`, `sign_flip`, `alie`, `label_flip` (one malicious
-   client). Still to add: `fang_krum` (needs ≥2 malicious → a `num_malicious`
-   param, which also changes the MCP tool surface). Extend Pareto to 3-axis
-   (fold in rounds-to-target) and
-   slice per (dataset × attack). Add sample-efficiency. Surfaces: the CLI
+1. **Broaden + surface the leaderboard.** The robustness producer now covers the
+   full FLPoison headliner set — `gaussian_noise`, `ipm`, `sign_flip`, `alie`,
+   `fang_krum`, `label_flip` — over `num_malicious` clients (shipped 2026-05-28).
+   Still to add: extend Pareto to 3-axis (fold in rounds-to-target) and slice per
+   (dataset × attack); add sample-efficiency (blocked — total client samples
+   aren't recorded; needs a producer change first). Surfaces: the CLI
    (`velocity leaderboard`) and the **MCP `leaderboard` tool** both ship; only
    the **Zensical web page** remains — and it's self-verifiable now: serve it on
    WSL localhost and `--screenshot`/`--dump-dom` via headless Windows Chrome
