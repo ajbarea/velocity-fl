@@ -27,6 +27,7 @@ except ImportError as exc:  # pragma: no cover
 
 __all__ = [
     "ClientData",
+    "dp_local_train",
     "evaluate",
     "layers_to_state_dict",
     "local_train",
@@ -131,6 +132,78 @@ def local_train(
             loss.backward()
             optimizer.step()
     return model
+
+
+def dp_local_train(
+    model: nn.Module,
+    loader: DataLoader,
+    *,
+    noise_multiplier: float,
+    max_grad_norm: float,
+    epochs: int = 1,
+    lr: float = 0.01,
+    momentum: float = 0.9,
+    loss_fn: nn.Module | None = None,
+    device: str | torch.device = "cpu",
+    delta: float = 1e-5,
+) -> tuple[nn.Module, float]:
+    """Local DP-SGD on one client's data; returns ``(trained_model, epsilon_spent)``.
+
+    The differentially-private counterpart of :func:`local_train`: an Opacus
+    ``PrivacyEngine`` wraps the model, optimizer, and loader so each step does
+    per-sample gradient clipping at ``max_grad_norm`` then adds Gaussian noise
+    scaled by ``noise_multiplier`` (DP-SGD; Abadi et al., CCS 2016). The privacy
+    spent over ``epochs`` is returned as ``epsilon`` at ``delta``, via Opacus's
+    Rényi-DP accountant (tighter composition than plain (ε, δ)-DP).
+
+    Higher ``noise_multiplier`` ⇒ stronger privacy ⇒ smaller ``epsilon`` and
+    lower utility — the trade-off the caller tunes.
+
+    Opacus is an optional dependency (``velocity-fl[dp]``), imported lazily so it
+    stays off the base and ``[torch]`` install paths.
+
+    research(2026-05): Opacus 1.6 ``PrivacyEngine.make_private`` is the canonical
+    PyTorch DP-SGD path (Fed-BioMed FL reference). This helper is single-round
+    (one engine per call); cumulative cross-round accounting + ``secure_mode`` for
+    production are demonstrated/discussed in ``examples/mnist_fedavg_dp.py``.
+    """
+    try:
+        from opacus import PrivacyEngine
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(
+            "dp_local_train requires Opacus. Install with: pip install 'velocity-fl[dp]'"
+        ) from exc
+
+    criterion = loss_fn if loss_fn is not None else nn.CrossEntropyLoss()
+    model.train()
+    model.to(device)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+
+    privacy_engine = PrivacyEngine()
+    dp_parts = privacy_engine.make_private(
+        module=model,
+        optimizer=optimizer,
+        data_loader=loader,
+        noise_multiplier=noise_multiplier,
+        max_grad_norm=max_grad_norm,
+    )
+    # Opacus's make_private return-type stub overstates the tuple arity (types the
+    # with-criterion 4-tuple); the no-criterion call returns the 3 we unpack.
+    private_model, private_optimizer, private_loader = dp_parts  # ty: ignore[invalid-assignment]
+
+    for _ in range(epochs):
+        for x, y in private_loader:
+            x = x.to(device)
+            y = y.to(device)
+            private_optimizer.zero_grad()
+            # Opacus's make_private return-union confuses ty; the wrapper is callable.
+            loss = criterion(private_model(x), y)  # ty: ignore[call-non-callable]
+            loss.backward()
+            private_optimizer.step()
+
+    # `model` was wrapped by reference, so it now holds the trained weights with
+    # clean state_dict keys (no GradSampleModule prefix) for aggregation.
+    return model, float(privacy_engine.get_epsilon(delta=delta))
 
 
 @torch.no_grad()

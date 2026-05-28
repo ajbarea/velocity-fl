@@ -297,9 +297,8 @@ below are wider than they are today.
 
 ## Privacy
 
-> Source: 2026-05-21 audit-of-audits. Byzantine robustness + DP is the 2026 gold-standard pairing per [Fed-BioMed Opacus reference](https://fedbiomed.gitlabpages.inria.fr/latest/tutorials/security/differential-privacy-with-opacus-on-fedbiomed/). Two distinct work-streams: client-side DP (Opacus, canonical) and server-side DP in the Rust kernel (novel, research).
+> Source: 2026-05-21 audit-of-audits. Byzantine robustness + DP is the 2026 gold-standard pairing per [Fed-BioMed Opacus reference](https://fedbiomed.gitlabpages.inria.fr/latest/tutorials/security/differential-privacy-with-opacus-on-fedbiomed/). Two distinct work-streams: client-side DP (Opacus, canonical — shipped 2026-05-27, see Completed) and server-side DP in the Rust kernel (novel, research — below).
 
-- **Client-side DP via Opacus in example clients** — wire `Opacus.PrivacyEngine` into `examples/mnist_fedavg.py` and any new example clients so the example surface demonstrates DP-aware training. This is the canonical 2026 pattern; not novel infrastructure work but visible adoption. Tier 1 low-lift. Pairs with phalanx-fl's parallel Privacy section (the simulation sandbox covers the same axis end-to-end).
 - **Server-side DP-FedAvg in Rust core (research)** — implement Gaussian-mechanism gradient clipping + noise injection inside `vfl-core/src/strategy.rs` with Renyi-DP accounting for tighter bounds. Expose via `velocity.strategy.FedAvg(differential_privacy=DifferentialPrivacy(epsilon=5.0, ...))`. Benchmark: Rust DP-aggregation vs pure-Python DP alternatives — if Rust isn't materially faster, the work doesn't ship as-is. Research-tier; only meaningful after client-side DP is shipped in examples so the comparison story is honest. Position as: "vFL is the only Rust-native FL aggregator with first-class DP support."
 
 ## Streaming aggregation (research)
@@ -347,6 +346,8 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-27 — **Client-side differential privacy (Opacus DP-SGD).** `velocity.training.dp_local_train(...) -> (model, epsilon)` wraps a client's local training in an Opacus `PrivacyEngine` (per-sample clipping + Gaussian noise; Rényi-DP accounting). New `[dp]` extra (`opacus>=1.6,<2`; torch stays CPU-only via `[tool.uv.sources]`). Demonstrated in `examples/mnist_fedavg_dp.py` (Dirichlet non-IID; per-round worst-case epsilon; ~0.83 acc under DP noise vs the non-private demo's ~0.92). Single-engine-per-call helper; cumulative cross-round accounting + `secure_mode` are flagged as production follow-ups in the example. research(2026-05): Opacus 1.6 is the canonical PyTorch DP-SGD path (Fed-BioMed FL reference).
 
 - 2026-05-27 — **FEMNIST natural (writer-keyed) partition.** `velocity.partition.natural(group_ids, num_clients)` deals whole groups (writers) across clients so a writer never splits — the canonical non-IID benchmark where one writer ≈ one client. Threaded through `load_federated(partition="natural", group_by=...)`, with `writer_id` group aliases and `character` added to the label aliases, so `flwrlabs/femnist` loads end-to-end. Stdlib-only (Rust-portable, like the other partitioners). Deliberately deferred (no leaderboard consumer yet): MCP `run_experiment` exposure, a FEMNIST `NORMALIZATION_STATS` entry, a runnable example. research(2026-05): mirrors Flower Datasets' `NaturalIdPartitioner` / `GroupedNaturalIdPartitioner`, keyed on `num_clients` to match this module's API.
 
