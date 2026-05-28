@@ -814,6 +814,7 @@ async def run_real_training(
     strategy: dict[str, Any] | None = None,
     partition: str = "iid",
     partition_kwargs: dict[str, Any] | None = None,
+    attack: str | None = None,
 ) -> dict[str, Any]:
     """Trigger a real federated round against MNIST (not mock).
 
@@ -854,6 +855,8 @@ async def run_real_training(
     strat = parse_strategy(strategy) if strategy is not None else parse_strategy("FedAvg")
     if partition not in ("iid", "dirichlet", "shard"):
         raise ValueError(f"partition must be one of iid|dirichlet|shard, got {partition!r}")
+    if attack is not None and attack != "gaussian_noise":
+        raise ValueError(f"attack must be None or 'gaussian_noise', got {attack!r}")
     p_kwargs = partition_kwargs or {}
 
     strat_label = strategy_name(strat)
@@ -898,6 +901,7 @@ async def run_real_training(
         strategy=strat,
         partition=partition,
         partition_kwargs=p_kwargs,
+        attack=attack,
     )
 
 
@@ -914,6 +918,7 @@ async def _execute_real_training(
     strategy: Any,
     partition: str,
     partition_kwargs: dict[str, Any],
+    attack: str | None = None,
 ) -> dict[str, Any]:
     """Run real federated training off the asyncio thread.
 
@@ -935,6 +940,7 @@ async def _execute_real_training(
         strategy=strategy,
         partition=partition,
         partition_kwargs=partition_kwargs,
+        attack=attack,
     )
 
 
@@ -992,6 +998,7 @@ def _run_real_training_sync(
     strategy: Any,
     partition: str,
     partition_kwargs: dict[str, Any],
+    attack: str | None = None,
 ) -> dict[str, Any]:
     """Sync inner loop — mirrors examples/mnist_fedavg.py shape.
 
@@ -1067,6 +1074,7 @@ def _run_real_training_sync(
         "seed": seed,
         "partition": partition,
         "partition_kwargs": partition_kwargs,
+        "attack": attack,
         "mode": "real",
     }
     run_id = db.start_run(user_id, config)
@@ -1095,6 +1103,18 @@ def _run_real_training_sync(
                     num_samples=client.num_samples,
                     weights=state_dict_to_layers(local_model.state_dict()),
                 )
+            )
+
+        if attack == "gaussian_noise" and client_updates:
+            # Replace one client's update with Gaussian noise (the canonical
+            # baseline model-poisoning attack) so robustness-delta can compare the
+            # attacked run against its matched no-attack baseline.
+            from velocity.paper_attacks import gaussian_byzantine
+
+            client_updates[0] = gaussian_byzantine(
+                template_state,
+                seed=seed + _round_idx,
+                num_samples=split.clients[0].num_samples,
             )
 
         summary_obj = orch.run_round(client_updates, reported_loss=pre_loss)

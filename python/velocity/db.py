@@ -565,6 +565,78 @@ def pareto_frontier(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
     return frontier
 
 
+def robustness_delta_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """Accuracy drop under attack vs the matched no-attack baseline, per experiment.
+
+    Runs carry an optional `attack` in their config (absent/None = the honest
+    baseline). Runs are matched by *base fingerprint* — `config_fingerprint` over
+    the config with `attack` removed — so an attacked run pairs with the baseline
+    that shares every other knob. For each (base config, attack) the delta is
+    `mean(baseline accuracy) - mean(attacked accuracy)`: smaller = more robust.
+    Ranked ascending (most robust first). A group needs both a baseline and the
+    attack present, each with >= `min_runs` runs.
+
+    research(2026-05): the Byzantine-robustness axis the leaderboard's attack
+    arena reports as worst-case defense; matched attacked-vs-clean accuracy delta
+    is the standard FL robustness measure (FLPoison SoK arXiv:2502.03801).
+    """
+    with connect() as c:
+        rows = c.execute(
+            """
+            SELECT r.config_json, r.strategy, r.dataset,
+                   (SELECT global_accuracy FROM rounds
+                    WHERE run_id = r.run_id AND global_accuracy IS NOT NULL
+                    ORDER BY round_num DESC LIMIT 1) AS final_acc
+            FROM runs r
+            WHERE r.user_id = ?
+              AND r.status = 'complete'
+              AND r.config_fingerprint IS NOT NULL
+            """,
+            (user_id,),
+        ).fetchall()
+
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if row["final_acc"] is None:
+            continue
+        cfg = json.loads(row["config_json"])
+        attack = cfg.get("attack")
+        base_fp = config_fingerprint({k: v for k, v in cfg.items() if k != "attack"})
+        g = groups.setdefault(
+            base_fp,
+            {"strategy": row["strategy"], "dataset": row["dataset"], "baseline": [], "attacks": {}},
+        )
+        if attack is None:
+            g["baseline"].append(row["final_acc"])
+        else:
+            g["attacks"].setdefault(attack, []).append(row["final_acc"])
+
+    board: list[dict[str, Any]] = []
+    for g in groups.values():
+        if len(g["baseline"]) < min_runs:
+            continue
+        baseline_acc = statistics.fmean(g["baseline"])
+        for attack, accs in g["attacks"].items():
+            if len(accs) < min_runs:
+                continue
+            attacked_acc = statistics.fmean(accs)
+            board.append(
+                {
+                    "strategy": g["strategy"],
+                    "dataset": g["dataset"],
+                    "attack": attack,
+                    "n_baseline": len(g["baseline"]),
+                    "n_attacked": len(accs),
+                    "baseline_accuracy": baseline_acc,
+                    "attacked_accuracy": attacked_acc,
+                    "robustness_delta": baseline_acc - attacked_acc,
+                }
+            )
+
+    board.sort(key=lambda r: r["robustness_delta"])  # ascending: most robust first
+    return board
+
+
 def active_hypotheses(user_id: str) -> list[dict[str, Any]]:
     with connect() as c:
         rows = c.execute(

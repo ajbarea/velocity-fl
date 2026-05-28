@@ -311,3 +311,27 @@ def test_cli_leaderboard_pareto_json(_isolated_db):
     payload = json.loads(result.stdout)
     assert payload[0]["strategy"] == "FedAvg"
     assert payload[0]["mean_accuracy"] == pytest.approx(0.9)
+
+
+def test_cli_leaderboard_robustness(_isolated_db):
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _seed_run(_isolated_db, "alice", base, 0.90)  # baseline
+    _seed_run(_isolated_db, "alice", {**base, "attack": "gaussian_noise"}, 0.60)  # attacked
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "robustness"])
+    assert result.exit_code == 0, result.stdout
+    assert "Robustness" in result.stdout
+    assert "Krum" in result.stdout
+    assert "gaussian_noise" in result.stdout
+
+
+def test_cli_leaderboard_robustness_json(_isolated_db):
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _seed_run(_isolated_db, "alice", base, 0.90)
+    _seed_run(_isolated_db, "alice", {**base, "attack": "gaussian_noise"}, 0.60)
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "robustness", "--json"]
+    )
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload[0]["attack"] == "gaussian_noise"
+    assert payload[0]["robustness_delta"] == pytest.approx(0.30)

@@ -104,9 +104,9 @@ def leaderboard(
     from velocity import db
     from velocity.memory import default_user_id
 
-    if metric not in {"accuracy", "rounds-to-target", "wall-clock", "pareto"}:
+    if metric not in {"accuracy", "rounds-to-target", "wall-clock", "pareto", "robustness"}:
         raise typer.BadParameter(
-            "metric must be 'accuracy', 'rounds-to-target', 'wall-clock', or 'pareto'"
+            "metric must be 'accuracy', 'rounds-to-target', 'wall-clock', 'pareto', or 'robustness'"
         )
 
     user_id = user or default_user_id()
@@ -177,6 +177,27 @@ def leaderboard(
             typer.echo(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_accuracy']:>8.4f}  {row['mean_wall_clock_ms']:>10.0f}"
+            )
+        return
+
+    if metric == "robustness":
+        board = db.robustness_delta_leaderboard(user_id, min_runs=min_runs)
+        if json_out:
+            typer.echo(json.dumps(board))
+            return
+        if not board:
+            typer.echo(f"No matched baseline+attacked runs for user {user_id!r} yet.")
+            return
+        typer.echo(f"Robustness — accuracy drop under attack (user: {user_id})")
+        typer.echo(
+            f"{'#':>2}  {'strategy':<12} {'attack':<16} "
+            f"{'baseline':>8}  {'attacked':>8}  {'delta':>7}"
+        )
+        for rank, row in enumerate(board, start=1):
+            typer.echo(
+                f"{rank:>2}  {row['strategy']:<12} {row['attack']:<16} "
+                f"{row['baseline_accuracy']:>8.4f}  {row['attacked_accuracy']:>8.4f}  "
+                f"{row['robustness_delta']:>7.4f}"
             )
         return
 

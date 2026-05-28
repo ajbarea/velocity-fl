@@ -579,3 +579,66 @@ def test_pareto_row_carries_both_axes():
     row = db.pareto_frontier("alice")[0]
     assert row["mean_accuracy"] == pytest.approx(0.95)
     assert row["mean_wall_clock_ms"] == pytest.approx(500)
+
+
+# ---------------------------------------------------------------------------
+# robustness_delta_leaderboard — accuracy drop under attack vs matched baseline
+# ---------------------------------------------------------------------------
+
+
+def test_robustness_delta_matches_baseline_and_attack():
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _completed_run("alice", {**base, "seed": 1}, [0.90])  # baseline (no attack)
+    _completed_run("alice", {**base, "attack": "gaussian", "seed": 1}, [0.60])  # attacked
+    board = db.robustness_delta_leaderboard("alice")
+    assert len(board) == 1
+    row = board[0]
+    assert row["attack"] == "gaussian"
+    assert row["baseline_accuracy"] == pytest.approx(0.90)
+    assert row["attacked_accuracy"] == pytest.approx(0.60)
+    assert row["robustness_delta"] == pytest.approx(0.30)
+
+
+def test_robustness_delta_ranks_most_robust_first():
+    k = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    f = {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist"}
+    _completed_run("alice", {**k, "seed": 1}, [0.90])
+    _completed_run("alice", {**k, "attack": "gaussian", "seed": 1}, [0.80])  # Krum drops 0.10
+    _completed_run("alice", {**f, "seed": 1}, [0.90])
+    _completed_run("alice", {**f, "attack": "gaussian", "seed": 1}, [0.60])  # FedAvg drops 0.30
+    board = db.robustness_delta_leaderboard("alice")
+    assert [r["strategy"] for r in board] == ["Krum", "FedAvg"]  # ascending delta
+
+
+def test_robustness_delta_excludes_attack_without_baseline():
+    _completed_run(
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "mnist", "attack": "gaussian", "seed": 1},
+        [0.60],
+    )
+    assert db.robustness_delta_leaderboard("alice") == []
+
+
+def test_robustness_delta_groups_seeds():
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _completed_run("alice", {**base, "seed": 1}, [0.90])
+    _completed_run("alice", {**base, "seed": 2}, [0.92])  # baseline mean 0.91
+    _completed_run("alice", {**base, "attack": "gaussian", "seed": 1}, [0.60])
+    _completed_run("alice", {**base, "attack": "gaussian", "seed": 2}, [0.62])  # attacked mean 0.61
+    row = db.robustness_delta_leaderboard("alice")[0]
+    assert row["n_baseline"] == 2
+    assert row["n_attacked"] == 2
+    assert row["baseline_accuracy"] == pytest.approx(0.91)
+    assert row["attacked_accuracy"] == pytest.approx(0.61)
+    assert row["robustness_delta"] == pytest.approx(0.30)
+
+
+def test_robustness_delta_is_user_scoped():
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _completed_run("alice", {**base, "seed": 1}, [0.90])
+    _completed_run("alice", {**base, "attack": "gaussian", "seed": 1}, [0.70])
+    _completed_run("bob", {**base, "seed": 1}, [0.90])
+    _completed_run("bob", {**base, "attack": "gaussian", "seed": 1}, [0.10])
+    board = db.robustness_delta_leaderboard("alice")
+    assert len(board) == 1
+    assert board[0]["robustness_delta"] == pytest.approx(0.20)
