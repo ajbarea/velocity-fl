@@ -16,7 +16,9 @@ fingerprint** + **three live-store leaderboard axes** — accuracy
 was dropping), rounds-to-target (`db.rounds_to_target_leaderboard`), and
 wall-clock (`db.wall_clock_leaderboard`, unblocked by instrumenting
 `run_real_training` to record per-round `duration_ms`, verified with a real
-MNIST run). All surfaced via `velocity leaderboard [--metric ...]`. Prior:
+MNIST run) — plus a **Pareto frontier** (`db.pareto_frontier`, accuracy vs
+wall-clock non-dominated set). All four views surfaced via `velocity
+leaderboard [--metric accuracy|rounds-to-target|wall-clock|pareto]`. Prior:
 FEMNIST natural partition + client-side DP (2026-05-27).
 
 ## Next up (queued, not active)

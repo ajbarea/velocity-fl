@@ -241,10 +241,13 @@ rather than the curated, dumped arena CSV the first cut renders.
   plus sample efficiency (accuracy per total client sample). Per-axis because
   any weighted combination buries the tradeoffs that make the comparison
   interesting.
-- **Pareto frontier per (dataset × attack) pair** — rather than a
-  single "winner," surface the non-dominated set across
-  accuracy/robustness/wall-clock. This is the honest answer to "what
-  should I use" — there usually isn't one.
+- **Pareto frontier** — rather than a single "winner," surface the
+  non-dominated set across axes. _First cut shipped 2026-05-28:_
+  `db.pareto_frontier` over accuracy (max) vs total wall-clock (min),
+  surfaced via `velocity leaderboard --metric pareto` (reuses the accuracy +
+  wall-clock axis functions). The honest answer to "what should I use" —
+  there usually isn't one. Remaining: extend the frontier to rounds-to-target
+  and (once it ships) robustness delta, and slice it per (dataset × attack).
 - **Theoretical complexity labels, not rankings** — tag aggregators
   with their asymptotic cost (FedAvg: O(n·d); Krum: O(n²·d);
   Bulyan: O(n²·d + n·d·log n)). Static lookup, surfaced next to each
@@ -367,6 +370,7 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-05-28 — **Pareto frontier (accuracy vs wall-clock).** `db.pareto_frontier(user_id, min_runs=1)` reuses `accuracy_leaderboard` + `wall_clock_leaderboard`, joins per `config_fingerprint` (configs measured on both axes), and returns the non-dominated set (accuracy max, wall-clock min) ordered by accuracy desc. Surfaced via `velocity leaderboard --metric pareto`. The honest "what should I use" view; first 2-axis cut (rounds-to-target + robustness delta join later). research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL multi-objective framing (MDPI Sensors 2024 resource-efficiency + convergence).
 - 2026-05-28 — **Wall-clock leaderboard axis + producer instrumentation.** `run_real_training` now records per-round `duration_ms` (verified end-to-end with a real 2-round MNIST run: `duration_ms` lands in `rounds`). `db.wall_clock_leaderboard(user_id, min_runs=1)` sums each completed run's per-round durations, groups by `config_fingerprint`, and ranks by mean±std total wall-clock ascending (runs with no timing excluded). Surfaced via `velocity leaderboard --metric wall-clock`. Third per-axis ranking. research(2026-05): wall-clock training time is a standard FL systems-benchmark axis (FedScale), reported mean±std over seeds and kept distinct from round count.
 - 2026-05-28 — **Rounds-to-target leaderboard axis (convergence speed).** `db.rounds_to_target_leaderboard(user_id, target, min_runs=1)` takes each completed run's first round to reach `target` accuracy (runs that never reach are excluded), groups by `config_fingerprint`, and ranks by mean±std rounds + `n_reached` ascending (faster first). Surfaced via `velocity leaderboard --metric rounds-to-target --target 0.9`. Second per-axis ranking; unblocked by the per-round `global_accuracy` now persisted (so it needs no producer changes, unlike wall-clock / robustness-delta). research(2026-05): rounds-to-target is a standard FL convergence-speed axis alongside final accuracy (pFL-Bench / FL benchmark surveys).
 - 2026-05-28 — **Live-store accuracy leaderboard (first ranking axis).** `db.accuracy_leaderboard(user_id, min_runs=1)` groups *completed* runs by `config_fingerprint`, takes each run's last accuracy-bearing round, and ranks experiments by mean±std final accuracy + n_runs (std `None` at n=1). Also persisted `global_accuracy` on `rounds` (schema column + idempotent migration + `record_round` wiring) — it was computed by `run_real_training` and dropped on the floor before. The live-store sibling of the arena's dumped CSV; the per-axis ranking engine's first axis. Surfaced via the `velocity leaderboard` CLI command (`--json` for scripting); the MCP + Zensical surfaces are still ahead. research(2026-05): accuracy + σ-over-seeds is the canonical FL-benchmark reporting unit (pFL-Bench).
