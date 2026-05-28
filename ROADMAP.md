@@ -229,12 +229,13 @@ rather than the curated, dumped arena CSV the first cut renders.
   grouping read path — `GROUP BY config_fingerprint` over the live store — which
   is the per-axis ranking engine below; today only the dumped arena CSV is ranked.
 - **Per-axis ranking engine** — independent leaderboards, not a
-  single composite score. Axes: final-round accuracy, rounds-to-target
-  accuracy, wall-clock at fixed bench tier, Byzantine robustness
-  delta (accuracy drop under attack vs no-attack baseline on the same
-  data + strategy), sample efficiency (accuracy per total client
-  sample). Per-axis because any weighted combination buries the
-  tradeoffs that make the comparison interesting.
+  single composite score. _First axis shipped 2026-05-28:_ final-round
+  accuracy via `db.accuracy_leaderboard` (mean±std+n per fingerprint over
+  the live store). Remaining axes: rounds-to-target accuracy, wall-clock at
+  fixed bench tier, Byzantine robustness delta (accuracy drop under attack
+  vs no-attack baseline on the same data + strategy), sample efficiency
+  (accuracy per total client sample). Per-axis because any weighted
+  combination buries the tradeoffs that make the comparison interesting.
 - **Pareto frontier per (dataset × attack) pair** — rather than a
   single "winner," surface the non-dominated set across
   accuracy/robustness/wall-clock. This is the honest answer to "what
@@ -360,6 +361,8 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-28 — **Live-store accuracy leaderboard (first ranking axis).** `db.accuracy_leaderboard(user_id, min_runs=1)` groups *completed* runs by `config_fingerprint`, takes each run's last accuracy-bearing round, and ranks experiments by mean±std final accuracy + n_runs (std `None` at n=1). Also persisted `global_accuracy` on `rounds` (schema column + idempotent migration + `record_round` wiring) — it was computed by `run_real_training` and dropped on the floor before. The live-store sibling of the arena's dumped CSV; the per-axis ranking engine's first axis. research(2026-05): accuracy + σ-over-seeds is the canonical FL-benchmark reporting unit (pFL-Bench).
 
 - 2026-05-28 — **Experiment config fingerprint (leaderboard foundation).** `db.config_fingerprint(config)` → stable 16-hex SHA-256 over canonical JSON (stdlib sorted-key, no whitespace) of the run-identity config; stored on `runs.config_fingerprint` (indexed), computed in `start_run`, which now also stamps `vfl_version`. Seed + git_sha are excluded so seed-repeats of one experiment share a fingerprint (the arena's mean±std grouping); vfl_version is included for cross-version comparability. Idempotent `_migrate` adds the column + index to pre-fingerprint DBs. research(2026-05): RFC 8785 JCS → SHA-256 is the cross-language content-addressing standard; we use stdlib canonical JSON since the fingerprint is internal (no cross-runtime number-normalisation need, no new dep).
 

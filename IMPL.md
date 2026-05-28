@@ -10,24 +10,28 @@ execution lives here.
 
 ## In flight
 
-Nothing open. Most recent ship 2026-05-28 (see ROADMAP → Completed):
-**experiment config fingerprint** (`db.config_fingerprint` + `runs.config_fingerprint`
-column/index + `start_run` stamping `vfl_version`) — the leaderboard-ingestion
-foundation. Prior: FEMNIST natural partition + client-side DP (2026-05-27).
+Nothing open. Shipped 2026-05-28 (see ROADMAP → Completed): **experiment config
+fingerprint** + **live-store accuracy leaderboard** (`db.accuracy_leaderboard`
+groups completed runs by `config_fingerprint`, ranks final-round accuracy
+mean±std+n — the first per-axis ranking over the live store, sibling to the
+arena's dumped CSV; also fixed a data-loss gap where `global_accuracy` was
+computed then dropped at `record_round`). Prior: FEMNIST natural partition +
+client-side DP (2026-05-27).
 
 ## Next up (queued, not active)
 
 This session's reconciliation found the ROADMAP badly drifted: the
 `velocity.paper_attacks` headliner set (ALIE/IPM/Fang/sign-flip/gaussian, #36)
 and the attack-arena defender leaderboard (#33) were shipped but listed as
-future work, so all three Live-experiment-leaderboard prerequisites are in fact
-met. Corrected priorities:
+future work; all three Live-experiment-leaderboard prerequisites are in fact
+met, and the first ranking axis (accuracy) now reads the live store. Corrected
+priorities:
 
-1. **Leaderboard read path** (ROADMAP → Live experiment leaderboard, newly
-   unblocked by the fingerprint) — `GROUP BY config_fingerprint` over the live
-   store → per-axis ranking (final-acc, rounds-to-target, wall-clock, robustness
-   delta). The arena ranks a *dumped CSV* today; this ranks live runs. Start with
-   one axis, not the whole stack.
+1. **More leaderboard axes + surfacing** (ROADMAP → Live experiment leaderboard)
+   — extend the live ranking past accuracy: rounds-to-target, wall-clock,
+   Byzantine robustness delta (accuracy drop under attack vs matched baseline),
+   then the Pareto frontier per (dataset × attack). Surface `accuracy_leaderboard`
+   through an MCP tool / the Zensical page. Each axis is its own small slice.
 2. **Server-side DP-FedAvg in Rust core** (ROADMAP → Privacy, research-tier) — the
    novel sibling to the shipped client-side DP; only once the perf story has
    headroom and the Rust-vs-Python DP comparison can be honest.
