@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import statistics
 import threading
 import uuid
 from collections.abc import Iterator
@@ -53,12 +54,13 @@ CREATE TABLE IF NOT EXISTS runs (
 CREATE INDEX IF NOT EXISTS idx_runs_user_time ON runs(user_id, started_at DESC);
 
 CREATE TABLE IF NOT EXISTS rounds (
-    run_id       TEXT NOT NULL REFERENCES runs(run_id),
-    round_num    INTEGER NOT NULL,
-    global_loss  REAL,
-    num_clients  INTEGER,
-    duration_ms  INTEGER,
-    timestamp    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    run_id          TEXT NOT NULL REFERENCES runs(run_id),
+    round_num       INTEGER NOT NULL,
+    global_loss     REAL,
+    global_accuracy REAL,
+    num_clients     INTEGER,
+    duration_ms     INTEGER,
+    timestamp       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (run_id, round_num)
 );
 
@@ -119,12 +121,15 @@ def _migrate(conn: sqlite3.Connection) -> None:
     it references a column that may need migrating in first — running it after
     the ALTER keeps both fresh and legacy DBs on the same final shape.
     """
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(runs)")}
-    if "config_fingerprint" not in cols:
+    run_cols = {r[1] for r in conn.execute("PRAGMA table_info(runs)")}
+    if "config_fingerprint" not in run_cols:
         conn.execute("ALTER TABLE runs ADD COLUMN config_fingerprint TEXT")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_runs_fingerprint ON runs(user_id, config_fingerprint)"
     )
+    round_cols = {r[1] for r in conn.execute("PRAGMA table_info(rounds)")}
+    if "global_accuracy" not in round_cols:
+        conn.execute("ALTER TABLE rounds ADD COLUMN global_accuracy REAL")
 
 
 def init_db(path: Path | None = None) -> Path:
@@ -264,12 +269,13 @@ def record_round(run_id: str, summary: dict[str, Any]) -> None:
     with connect() as c:
         c.execute(
             """INSERT OR REPLACE INTO rounds(run_id, round_num, global_loss,
-                                             num_clients, duration_ms)
-               VALUES (?, ?, ?, ?, ?)""",
+                                             global_accuracy, num_clients, duration_ms)
+               VALUES (?, ?, ?, ?, ?, ?)""",
             (
                 run_id,
                 summary["round"],
                 summary.get("global_loss"),
+                summary.get("global_accuracy"),
                 summary.get("num_clients"),
                 summary.get("duration_ms"),
             ),
@@ -333,6 +339,66 @@ def run_history(run_id: str) -> list[dict[str, Any]]:
             (run_id,),
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+def accuracy_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """Final-round accuracy ranked per experiment, grouped by config fingerprint.
+
+    Each group is the set of *completed* runs sharing a `config_fingerprint`
+    (the same experiment across seeds). For every run we take the last round
+    that recorded a `global_accuracy`, then aggregate mean ± sample-std across
+    the group, ordered by mean accuracy descending. `std_accuracy` is `None`
+    for a single-run group — variance is undefined at n=1, and a single-seed
+    trace is not a publishable comparison. Groups below `min_runs` are dropped.
+
+    research(2026-05): accuracy is the headline axis in FL benchmark surveys
+    and mean ± std over seeds is the canonical reporting unit (pFL-Bench). This
+    is the live-store sibling of `scripts/dump_attack_arena.py`'s curated CSV.
+    """
+    with connect() as c:
+        rows = c.execute(
+            """
+            SELECT r.config_fingerprint AS fp, r.strategy, r.dataset,
+                   rd.global_accuracy AS acc
+            FROM runs r
+            JOIN rounds rd ON rd.run_id = r.run_id
+            WHERE r.user_id = ?
+              AND r.status = 'complete'
+              AND r.config_fingerprint IS NOT NULL
+              AND rd.global_accuracy IS NOT NULL
+              AND rd.round_num = (
+                  SELECT MAX(round_num) FROM rounds
+                  WHERE run_id = r.run_id AND global_accuracy IS NOT NULL
+              )
+            """,
+            (user_id,),
+        ).fetchall()
+
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        g = groups.setdefault(
+            row["fp"],
+            {
+                "config_fingerprint": row["fp"],
+                "strategy": row["strategy"],
+                "dataset": row["dataset"],
+                "_accs": [],
+            },
+        )
+        g["_accs"].append(row["acc"])
+
+    board: list[dict[str, Any]] = []
+    for g in groups.values():
+        accs = g.pop("_accs")
+        if len(accs) < min_runs:
+            continue
+        g["n_runs"] = len(accs)
+        g["mean_accuracy"] = statistics.fmean(accs)
+        g["std_accuracy"] = statistics.stdev(accs) if len(accs) > 1 else None
+        board.append(g)
+
+    board.sort(key=lambda r: r["mean_accuracy"], reverse=True)
+    return board
 
 
 def active_hypotheses(user_id: str) -> list[dict[str, Any]]:

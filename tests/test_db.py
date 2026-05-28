@@ -263,6 +263,49 @@ def test_start_run_records_vfl_version_for_cross_version_comparability():
     assert "vfl_version" in json.loads(row["config_json"])
 
 
+def test_record_round_persists_global_accuracy():
+    run_id = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m"})
+    db.record_round(
+        run_id,
+        {"round": 1, "global_loss": 0.3, "global_accuracy": 0.91, "num_clients": 3},
+    )
+    with db.connect() as c:
+        row = c.execute("SELECT global_accuracy FROM rounds WHERE run_id = ?", (run_id,)).fetchone()
+    assert row["global_accuracy"] == pytest.approx(0.91)
+
+
+def test_record_round_accuracy_optional():
+    # Demo summaries carry no accuracy; the column stays NULL, no error.
+    run_id = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m"})
+    db.record_round(run_id, {"round": 1, "global_loss": 0.3, "num_clients": 3})
+    with db.connect() as c:
+        row = c.execute("SELECT global_accuracy FROM rounds WHERE run_id = ?", (run_id,)).fetchone()
+    assert row["global_accuracy"] is None
+
+
+def test_init_db_migrates_legacy_rounds_table(tmp_path):
+    # A pre-accuracy DB: the old rounds schema, missing only global_accuracy.
+    legacy = tmp_path / "legacy_rounds.db"
+    with sqlite3.connect(legacy) as conn:
+        conn.executescript(
+            """
+            CREATE TABLE rounds (
+                run_id TEXT NOT NULL, round_num INTEGER NOT NULL, global_loss REAL,
+                num_clients INTEGER, duration_ms INTEGER,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (run_id, round_num)
+            );
+            INSERT INTO rounds(run_id, round_num, global_loss) VALUES ('r', 1, 0.5);
+            """
+        )
+    db.init_db(legacy)
+    with sqlite3.connect(legacy) as conn:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(rounds)")}
+        survivor = conn.execute("SELECT global_loss FROM rounds WHERE run_id = 'r'").fetchone()
+    assert "global_accuracy" in cols
+    assert survivor[0] == 0.5
+
+
 def test_init_db_migrates_legacy_runs_table(tmp_path):
     # A pre-fingerprint DB: the full old runs schema, missing only config_fingerprint.
     legacy = tmp_path / "legacy.db"
@@ -286,3 +329,75 @@ def test_init_db_migrates_legacy_runs_table(tmp_path):
         survivors = conn.execute("SELECT run_id FROM runs").fetchall()
     assert "config_fingerprint" in cols
     assert survivors == [("old",)]
+
+
+# ---------------------------------------------------------------------------
+# accuracy_leaderboard — final-round accuracy ranked per experiment fingerprint
+# ---------------------------------------------------------------------------
+
+
+def _completed_run(user_id: str, config: dict, accuracies: list[float]) -> str:
+    run_id = db.start_run(user_id, config)
+    for i, acc in enumerate(accuracies, start=1):
+        db.record_round(run_id, {"round": i, "global_accuracy": acc, "num_clients": 3})
+    db.complete_run(run_id)
+    return run_id
+
+
+def test_accuracy_leaderboard_groups_seeds_with_mean_std():
+    base = {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist", "lr": 0.01}
+    _completed_run("alice", {**base, "seed": 1}, [0.80, 0.90])  # final 0.90
+    _completed_run("alice", {**base, "seed": 2}, [0.70, 0.80])  # final 0.80
+    board = db.accuracy_leaderboard("alice")
+    assert len(board) == 1  # both seeds collapse into one experiment row
+    row = board[0]
+    assert row["n_runs"] == 2
+    assert row["mean_accuracy"] == pytest.approx(0.85)
+    assert row["std_accuracy"] == pytest.approx(0.0707107, abs=1e-6)  # stdev([0.9, 0.8])
+    assert row["strategy"] == "FedAvg"
+    assert row["dataset"] == "mnist"
+
+
+def test_accuracy_leaderboard_uses_final_round():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.5, 0.6, 0.99])
+    assert db.accuracy_leaderboard("alice")[0]["mean_accuracy"] == pytest.approx(0.99)
+
+
+def test_accuracy_leaderboard_ranks_by_mean_desc():
+    _completed_run("alice", {"strategy": "Krum", "model_id": "m", "seed": 1}, [0.95])
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.70])
+    assert [r["strategy"] for r in db.accuracy_leaderboard("alice")] == ["Krum", "FedAvg"]
+
+
+def test_accuracy_leaderboard_excludes_incomplete_runs():
+    run_id = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1})
+    db.record_round(run_id, {"round": 1, "global_accuracy": 0.99, "num_clients": 3})
+    # never completed → still 'running'
+    assert db.accuracy_leaderboard("alice") == []
+
+
+def test_accuracy_leaderboard_ignores_runs_without_accuracy():
+    run_id = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1})
+    db.record_round(run_id, {"round": 1, "global_loss": 0.3, "num_clients": 3})  # no accuracy
+    db.complete_run(run_id)
+    assert db.accuracy_leaderboard("alice") == []
+
+
+def test_accuracy_leaderboard_std_none_for_single_run():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.88])
+    row = db.accuracy_leaderboard("alice")[0]
+    assert row["n_runs"] == 1
+    assert row["std_accuracy"] is None
+
+
+def test_accuracy_leaderboard_min_runs_filter():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.88])
+    assert db.accuracy_leaderboard("alice", min_runs=2) == []
+
+
+def test_accuracy_leaderboard_is_user_scoped():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.88])
+    _completed_run("bob", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.99])
+    board = db.accuracy_leaderboard("alice")
+    assert len(board) == 1
+    assert board[0]["mean_accuracy"] == pytest.approx(0.88)
