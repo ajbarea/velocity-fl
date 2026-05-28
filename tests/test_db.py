@@ -401,3 +401,61 @@ def test_accuracy_leaderboard_is_user_scoped():
     board = db.accuracy_leaderboard("alice")
     assert len(board) == 1
     assert board[0]["mean_accuracy"] == pytest.approx(0.88)
+
+
+# ---------------------------------------------------------------------------
+# rounds_to_target_leaderboard — convergence speed ranked per experiment
+# ---------------------------------------------------------------------------
+
+
+def test_rounds_to_target_ranks_faster_first():
+    fast = {"strategy": "Krum", "model_id": "m", "dataset": "mnist", "seed": 1}
+    slow = {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist", "seed": 1}
+    _completed_run("alice", fast, [0.5, 0.95])  # reaches 0.9 at round 2
+    _completed_run("alice", slow, [0.3, 0.6, 0.8, 0.92])  # reaches 0.9 at round 4
+    board = db.rounds_to_target_leaderboard("alice", target=0.9)
+    assert [r["strategy"] for r in board] == ["Krum", "FedAvg"]
+    assert board[0]["mean_rounds_to_target"] == pytest.approx(2)
+
+
+def test_rounds_to_target_uses_first_crossing():
+    _completed_run(
+        "alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.5, 0.95, 0.7, 0.99]
+    )
+    board = db.rounds_to_target_leaderboard("alice", target=0.9)
+    assert board[0]["mean_rounds_to_target"] == pytest.approx(2)  # first crossing, not last
+
+
+def test_rounds_to_target_excludes_runs_that_never_reach():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.1, 0.2, 0.3])
+    assert db.rounds_to_target_leaderboard("alice", target=0.9) == []
+
+
+def test_rounds_to_target_groups_seeds_with_mean_std():
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _completed_run("alice", {**base, "seed": 1}, [0.5, 0.95])  # round 2
+    _completed_run("alice", {**base, "seed": 2}, [0.3, 0.6, 0.7, 0.91])  # round 4
+    board = db.rounds_to_target_leaderboard("alice", target=0.9)
+    assert len(board) == 1
+    assert board[0]["n_reached"] == 2
+    assert board[0]["mean_rounds_to_target"] == pytest.approx(3)  # (2+4)/2
+    assert board[0]["std_rounds_to_target"] == pytest.approx(1.4142136, abs=1e-6)  # stdev([2,4])
+
+
+def test_rounds_to_target_min_runs_filter():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.5, 0.95])
+    assert db.rounds_to_target_leaderboard("alice", target=0.9, min_runs=2) == []
+
+
+def test_rounds_to_target_excludes_incomplete_runs():
+    run_id = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1})
+    db.record_round(run_id, {"round": 1, "global_accuracy": 0.95, "num_clients": 3})
+    # never completed → still 'running'
+    assert db.rounds_to_target_leaderboard("alice", target=0.9) == []
+
+
+def test_rounds_to_target_single_run_std_none():
+    _completed_run("alice", {"strategy": "FedAvg", "model_id": "m", "seed": 1}, [0.5, 0.95])
+    row = db.rounds_to_target_leaderboard("alice", target=0.9)[0]
+    assert row["n_reached"] == 1
+    assert row["std_rounds_to_target"] is None

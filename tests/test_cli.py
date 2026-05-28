@@ -219,3 +219,41 @@ def test_cli_leaderboard_empty_is_friendly(_isolated_db):
     result = runner.invoke(app, ["leaderboard", "--user", "nobody"])
     assert result.exit_code == 0
     assert "No completed runs" in result.stdout
+
+
+def test_cli_leaderboard_rounds_to_target(_isolated_db):
+    _seed_run(
+        _isolated_db, "alice", {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}, 0.95
+    )
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "rounds-to-target", "--target", "0.9"]
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "Rounds-to-target" in result.stdout
+    assert "Krum" in result.stdout
+
+
+def test_cli_leaderboard_rounds_to_target_json(_isolated_db):
+    _seed_run(_isolated_db, "alice", {"strategy": "FedAvg", "model_id": "m"}, 0.95)
+    result = runner.invoke(
+        app,
+        [
+            "leaderboard",
+            "--user",
+            "alice",
+            "--metric",
+            "rounds-to-target",
+            "--target",
+            "0.9",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload[0]["strategy"] == "FedAvg"
+    assert payload[0]["mean_rounds_to_target"] == 1
+
+
+def test_cli_leaderboard_rejects_unknown_metric(_isolated_db):
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "bogus"])
+    assert result.exit_code != 0

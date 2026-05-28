@@ -401,6 +401,65 @@ def accuracy_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, A
     return board
 
 
+def rounds_to_target_leaderboard(
+    user_id: str, target: float, *, min_runs: int = 1
+) -> list[dict[str, Any]]:
+    """Rounds-to-target-accuracy ranked per experiment (faster convergence first).
+
+    For each *completed* run, the first round whose `global_accuracy` reaches
+    `target` is its rounds-to-target; runs that never reach it are excluded.
+    Grouped by `config_fingerprint`, aggregated mean ± sample-std over the runs
+    that reached, ordered ascending (fewer rounds = faster). `std` is `None` for
+    a single run; groups with fewer than `min_runs` reaching runs are dropped.
+
+    research(2026-05): rounds-to-target (communication rounds to a target
+    accuracy) is a standard FL convergence-speed axis alongside final accuracy,
+    reported mean ± std over seeds (pFL-Bench / FL benchmark surveys). Second
+    live-store axis after `accuracy_leaderboard`.
+    """
+    with connect() as c:
+        rows = c.execute(
+            """
+            SELECT r.config_fingerprint AS fp, r.strategy, r.dataset,
+                   (SELECT MIN(round_num) FROM rounds
+                    WHERE run_id = r.run_id AND global_accuracy >= ?) AS rtt
+            FROM runs r
+            WHERE r.user_id = ?
+              AND r.status = 'complete'
+              AND r.config_fingerprint IS NOT NULL
+            """,
+            (target, user_id),
+        ).fetchall()
+
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if row["rtt"] is None:
+            continue  # never reached the target accuracy
+        g = groups.setdefault(
+            row["fp"],
+            {
+                "config_fingerprint": row["fp"],
+                "strategy": row["strategy"],
+                "dataset": row["dataset"],
+                "_rtts": [],
+            },
+        )
+        g["_rtts"].append(row["rtt"])
+
+    board: list[dict[str, Any]] = []
+    for g in groups.values():
+        rtts = g.pop("_rtts")
+        if len(rtts) < min_runs:
+            continue
+        g["n_reached"] = len(rtts)
+        g["mean_rounds_to_target"] = statistics.fmean(rtts)
+        g["std_rounds_to_target"] = statistics.stdev(rtts) if len(rtts) > 1 else None
+        board.append(g)
+
+    board.sort(key=lambda r: r["mean_rounds_to_target"])  # ascending: faster first
+    return board
+
+
 def active_hypotheses(user_id: str) -> list[dict[str, Any]]:
     with connect() as c:
         rows = c.execute(

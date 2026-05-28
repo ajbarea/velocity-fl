@@ -85,18 +85,55 @@ def leaderboard(
     user: str = typer.Option(
         None, help="User id (default: $VFL_USER_ID, then the current OS user)."
     ),
+    metric: str = typer.Option(
+        "accuracy",
+        help="Ranking axis: 'accuracy' (final-round) or 'rounds-to-target' (convergence speed).",
+    ),
+    target: float = typer.Option(
+        0.9, help="Target accuracy for the 'rounds-to-target' metric (0-1)."
+    ),
     min_runs: int = typer.Option(1, min=1, help="Drop experiments with fewer than N runs."),
     json_out: bool = typer.Option(False, "--json", help="Emit JSON instead of a table."),
 ) -> None:
-    """Rank stored experiments by mean final-round accuracy across seeds.
+    """Rank stored experiments across seeds, grouped by config fingerprint.
 
-    Reads the live experiment store (`velocity.db`), grouping completed runs by
-    config fingerprint so seed-repeats collapse into one ranked row.
+    Reads the live experiment store (`velocity.db`). Two axes: final-round
+    accuracy (default) and rounds-to-target convergence speed (`--metric
+    rounds-to-target --target 0.9`).
     """
     from velocity import db
     from velocity.memory import default_user_id
 
+    if metric not in {"accuracy", "rounds-to-target"}:
+        raise typer.BadParameter("metric must be 'accuracy' or 'rounds-to-target'")
+
     user_id = user or default_user_id()
+
+    if metric == "rounds-to-target":
+        board = db.rounds_to_target_leaderboard(user_id, target=target, min_runs=min_runs)
+        if json_out:
+            typer.echo(json.dumps(board))
+            return
+        if not board:
+            typer.echo(f"No completed runs reaching accuracy {target:g} for user {user_id!r} yet.")
+            return
+        typer.echo(f"Rounds-to-target ({target:g}) leaderboard (user: {user_id})")
+        typer.echo(
+            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_rounds':>11}  {'std':>6}"
+        )
+        for rank, row in enumerate(board, start=1):
+            std = (
+                "n/a"
+                if row["std_rounds_to_target"] is None
+                else f"{row['std_rounds_to_target']:.2f}"
+            )
+            dataset = row["dataset"] or "-"
+            typer.echo(
+                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_reached']:>3}  "
+                f"{row['mean_rounds_to_target']:>11.2f}  {std:>6}"
+            )
+        return
+
     board = db.accuracy_leaderboard(user_id, min_runs=min_runs)
     if json_out:
         typer.echo(json.dumps(board))
