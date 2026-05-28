@@ -49,12 +49,8 @@ from velocity import _core
 from velocity.datasets import load_federated
 from velocity.paper_attacks import (
     ALL_ATTACKS,
-    alie_attack,
-    fang_krum_attack,
-    gaussian_byzantine,
-    inner_product_manipulation,
+    craft_byzantine_updates,
     run_federated_round,
-    sign_flip_byzantine,
 )
 from velocity.training import (
     evaluate,
@@ -146,46 +142,21 @@ def _run_one(
             apply_label_flip=(attack == "label_flip"),
         )
 
-        avg_samples = int(sum(c.num_samples for c in split.clients) / NUM_CLIENTS)
-        if attack == "label_flip":
-            pass  # label-flip was injected during training above.
-        elif attack == "ipm":
-            byzantine = inner_product_manipulation(
-                honest_states, honest_samples, num_samples=avg_samples
-            )
-            for cid in COMPROMISED_IDS:
-                updates[cid] = byzantine
-        elif attack == "gaussian":
-            for cid in COMPROMISED_IDS:
-                updates[cid] = gaussian_byzantine(
-                    template_state,
-                    seed=cid * 1000 + round_idx,
-                    num_samples=split.clients[cid].num_samples,
-                )
-        elif attack == "sign_flip":
-            for cid, state in zip(COMPROMISED_IDS, attacker_states, strict=True):
-                updates[cid] = sign_flip_byzantine(
-                    state, num_samples=split.clients[cid].num_samples
-                )
-        elif attack == "alie":
-            byzantine = alie_attack(
-                honest_states,
-                num_clients=NUM_CLIENTS,
-                num_adv=NUM_COMPROMISED,
-                num_samples=avg_samples,
-            )
-            for cid in COMPROMISED_IDS:
-                updates[cid] = byzantine
-        elif attack == "fang_krum":
-            byzantine = fang_krum_attack(
-                attacker_states,
+        if attack != "label_flip":  # label-flip was injected during training above
+            craft_byzantine_updates(
+                updates,
+                attack,
+                COMPROMISED_IDS,
                 global_state=global_state,
-                num_samples=avg_samples,
+                template_state=template_state,
+                honest_states=honest_states,
+                honest_samples=honest_samples,
+                attacker_states=attacker_states,
+                num_clients=NUM_CLIENTS,
+                sample_counts=[c.num_samples for c in split.clients],
+                base_seed=0,
+                round_idx=round_idx,
             )
-            for cid in COMPROMISED_IDS:
-                updates[cid] = byzantine
-        else:
-            raise ValueError(f"unknown attack: {attack!r}")
 
         orch.run_round(updates, reported_loss=pre_loss)
         post_eval = _make_model()

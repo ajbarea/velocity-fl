@@ -570,8 +570,10 @@ def robustness_delta_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dic
 
     Runs carry an optional `attack` in their config (absent/None = the honest
     baseline). Runs are matched by *base fingerprint* — `config_fingerprint` over
-    the config with `attack` removed — so an attacked run pairs with the baseline
-    that shares every other knob. For each (base config, attack) the delta is
+    the config with the attack spec (`attack` and `num_malicious`) removed — so an
+    attacked run pairs with the baseline that shares every other knob, regardless
+    of how many malicious clients the attack used. For each (base config, attack)
+    the delta is
     `mean(baseline accuracy) - mean(attacked accuracy)`: smaller = more robust.
     Ranked ascending (most robust first). A group needs both a baseline and the
     attack present, each with >= `min_runs` runs.
@@ -601,7 +603,9 @@ def robustness_delta_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dic
             continue
         cfg = json.loads(row["config_json"])
         attack = cfg.get("attack")
-        base_fp = config_fingerprint({k: v for k, v in cfg.items() if k != "attack"})
+        base_fp = config_fingerprint(
+            {k: v for k, v in cfg.items() if k not in ("attack", "num_malicious")}
+        )
         g = groups.setdefault(
             base_fp,
             {"strategy": row["strategy"], "dataset": row["dataset"], "baseline": [], "attacks": {}},

@@ -245,3 +245,108 @@ def test_gaussian_byzantine_uses_configurable_std() -> None:
     # 150 draws from N(0, 100); empirical std should be close to 10.
     vals = np.array(list(update.weights["fc1.weight"]) + list(update.weights["fc1.bias"]))
     assert vals.std() == pytest.approx(10.0, rel=0.25)
+
+
+# ---------------------------------------------------------------------------
+# craft_byzantine_updates — shared multi-malicious tiling dispatch
+# ---------------------------------------------------------------------------
+
+
+def _toy_update(state: dict[str, torch.Tensor], num_samples: int = 10):
+    from velocity import _core
+
+    return _core.ClientUpdate(
+        num_samples=num_samples,
+        weights={k: v.flatten().tolist() for k, v in state.items()},
+    )
+
+
+def _four_client_setup():
+    """cids 0,1 malicious + cids 2,3 honest; returns the kwargs craft expects."""
+    honest = [
+        _toy_state([[1.0, 2.0, 3.0], [0.5, 0.5]]),
+        _toy_state([[1.1, 2.1, 3.1], [0.6, 0.6]]),
+    ]
+    attacker = [
+        _toy_state([[0.2, -0.2, 0.2], [0.1, -0.1]]),
+        _toy_state([[0.3, -0.3, 0.3], [0.2, -0.2]]),
+    ]
+    zero = _toy_state([[0.0, 0.0, 0.0], [0.0, 0.0]])
+    updates = [_toy_update(attacker[0]), _toy_update(attacker[1]), *map(_toy_update, honest)]
+    return updates, {
+        "malicious_ids": [0, 1],
+        "global_state": zero,
+        "template_state": zero,
+        "honest_states": honest,
+        "honest_samples": [10, 10],
+        "attacker_states": attacker,
+        "num_clients": 4,
+        "sample_counts": [10, 10, 10, 10],
+    }
+
+
+def test_craft_tiles_ipm_to_every_malicious_slot_and_leaves_honest_untouched() -> None:
+    from velocity.paper_attacks import craft_byzantine_updates
+
+    updates, kw = _four_client_setup()
+    craft_byzantine_updates(updates, "ipm", **kw)
+    # Both malicious slots carry the identical crafted update (tiled).
+    assert updates[0].weights["fc1.weight"].tolist() == updates[1].weights["fc1.weight"].tolist()
+    # ipm with equal weights = -mean(honest fc1.weight=[1.0,2.0,3.0],[1.1,2.1,3.1]).
+    assert updates[0].weights["fc1.weight"].tolist() == pytest.approx([-1.05, -2.05, -3.05])
+    # Honest slots are not modified.
+    assert updates[2].weights["fc1.weight"].tolist() == pytest.approx([1.0, 2.0, 3.0])
+    assert updates[3].weights["fc1.weight"].tolist() == pytest.approx([1.1, 2.1, 3.1])
+
+
+def test_craft_alie_tiles_one_craft_to_all_malicious_slots() -> None:
+    from velocity.paper_attacks import craft_byzantine_updates
+
+    updates, kw = _four_client_setup()
+    craft_byzantine_updates(updates, "alie", **kw)
+    assert updates[0].weights["fc1.weight"].tolist() == updates[1].weights["fc1.weight"].tolist()
+
+
+def test_craft_gaussian_is_per_slot_distinct() -> None:
+    from velocity.paper_attacks import craft_byzantine_updates
+
+    updates, kw = _four_client_setup()
+    craft_byzantine_updates(updates, "gaussian", base_seed=0, round_idx=0, **kw)
+    # Per-client seeding (base_seed + cid*1000 + round_idx) => the two malicious
+    # slots get different noise, not a tiled clone.
+    assert updates[0].weights["fc1.weight"].tolist() != updates[1].weights["fc1.weight"].tolist()
+
+
+def test_craft_sign_flip_negates_each_attackers_own_state() -> None:
+    from velocity.paper_attacks import craft_byzantine_updates
+
+    updates, kw = _four_client_setup()
+    craft_byzantine_updates(updates, "sign_flip", **kw)
+    # Slot cid gets -attacker_states[i]; attacker[0] fc1.weight = [0.2,-0.2,0.2].
+    assert updates[0].weights["fc1.weight"].tolist() == pytest.approx([-0.2, 0.2, -0.2])
+    assert updates[1].weights["fc1.weight"].tolist() == pytest.approx([-0.3, 0.3, -0.3])
+
+
+def test_craft_fang_krum_tiles_and_requires_two_attackers() -> None:
+    from velocity.paper_attacks import craft_byzantine_updates
+
+    updates, kw = _four_client_setup()
+    craft_byzantine_updates(updates, "fang_krum", **kw)
+    assert updates[0].weights["fc1.weight"].tolist() == updates[1].weights["fc1.weight"].tolist()
+
+    # A single attacker can't satisfy Fang's binary search.
+    one_attacker = dict(kw)
+    one_attacker["malicious_ids"] = [0]
+    one_attacker["attacker_states"] = kw["attacker_states"][:1]
+    with pytest.raises(ValueError, match="num_adv >= 2"):
+        craft_byzantine_updates([_toy_update(kw["global_state"])] * 4, "fang_krum", **one_attacker)
+
+
+def test_craft_rejects_training_time_attack() -> None:
+    from velocity.paper_attacks import craft_byzantine_updates
+
+    updates, kw = _four_client_setup()
+    # label_flip poisons during training, not via update replacement — the
+    # dispatch handles model-poisoning attacks only and must reject it loudly.
+    with pytest.raises(ValueError, match=r"label_flip|unknown"):
+        craft_byzantine_updates(updates, "label_flip", **kw)

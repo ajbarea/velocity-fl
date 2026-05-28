@@ -860,6 +860,7 @@ async def run_real_training(
     partition: str = "iid",
     partition_kwargs: dict[str, Any] | None = None,
     attack: str | None = None,
+    num_malicious: int = 1,
 ) -> dict[str, Any]:
     """Trigger a real federated round against MNIST (not mock).
 
@@ -884,6 +885,13 @@ async def run_real_training(
     ``{"alpha": 0.1}`` for Dirichlet, ``{"shards_per_client": 2}`` for shard
     (McMahan-style). IID takes no kwargs.
 
+    ``attack`` (optional) injects a Byzantine attack on the first
+    ``num_malicious`` clients so the robustness-delta leaderboard can pair the
+    run against its matched no-attack baseline: ``gaussian_noise``, ``ipm``,
+    ``sign_flip``, ``alie``, ``label_flip`` (>= 1 malicious), and ``fang_krum``
+    (Fang's Krum-targeted attack, >= 2 malicious). ``num_malicious`` must leave
+    at least one honest client (``num_malicious < num_clients``).
+
     Returns ``{"run_id", "summaries", "final_loss", "final_accuracy"}`` on
     success; ``{"status": "declined"|"cancelled", "reason": ...}`` if the
     user does not consent.
@@ -904,6 +912,17 @@ async def run_real_training(
         raise ValueError(
             f"attack must be None or one of {sorted(_REAL_TRAINING_ATTACKS)}, got {attack!r}"
         )
+    if attack is not None:
+        if not 1 <= num_malicious < num_clients:
+            raise ValueError(
+                f"num_malicious must satisfy 1 <= num_malicious < num_clients "
+                f"(num_clients={num_clients}); got {num_malicious}"
+            )
+        if attack == "fang_krum" and num_malicious < 2:
+            raise ValueError(
+                f"attack 'fang_krum' needs num_malicious >= 2 (Fang's binary "
+                f"search needs the simulation room); got {num_malicious}"
+            )
     p_kwargs = partition_kwargs or {}
 
     strat_label = strategy_name(strat)
@@ -949,6 +968,7 @@ async def run_real_training(
         partition=partition,
         partition_kwargs=p_kwargs,
         attack=attack,
+        num_malicious=num_malicious,
     )
 
 
@@ -966,6 +986,7 @@ async def _execute_real_training(
     partition: str,
     partition_kwargs: dict[str, Any],
     attack: str | None = None,
+    num_malicious: int = 1,
 ) -> dict[str, Any]:
     """Run real federated training off the asyncio thread.
 
@@ -988,6 +1009,7 @@ async def _execute_real_training(
         partition=partition,
         partition_kwargs=partition_kwargs,
         attack=attack,
+        num_malicious=num_malicious,
     )
 
 
@@ -1032,49 +1054,13 @@ def _map_strategy_to_rust(strategy: Any) -> Any:
     raise ValueError(f"Unsupported strategy: {strategy!r}")
 
 
-# Attacks the real-training producer can inject (one malicious client). Each maps
-# to a paper_attacks primitive; the robustness-delta leaderboard reads the result.
-_REAL_TRAINING_ATTACKS = frozenset({"gaussian_noise", "ipm", "sign_flip", "alie", "label_flip"})
-
-
-def _attacked_update(
-    attack: str,
-    *,
-    template_state: dict[str, Any],
-    honest_states: list[dict[str, Any]],
-    honest_samples: list[int],
-    attacker_state: dict[str, Any] | None,
-    num_clients: int,
-    num_samples: int,
-    seed: int,
-    round_idx: int,
-) -> Any:
-    """Build the malicious client's poisoned ``ClientUpdate`` for ``attack``.
-
-    Dispatches to the hermetically-tested `velocity.paper_attacks` primitives,
-    one malicious client. ``gaussian_noise`` needs only the model template;
-    ``sign_flip`` flips the attacker's own trained state; ``ipm`` / ``alie`` craft
-    from the honest cluster's trained states.
-    """
-    from velocity.paper_attacks import (
-        alie_attack,
-        gaussian_byzantine,
-        inner_product_manipulation,
-        sign_flip_byzantine,
-    )
-
-    if attack == "gaussian_noise":
-        return gaussian_byzantine(template_state, seed=seed + round_idx, num_samples=num_samples)
-    if attack == "sign_flip":
-        assert attacker_state is not None  # the caller's loop sets it for client 0
-        return sign_flip_byzantine(attacker_state, num_samples=num_samples)
-    if attack == "ipm":
-        return inner_product_manipulation(honest_states, honest_samples, num_samples=num_samples)
-    if attack == "alie":
-        return alie_attack(
-            honest_states, num_clients=num_clients, num_adv=1, num_samples=num_samples
-        )
-    raise ValueError(f"unknown attack {attack!r}")
+# Attacks the real-training producer can inject. Each maps to a
+# velocity.paper_attacks primitive via the shared craft_byzantine_updates
+# dispatch; the robustness-delta leaderboard reads the result. fang_krum needs
+# >= 2 malicious clients (Fang's binary search); the rest run with >= 1.
+_REAL_TRAINING_ATTACKS = frozenset(
+    {"gaussian_noise", "ipm", "sign_flip", "alie", "label_flip", "fang_krum"}
+)
 
 
 def _run_real_training_sync(
@@ -1091,6 +1077,7 @@ def _run_real_training_sync(
     partition: str,
     partition_kwargs: dict[str, Any],
     attack: str | None = None,
+    num_malicious: int = 1,
 ) -> dict[str, Any]:
     """Sync inner loop — mirrors examples/mnist_fedavg.py shape.
 
@@ -1104,6 +1091,7 @@ def _run_real_training_sync(
 
     from velocity import _core
     from velocity.datasets import load_federated
+    from velocity.paper_attacks import craft_byzantine_updates
     from velocity.strategy import FedProx, strategy_name
     from velocity.training import (
         evaluate,
@@ -1169,6 +1157,11 @@ def _run_real_training_sync(
         "attack": attack,
         "mode": "real",
     }
+    # num_malicious is part of the attack spec; absent on clean runs so their
+    # config fingerprint is unchanged. robustness_delta_leaderboard strips it
+    # (with `attack`) to pair an attacked run with its no-attack baseline.
+    if attack:
+        config["num_malicious"] = num_malicious
     run_id = db.start_run(user_id, config)
 
     summaries: list[dict[str, Any]] = []
@@ -1179,17 +1172,23 @@ def _run_real_training_sync(
         pre_eval.load_state_dict(global_state)
         pre_loss, _ = evaluate(pre_eval, split.test_loader)
 
+        # Malicious clients occupy the first ``num_malicious`` slots when an
+        # attack is configured (mirrors the arena's COMPROMISED_IDS).
+        malicious_ids = list(range(num_malicious)) if attack else []
+        malicious_set = set(malicious_ids)
+
         client_updates = []
         honest_states: list[dict[str, Any]] = []
         honest_samples: list[int] = []
-        attacker_state: dict[str, Any] | None = None
+        attacker_states: list[dict[str, Any]] = []
+        sample_counts: list[int] = []
         for cid, client in enumerate(split.clients):
             local_model = make_model()
             local_model.load_state_dict(copy.deepcopy(global_state))
-            # label_flip poisons the malicious client *during* training (flipped
+            # label_flip poisons the malicious clients *during* training (flipped
             # labels), unlike the model-poisoning attacks that replace the update.
             label_attack = None
-            if attack == "label_flip" and cid == 0:
+            if attack == "label_flip" and cid in malicious_set:
                 from velocity.data_attacks import make_label_flip_callback
 
                 label_attack = make_label_flip_callback(num_classes=split.num_classes, seed=seed)
@@ -1202,33 +1201,37 @@ def _run_real_training_sync(
                 label_attack=label_attack,
             )
             sd = local_model.state_dict()
+            sample_counts.append(client.num_samples)
             client_updates.append(
                 _core.ClientUpdate(
                     num_samples=client.num_samples,
                     weights=state_dict_to_layers(sd),
                 )
             )
-            # Client 0 is the malicious one; collect the honest cluster's trained
-            # states (some attacks craft from them) and the attacker's own state.
-            if attack and cid == 0:
-                attacker_state = sd
+            # ipm/alie craft from the honest cluster's trained states; sign_flip/
+            # fang_krum craft from the attackers' own. Collect both partitions.
+            if cid in malicious_set:
+                attacker_states.append(sd)
             elif attack:
                 honest_states.append(sd)
                 honest_samples.append(client.num_samples)
 
-        if attack and attack != "label_flip" and client_updates:
-            # Replace the malicious client's update so robustness-delta can compare
-            # the attacked run against its matched no-attack baseline. (label_flip
+        if attack and attack != "label_flip":
+            # Replace the malicious slots so robustness-delta can compare the
+            # attacked run against its matched no-attack baseline. (label_flip
             # already poisoned during training above — no update replacement.)
-            client_updates[0] = _attacked_update(
-                attack,
+            craft_byzantine_updates(
+                client_updates,
+                "gaussian" if attack == "gaussian_noise" else attack,
+                malicious_ids,
+                global_state=global_state,
                 template_state=template_state,
                 honest_states=honest_states,
                 honest_samples=honest_samples,
-                attacker_state=attacker_state,
+                attacker_states=attacker_states,
                 num_clients=len(split.clients),
-                num_samples=split.clients[0].num_samples,
-                seed=seed,
+                sample_counts=sample_counts,
+                base_seed=seed,
                 round_idx=_round_idx,
             )
 

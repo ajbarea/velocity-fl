@@ -257,6 +257,59 @@ def test_unknown_partition_rejected_before_elicit(stub_execute: AsyncMock) -> No
     stub_execute.assert_not_awaited()
 
 
+def test_fang_krum_requires_two_malicious_before_elicit(stub_execute: AsyncMock) -> None:
+    """Fang's Krum-targeted attack needs >= 2 malicious clients; reject 1 early."""
+    ctx = _make_ctx(None)
+    with pytest.raises(ValueError, match="num_malicious"):
+        asyncio.run(
+            mcp_app.run_real_training(
+                ctx=ctx,
+                user_id="testuser",
+                rounds=2,
+                num_clients=4,
+                attack="fang_krum",
+                num_malicious=1,
+            )
+        )
+    stub_execute.assert_not_awaited()
+
+
+def test_num_malicious_must_leave_an_honest_client(stub_execute: AsyncMock) -> None:
+    """num_malicious >= num_clients leaves no honest cluster; reject before elicit."""
+    ctx = _make_ctx(None)
+    with pytest.raises(ValueError, match="num_malicious"):
+        asyncio.run(
+            mcp_app.run_real_training(
+                ctx=ctx,
+                user_id="testuser",
+                rounds=2,
+                num_clients=2,
+                attack="gaussian_noise",
+                num_malicious=2,
+            )
+        )
+    stub_execute.assert_not_awaited()
+
+
+def test_num_malicious_threaded_to_executor(isolated_db: Path, stub_execute: AsyncMock) -> None:
+    """A valid fang_krum run threads num_malicious through to the executor."""
+    del isolated_db
+    ctx = _make_ctx(AcceptedElicitation(data=mcp_app.RealTrainingConfirm(confirm=True)))
+    asyncio.run(
+        mcp_app.run_real_training(
+            ctx=ctx,
+            user_id="testuser",
+            rounds=2,
+            num_clients=4,
+            attack="fang_krum",
+            num_malicious=2,
+        )
+    )
+    kwargs = stub_execute.call_args.kwargs
+    assert kwargs["attack"] == "fang_krum"
+    assert kwargs["num_malicious"] == 2
+
+
 def test_unknown_strategy_rejected_before_elicit(stub_execute: AsyncMock) -> None:
     """Unknown strategy name should propagate parse_strategy's ValueError."""
     ctx = _make_ctx(None)
@@ -298,28 +351,45 @@ def test_leaderboard_tool_empty_is_friendly(isolated_db: Path) -> None:
     assert "No accuracy leaderboard data" in res.content[0].text
 
 
-def test_attacked_update_dispatches_all_types():
-    """_attacked_update builds a valid poisoned ClientUpdate for each attack."""
+def test_real_training_model_poisoning_attacks_route_through_craft():
+    """Every non-training-time real-training attack is handled by the shared dispatch.
+
+    Guards against drift between ``_REAL_TRAINING_ATTACKS`` and the craft
+    dispatch (e.g. adding an attack to the producer's set without teaching the
+    helper, or breaking the gaussian_noise->gaussian normalization).
+    """
     torch = pytest.importorskip("torch")
     from velocity import _core
+    from velocity.paper_attacks import craft_byzantine_updates
 
     def toy_state(scale: float) -> dict:
         return {"fc.weight": torch.ones(2, 3) * scale, "fc.bias": torch.zeros(2) + scale}
 
     template = toy_state(0.0)
     honest = [toy_state(1.0), toy_state(1.1)]
-    attacker = toy_state(2.0)
-    for attack in ("gaussian_noise", "ipm", "sign_flip", "alie"):
-        upd = mcp_app._attacked_update(
-            attack,
+    attackers = [toy_state(2.0), toy_state(2.1)]
+
+    def mk(state: dict) -> Any:
+        return _core.ClientUpdate(
+            num_samples=10, weights={k: v.flatten().tolist() for k, v in state.items()}
+        )
+
+    # cids 0,1 malicious; cids 2,3 honest — enough for fang_krum's >= 2.
+    for attack in sorted(mcp_app._REAL_TRAINING_ATTACKS - {"label_flip"}):
+        updates = [mk(attackers[0]), mk(attackers[1]), mk(honest[0]), mk(honest[1])]
+        craft_byzantine_updates(
+            updates,
+            "gaussian" if attack == "gaussian_noise" else attack,
+            [0, 1],
+            global_state=template,
             template_state=template,
             honest_states=honest,
             honest_samples=[10, 10],
-            attacker_state=attacker,
-            num_clients=3,
-            num_samples=10,
-            seed=0,
+            attacker_states=attackers,
+            num_clients=4,
+            sample_counts=[10, 10, 10, 10],
+            base_seed=0,
             round_idx=0,
         )
-        assert isinstance(upd, _core.ClientUpdate), attack
-        assert upd.num_samples == 10, attack
+        assert isinstance(updates[0], _core.ClientUpdate), attack
+        assert updates[0].num_samples == 10, attack

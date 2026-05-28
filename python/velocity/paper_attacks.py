@@ -407,6 +407,77 @@ def fang_krum_attack(
     return _core.ClientUpdate(num_samples=num_samples, weights=poisoned)
 
 
+def craft_byzantine_updates(
+    updates: list[_core.ClientUpdate],
+    attack: str,
+    malicious_ids: Sequence[int],
+    *,
+    global_state: dict[str, Tensor],
+    template_state: dict[str, Tensor],
+    honest_states: Sequence[dict[str, Tensor]],
+    honest_samples: Sequence[int],
+    attacker_states: Sequence[dict[str, Tensor]],
+    num_clients: int,
+    sample_counts: Sequence[int],
+    base_seed: int = 0,
+    round_idx: int = 0,
+) -> None:
+    """Replace each malicious slot in ``updates`` with a poisoned update, in place.
+
+    The single multi-malicious tiling dispatch shared by the live-training
+    producer (``velocity.mcp_app``) and the offline arena
+    (``scripts/dump_attack_arena.py``). One training round feeds every attack;
+    this maps the round's honest/attacker states onto the compromised slots:
+
+    * ``gaussian``  — per-slot N(0, std²) noise, seeded ``base_seed +
+      cid*1000 + round_idx`` so each attacker draws independently.
+    * ``sign_flip`` — per-slot negation of that attacker's own trained state.
+    * ``ipm`` / ``alie`` / ``fang_krum`` — one update crafted from the honest
+      cluster (ipm/alie) or the attacker states (fang_krum), cloned into every
+      malicious slot (FLPoison's "identical supporters" construction).
+
+    ``attack`` takes the FLPoison short names; ``gaussian`` covers the
+    producer's ``gaussian_noise`` surface label (callers normalize). Training-
+    time attacks (``label_flip``) poison during ``local_train`` and must not be
+    routed here — they raise. The tiled crafts use the federation mean sample
+    count; ``sample_counts`` is indexed by client id.
+    """
+    avg_samples = int(sum(sample_counts) / num_clients)
+    if attack == "gaussian":
+        for cid in malicious_ids:
+            updates[cid] = gaussian_byzantine(
+                template_state,
+                seed=base_seed + cid * 1000 + round_idx,
+                num_samples=sample_counts[cid],
+            )
+    elif attack == "sign_flip":
+        for cid, state in zip(malicious_ids, attacker_states, strict=True):
+            updates[cid] = sign_flip_byzantine(state, num_samples=sample_counts[cid])
+    elif attack == "ipm":
+        byzantine = inner_product_manipulation(
+            honest_states, honest_samples, num_samples=avg_samples
+        )
+        for cid in malicious_ids:
+            updates[cid] = byzantine
+    elif attack == "alie":
+        byzantine = alie_attack(
+            honest_states,
+            num_clients=num_clients,
+            num_adv=len(malicious_ids),
+            num_samples=avg_samples,
+        )
+        for cid in malicious_ids:
+            updates[cid] = byzantine
+    elif attack == "fang_krum":
+        byzantine = fang_krum_attack(
+            attacker_states, global_state=global_state, num_samples=avg_samples
+        )
+        for cid in malicious_ids:
+            updates[cid] = byzantine
+    else:
+        raise ValueError(f"craft_byzantine_updates: unknown model-poisoning attack {attack!r}")
+
+
 # Importable convenience for the dump script's attack-dispatch dict.
 ALL_ATTACKS: tuple[str, ...] = (
     "label_flip",

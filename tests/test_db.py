@@ -633,6 +633,22 @@ def test_robustness_delta_groups_seeds():
     assert row["robustness_delta"] == pytest.approx(0.30)
 
 
+def test_robustness_delta_strips_num_malicious_when_matching_baseline():
+    base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
+    _completed_run("alice", {**base, "seed": 1}, [0.90])  # clean baseline, no num_malicious
+    # num_malicious is part of the attack spec — an attacked run carries it but
+    # must still pair with the clean baseline that shares every non-attack knob.
+    _completed_run(
+        "alice",
+        {**base, "attack": "fang_krum", "num_malicious": 2, "seed": 1},
+        [0.40],
+    )
+    board = db.robustness_delta_leaderboard("alice")
+    assert len(board) == 1
+    assert board[0]["attack"] == "fang_krum"
+    assert board[0]["robustness_delta"] == pytest.approx(0.50)
+
+
 def test_robustness_delta_is_user_scoped():
     base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
     _completed_run("alice", {**base, "seed": 1}, [0.90])
