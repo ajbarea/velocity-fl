@@ -228,19 +228,18 @@ rather than the curated, dumped arena CSV the first cut renders.
   column. `vfl_version` is included (cross-version comparability). Remaining: a
   grouping read path — `GROUP BY config_fingerprint` over the live store — which
   is the per-axis ranking engine below; today only the dumped arena CSV is ranked.
-- **Per-axis ranking engine** — independent leaderboards, not a
-  single composite score. _Three axes shipped 2026-05-28:_ final-round
-  accuracy (`db.accuracy_leaderboard`), rounds-to-target convergence speed
-  (`db.rounds_to_target_leaderboard`), and total wall-clock
-  (`db.wall_clock_leaderboard`) — all mean±std+n per fingerprint over the live
-  store and surfaced via `velocity leaderboard [--metric ...]`. Wall-clock was
-  unblocked by instrumenting the producer (`run_real_training` now records
-  per-round `duration_ms`). Remaining axes: Byzantine robustness delta
-  (accuracy drop under attack vs no-attack baseline) — still blocked on the
-  producer having an *attacked* live-run path (it does honest training only);
-  plus sample efficiency (accuracy per total client sample). Per-axis because
-  any weighted combination buries the tradeoffs that make the comparison
-  interesting.
+- **Per-axis ranking engine** — independent leaderboards, not a single
+  composite score. _Four axes shipped 2026-05-28:_ final-round accuracy
+  (`db.accuracy_leaderboard`), rounds-to-target convergence speed
+  (`db.rounds_to_target_leaderboard`), total wall-clock
+  (`db.wall_clock_leaderboard`), and Byzantine robustness delta
+  (`db.robustness_delta_leaderboard` — accuracy drop under attack vs the matched
+  no-attack baseline). All surfaced via `velocity leaderboard [--metric ...]`.
+  The producer was instrumented for both timing (`duration_ms`) and an
+  *attacked* live-run path (`run_real_training(attack="gaussian_noise")` — first
+  attack type; more to follow). Remaining: sample efficiency (accuracy per total
+  client sample). Per-axis because any weighted combination buries the tradeoffs
+  that make the comparison interesting.
 - **Pareto frontier** — rather than a single "winner," surface the
   non-dominated set across axes. _First cut shipped 2026-05-28:_
   `db.pareto_frontier` over accuracy (max) vs total wall-clock (min),
@@ -370,6 +369,7 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-05-28 — **Byzantine robustness-delta axis (+ attacked producer path).** `db.robustness_delta_leaderboard(user_id, min_runs=1)` matches each attacked run against its no-attack baseline by *base fingerprint* (`config_fingerprint` over config minus `attack`) and ranks by accuracy drop = `mean(baseline) - mean(attacked)`, most-robust first. Producer: `run_real_training(attack="gaussian_noise")` injects a Gaussian-noise client (reusing `paper_attacks.gaussian_byzantine`) and records `attack` in the run config; first attack type, more to follow. Surfaced via `velocity leaderboard --metric robustness`. Verified end-to-end on a real MNIST run (baseline 0.836 vs gaussian-attacked 0.097 → delta 0.739). The MCP tool-surface hash was updated (the `attack` param is a deliberate surface change). research(2026-05): matched attacked-vs-clean accuracy delta is the standard FL robustness measure (FLPoison SoK arXiv:2502.03801). Completes the per-axis engine (4 ranking axes + Pareto).
 - 2026-05-28 — **Pareto frontier (accuracy vs wall-clock).** `db.pareto_frontier(user_id, min_runs=1)` reuses `accuracy_leaderboard` + `wall_clock_leaderboard`, joins per `config_fingerprint` (configs measured on both axes), and returns the non-dominated set (accuracy max, wall-clock min) ordered by accuracy desc. Surfaced via `velocity leaderboard --metric pareto`. The honest "what should I use" view; first 2-axis cut (rounds-to-target + robustness delta join later). research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL multi-objective framing (MDPI Sensors 2024 resource-efficiency + convergence).
 - 2026-05-28 — **Wall-clock leaderboard axis + producer instrumentation.** `run_real_training` now records per-round `duration_ms` (verified end-to-end with a real 2-round MNIST run: `duration_ms` lands in `rounds`). `db.wall_clock_leaderboard(user_id, min_runs=1)` sums each completed run's per-round durations, groups by `config_fingerprint`, and ranks by mean±std total wall-clock ascending (runs with no timing excluded). Surfaced via `velocity leaderboard --metric wall-clock`. Third per-axis ranking. research(2026-05): wall-clock training time is a standard FL systems-benchmark axis (FedScale), reported mean±std over seeds and kept distinct from round count.
 - 2026-05-28 — **Rounds-to-target leaderboard axis (convergence speed).** `db.rounds_to_target_leaderboard(user_id, target, min_runs=1)` takes each completed run's first round to reach `target` accuracy (runs that never reach are excluded), groups by `config_fingerprint`, and ranks by mean±std rounds + `n_reached` ascending (faster first). Surfaced via `velocity leaderboard --metric rounds-to-target --target 0.9`. Second per-axis ranking; unblocked by the per-round `global_accuracy` now persisted (so it needs no producer changes, unlike wall-clock / robustness-delta). research(2026-05): rounds-to-target is a standard FL convergence-speed axis alongside final accuracy (pFL-Bench / FL benchmark surveys).
