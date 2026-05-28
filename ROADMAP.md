@@ -291,8 +291,8 @@ rather than the curated, dumped arena CSV the first cut renders.
   plain generated markdown (zero new deps). Remaining: render the *live* per-axis
   store (accuracy / rounds / wall-clock / robustness — currently per-user, needs
   a public dumped corpus like the arena's), an interactive Pareto scatter, and
-  per-(dataset × attack) slicing. A CI guard that `dump_leaderboard_page.py`
-  produces no diff (page in sync with corpus) is a cheap follow-up.
+  per-(dataset × attack) slicing. A drift guard (`tests/test_leaderboard_page_in_sync.py`)
+  already fails the suite if the committed page falls out of sync with the corpus.
 - **Prerequisites — now met.** (a) the aggregation suite ships nine kernels
   incl. Krum, Multi-Krum, Bulyan, Trimmed Mean (see Aggregation strategies);
   (b) the attack suite is real — the `velocity.paper_attacks` headliner set
