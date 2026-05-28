@@ -989,7 +989,7 @@ def _map_strategy_to_rust(strategy: Any) -> Any:
 
 # Attacks the real-training producer can inject (one malicious client). Each maps
 # to a paper_attacks primitive; the robustness-delta leaderboard reads the result.
-_REAL_TRAINING_ATTACKS = frozenset({"gaussian_noise", "ipm", "sign_flip", "alie"})
+_REAL_TRAINING_ATTACKS = frozenset({"gaussian_noise", "ipm", "sign_flip", "alie", "label_flip"})
 
 
 def _attacked_update(
@@ -1141,12 +1141,20 @@ def _run_real_training_sync(
         for cid, client in enumerate(split.clients):
             local_model = make_model()
             local_model.load_state_dict(copy.deepcopy(global_state))
+            # label_flip poisons the malicious client *during* training (flipped
+            # labels), unlike the model-poisoning attacks that replace the update.
+            label_attack = None
+            if attack == "label_flip" and cid == 0:
+                from velocity.data_attacks import make_label_flip_callback
+
+                label_attack = make_label_flip_callback(num_classes=split.num_classes, seed=seed)
             local_train(
                 local_model,
                 client.loader,
                 epochs=local_epochs,
                 lr=lr,
                 proximal_mu=proximal_mu,
+                label_attack=label_attack,
             )
             sd = local_model.state_dict()
             client_updates.append(
@@ -1163,9 +1171,10 @@ def _run_real_training_sync(
                 honest_states.append(sd)
                 honest_samples.append(client.num_samples)
 
-        if attack and client_updates:
+        if attack and attack != "label_flip" and client_updates:
             # Replace the malicious client's update so robustness-delta can compare
-            # the attacked run against its matched no-attack baseline.
+            # the attacked run against its matched no-attack baseline. (label_flip
+            # already poisoned during training above — no update replacement.)
             client_updates[0] = _attacked_update(
                 attack,
                 template_state=template_state,
