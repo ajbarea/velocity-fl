@@ -29,11 +29,12 @@ What remains builds on it:
    client). Still to add: `fang_krum` (needs ≥2 malicious → a `num_malicious`
    param, which also changes the MCP tool surface). Extend Pareto to 3-axis
    (fold in rounds-to-target) and
-   slice per (dataset × attack). Add sample-efficiency. Then the **MCP tool +
-   Zensical page** surfaces (CLI ships all five views today; these need
-   browser/MCP verification — WSL Chrome is broken, so do them where that can be
-   checked). Producer/attack changes live in `mcp_app.py`'s torch path — verify
-   with `uv run --extra all` (a real short run), not the bare env.
+   slice per (dataset × attack). Add sample-efficiency. Surfaces: the CLI
+   (`velocity leaderboard`) and the **MCP `leaderboard` tool** both ship; only
+   the **Zensical web page** remains, and it's browser-bound (WSL Chrome is
+   broken — do it where rendering can be checked). Producer/attack changes live
+   in `mcp_app.py`'s torch path — verify with `uv run --extra all` (a real short
+   run), not the bare env.
 2. **Server-side DP-FedAvg in Rust core** (ROADMAP → Privacy, research-tier) — the
    novel sibling to the shipped client-side DP; only once the perf story has
    headroom and the Rust-vs-Python DP comparison can be honest.
