@@ -236,8 +236,11 @@ rather than the curated, dumped arena CSV the first cut renders.
   (`db.robustness_delta_leaderboard` — accuracy drop under attack vs the matched
   no-attack baseline). All surfaced via `velocity leaderboard [--metric ...]`.
   The producer was instrumented for both timing (`duration_ms`) and an
-  *attacked* live-run path (`run_real_training(attack="gaussian_noise")` — first
-  attack type; more to follow). Remaining: sample efficiency (accuracy per total
+  *attacked* live-run path (`run_real_training(attack=…)`, one malicious client,
+  via the `_attacked_update` dispatch over `paper_attacks`: `gaussian_noise`,
+  `ipm`, `sign_flip`, `alie`). Remaining attack types: `fang_krum` (needs ≥2
+  malicious → a `num_malicious` param) and `label_flip` (training-time, not
+  update-replacement). Remaining axis: sample efficiency (accuracy per total
   client sample). Per-axis because any weighted combination buries the tradeoffs
   that make the comparison interesting.
 - **Pareto frontier** — rather than a single "winner," surface the
@@ -369,6 +372,7 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-05-28 — **Robustness attack coverage broadened.** The attacked producer now covers four `paper_attacks` types via the `_attacked_update` dispatch (`gaussian_noise`, `ipm`, `sign_flip`, `alie`), one malicious client; `_run_real_training_sync` collects the honest cluster's + attacker's trained states so distance-based attacks (ipm/alie) can craft from them. Dispatch unit-tested (toy states, torch env); ipm verified end-to-end on a real run. `fang_krum` (needs ≥2 malicious) + `label_flip` (training-time) remain.
 - 2026-05-28 — **Byzantine robustness-delta axis (+ attacked producer path).** `db.robustness_delta_leaderboard(user_id, min_runs=1)` matches each attacked run against its no-attack baseline by *base fingerprint* (`config_fingerprint` over config minus `attack`) and ranks by accuracy drop = `mean(baseline) - mean(attacked)`, most-robust first. Producer: `run_real_training(attack="gaussian_noise")` injects a Gaussian-noise client (reusing `paper_attacks.gaussian_byzantine`) and records `attack` in the run config; first attack type, more to follow. Surfaced via `velocity leaderboard --metric robustness`. Verified end-to-end on a real MNIST run (baseline 0.836 vs gaussian-attacked 0.097 → delta 0.739). The MCP tool-surface hash was updated (the `attack` param is a deliberate surface change). research(2026-05): matched attacked-vs-clean accuracy delta is the standard FL robustness measure (FLPoison SoK arXiv:2502.03801). Completes the per-axis engine (4 ranking axes + Pareto).
 - 2026-05-28 — **Pareto frontier (accuracy vs wall-clock).** `db.pareto_frontier(user_id, min_runs=1)` reuses `accuracy_leaderboard` + `wall_clock_leaderboard`, joins per `config_fingerprint` (configs measured on both axes), and returns the non-dominated set (accuracy max, wall-clock min) ordered by accuracy desc. Surfaced via `velocity leaderboard --metric pareto`. The honest "what should I use" view; first 2-axis cut (rounds-to-target + robustness delta join later). research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL multi-objective framing (MDPI Sensors 2024 resource-efficiency + convergence).
 - 2026-05-28 — **Wall-clock leaderboard axis + producer instrumentation.** `run_real_training` now records per-round `duration_ms` (verified end-to-end with a real 2-round MNIST run: `duration_ms` lands in `rounds`). `db.wall_clock_leaderboard(user_id, min_runs=1)` sums each completed run's per-round durations, groups by `config_fingerprint`, and ranks by mean±std total wall-clock ascending (runs with no timing excluded). Surfaced via `velocity leaderboard --metric wall-clock`. Third per-axis ranking. research(2026-05): wall-clock training time is a standard FL systems-benchmark axis (FedScale), reported mean±std over seeds and kept distinct from round count.

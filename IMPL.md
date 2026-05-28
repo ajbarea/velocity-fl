@@ -24,16 +24,16 @@ Prior: FEMNIST natural partition + client-side DP (2026-05-27).
 The leaderboard read/CLI side is now complete (4 axes + Pareto + robustness).
 What remains builds on it:
 
-1. **Broaden + surface the leaderboard.** The robustness producer ships only
-   `gaussian_noise` so far — add the rest of the `paper_attacks` set (ipm,
-   sign_flip, alie, fang_krum, label_flip) to `run_real_training`'s attacked
-   path so the robustness axis covers the full attack matrix. Extend Pareto to
-   3-axis (fold in rounds-to-target) and slice per (dataset × attack). Add
-   sample-efficiency. Then the **MCP tool + Zensical page** surfaces (CLI ships
-   all five views today; these need browser/MCP verification — WSL Chrome is
-   broken, so do them where that can be checked). Producer/attack changes live
-   in `mcp_app.py`'s torch path — verify with `uv run --extra all` (a real short
-   run), as done for `duration_ms` + `gaussian_noise`, not the bare env.
+1. **Broaden + surface the leaderboard.** The robustness producer now covers
+   `gaussian_noise`, `ipm`, `sign_flip`, `alie` (one malicious client). Still to
+   add: `fang_krum` (needs ≥2 malicious → a `num_malicious` param) and
+   `label_flip` (training-time, via a `local_train` label-attack callback, not
+   update replacement). Extend Pareto to 3-axis (fold in rounds-to-target) and
+   slice per (dataset × attack). Add sample-efficiency. Then the **MCP tool +
+   Zensical page** surfaces (CLI ships all five views today; these need
+   browser/MCP verification — WSL Chrome is broken, so do them where that can be
+   checked). Producer/attack changes live in `mcp_app.py`'s torch path — verify
+   with `uv run --extra all` (a real short run), not the bare env.
 2. **Server-side DP-FedAvg in Rust core** (ROADMAP → Privacy, research-tier) — the
    novel sibling to the shipped client-side DP; only once the perf story has
    headroom and the Rust-vs-Python DP comparison can be honest.
