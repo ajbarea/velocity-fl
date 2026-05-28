@@ -96,39 +96,46 @@ boundary rather than copying the wrapper.
 
 ## Attacks
 
-Current vFL split (post-restructure):
+Three attack families ship today:
 
 - **Round-level** (`security::AttackType`): `ModelPoisoning`, `SybilNodes`,
   `GaussianNoise` — operate on weights / client rosters during a round.
 - **Data-pipeline** (`velocity.data_attacks`): `apply_label_flipping`
   (bijective derangement, Biggio et al. ICML 2012; Tolpegin et al. ESORICS
   2020), `apply_targeted_label_flipping` (source→target with flip_ratio).
+- **Paper-cited model-poisoning** (`velocity.paper_attacks`, shipped #36
+  2026-05-23) — the FLPoison SoK (arXiv:2502.03801) headliner set, each
+  returning a poisoned `ClientUpdate` ready for the orchestrator:
+  `gaussian_byzantine` (Blanchard et al. NIPS 2017), `inner_product_manipulation`
+  (Xie et al. UAI 2020), `sign_flip_byzantine` (Damaskinos et al. ICML 2018),
+  `alie_attack` (Baruch et al. NeurIPS 2019), `fang_krum_attack` (Fang et al.
+  USENIX 2020). Covered by `tests/test_paper_attacks.py` (hermetic, hand-computed
+  formulas) + `tests/test_paper_attacks_nightly.py` (real-data), and dumped into
+  the attack arena (see Live experiment leaderboard).
 
-Both families are honest implementations now; the prior `LabelFlipping`
-no-op was removed once the data-pipeline path landed. Items below come from
-`phalanx-fl/intellifl/attack_utils/{poisoning,weight_poisoning}.py`, each
-with paper citations already documented in-place there.
+Still ahead, sourced from `phalanx-fl/intellifl/attack_utils/`:
 - **Backdoor trigger / BadNets** (Gu et al., 2017) — pixel-pattern trigger
-  stamped onto a fraction of images + relabel to target class. The canonical
-  FL backdoor attack; phalanx has square/cross patterns with auto-contrast.
-- **Boosted scaling** (Baruch et al., NeurIPS 2019 — "A Little Is Enough") —
-  scale update by `n_total / n_malicious` to exactly cancel FedAvg dilution.
-  Drop-in upgrade over the current naive constant-factor model poisoning.
-- **Inner-product manipulation** (Xie et al., 2020) — aggregation-aware,
-  L2-bounded perturbation that defeats Krum/Multi-Krum/Bulyan. Needed to
-  stress-test the robust aggregators once they land.
-- **Alternating-min / PGD poisoning** (Fang et al., USENIX 2020 + Bagdasaryan
-  et al., AISTATS 2020 + Bhagoji et al., ICML 2019) — optimization-based
-  attack via projected gradient descent in weight space, FedAvg-aware trust
-  region. Research-grade; only worth it once the robust-aggregation suite is
-  built out and we want to demonstrate we can break it.
+  stamped onto a fraction of images + relabel to target class. The actual
+  blocker is the attack-success-rate (ASR) metric the arena does not yet
+  report, not the trigger stamp; DBA + NeuroToxin are the same family.
+- **Constant-boost / model-replacement scaling** (Bagdasaryan et al., AISTATS
+  2020) — scale the malicious update by `n_total / n_malicious` to cancel
+  FedAvg dilution. Distinct from the shipped `alie_attack`: ALIE perturbs
+  *within* the honest std envelope (no boosting factor), so the two are not
+  the same attack — they were previously conflated in this list.
+- **PGD / alternating-min optimization poisoning** (Bhagoji et al., ICML 2019;
+  Bagdasaryan et al., AISTATS 2020) — projected gradient descent in weight
+  space with a FedAvg-aware trust region. `fang_krum_attack` already covers
+  the Fang et al. USENIX 2020 Krum-targeted variant; this is the heavier
+  optimization-based sibling, only worth it to demonstrate breaking the full
+  robust-aggregation suite.
 - **Byzantine perturbation with norm-clip** (Sun et al., 2019) — Gaussian
-  perturbation with optional L2-norm clipping for defense evasion. Small
-  delta over our existing `GaussianNoise`, useful when benchmarking against
-  norm-based defenses.
+  perturbation with optional L2-norm clipping for defense evasion. Small delta
+  over the shipped `gaussian_byzantine`, useful when benchmarking norm-based
+  defenses.
 
 Out of scope: phalanx's `token_replacement` (tokenizer-dependent, LLM-specific)
-and its deprecated `gradient_scaling` (superseded by `boosted_scaling`).
+and its deprecated `gradient_scaling` (superseded by constant-boost scaling).
 
 ### Attack forensics
 
@@ -200,21 +207,27 @@ for medical-FL benchmarks specifically.
 
 ## Live experiment leaderboard
 
-Longer-horizon: turn every run into comparable data. Today each round
-emits a `RoundSummary` that lands in SQLite via `velocity.db` and then
-gets forgotten. The goal is to make those runs rankable along several
-axes so researchers landing on the docs site can answer "what strategy
-should I reach for on FEMNIST under label-flipping?" without reading
-the code. Each bullet below is scoped to stand on its own; the whole
-stack only becomes interesting once the aggregation and attack suites
-below are wider than they are today.
+Longer-horizon: turn every run into comparable data. A **first cut already
+ships** — the worst-case Byzantine-FL defender leaderboard (`attack_arena_leaderboard`
+MCP tool over the `scripts/dump_attack_arena.py` multi-seed mean±std corpus,
+#33 2026-05-22). And `velocity.db` is not a forgetful sink: it persists
+`runs` / `rounds` / `attacks` / `hypotheses` / `agent_actions` per user, and
+since 2026-05-28 every run carries a stable `config_fingerprint` (below). The
+goal of the bullets below is to make the *live* store rankable along several
+axes — so researchers landing on the docs site can answer "what strategy
+should I reach for on FEMNIST under label-flipping?" without reading the code —
+rather than the curated, dumped arena CSV the first cut renders.
 
-- **Experiment ingestion + config fingerprint** — extend `velocity.db`
-  so every run stores a stable fingerprint:
-  `(dataset, partition, partition_params, strategy, strategy_params,
-  attack, attack_params, seed, vfl_version)`. This is what makes two
-  runs comparable. Depends on dataset + attack configs being fully
-  serialisable (they mostly already are via the existing dataclasses).
+- **Experiment ingestion + config fingerprint** — _fingerprint shipped
+  2026-05-28._ `db.config_fingerprint(config)` is a stable 16-hex SHA-256 over
+  canonical JSON of the run config, stored on `runs.config_fingerprint` (indexed)
+  and computed in `start_run`. **Seed is excluded** (not included as the original
+  tuple here suggested): runs that differ only by seed are repeats of one
+  experiment and must share a fingerprint so the leaderboard can aggregate
+  mean±std the way the arena already does across seeds; seed stays its own
+  column. `vfl_version` is included (cross-version comparability). Remaining: a
+  grouping read path — `GROUP BY config_fingerprint` over the live store — which
+  is the per-axis ranking engine below; today only the dumped arena CSV is ranked.
 - **Per-axis ranking engine** — independent leaderboards, not a
   single composite score. Axes: final-round accuracy, rounds-to-target
   accuracy, wall-clock at fixed bench tier, Byzantine robustness
@@ -260,14 +273,15 @@ below are wider than they are today.
   store. Researchers pick dataset + attack, see the Pareto frontier
   per axis, click into the fingerprint for repro. Depends on the
   Zensical site (`techne:docs-site` skill) and a stable store schema.
-- **Prerequisites** — this section only becomes worth shipping once:
-  (a) the aggregation suite includes at least Krum, Multi-Krum,
-  Bulyan, Trimmed Mean (so there's something to rank);
-  (b) the attack suite beyond `GaussianNoise` + `ModelPoisoning` is
-  real (boosted scaling, targeted label flipping, inner-product —
-  all under Attacks); (c) dataset breadth beyond MNIST + CIFAR-10
-  (FEMNIST and Shakespeare are the canonical FL-benchmark additions
-  once the HF loader handles text).
+- **Prerequisites — now met.** (a) the aggregation suite ships nine kernels
+  incl. Krum, Multi-Krum, Bulyan, Trimmed Mean (see Aggregation strategies);
+  (b) the attack suite is real — the `velocity.paper_attacks` headliner set
+  (ALIE, IPM, Fang/Krum, sign-flip, gaussian) plus targeted label flipping (see
+  Attacks); (c) dataset breadth is past MNIST + CIFAR-10 (CIFAR-100 + FEMNIST
+  natural partition, see Completed). The remaining gate is no longer the suites
+  but the *read* paths below — ranking, Pareto, and cross-config normalisation
+  over the now-fingerprinted live store. (Shakespeare / text still waits on the
+  HF loader's tokenisation path, see Datasets.)
 - **Out of scope for the first cut** — LLM-specific attacks
   (token_replacement et al. remain out of scope per the Attacks
   section). Leaderboards over arbitrary tasks (the first cut is
@@ -346,6 +360,8 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-28 — **Experiment config fingerprint (leaderboard foundation).** `db.config_fingerprint(config)` → stable 16-hex SHA-256 over canonical JSON (stdlib sorted-key, no whitespace) of the run-identity config; stored on `runs.config_fingerprint` (indexed), computed in `start_run`, which now also stamps `vfl_version`. Seed + git_sha are excluded so seed-repeats of one experiment share a fingerprint (the arena's mean±std grouping); vfl_version is included for cross-version comparability. Idempotent `_migrate` adds the column + index to pre-fingerprint DBs. research(2026-05): RFC 8785 JCS → SHA-256 is the cross-language content-addressing standard; we use stdlib canonical JSON since the fingerprint is internal (no cross-runtime number-normalisation need, no new dep).
 
 - 2026-05-27 — **Client-side differential privacy (Opacus DP-SGD).** `velocity.training.dp_local_train(...) -> (model, epsilon)` wraps a client's local training in an Opacus `PrivacyEngine` (per-sample clipping + Gaussian noise; Rényi-DP accounting). New `[dp]` extra (`opacus>=1.6,<2`; torch stays CPU-only via `[tool.uv.sources]`). Demonstrated in `examples/mnist_fedavg_dp.py` (Dirichlet non-IID; per-round worst-case epsilon; ~0.83 acc under DP noise vs the non-private demo's ~0.92). Single-engine-per-call helper; cumulative cross-round accounting + `secure_mode` are flagged as production follow-ups in the example. research(2026-05): Opacus 1.6 is the canonical PyTorch DP-SGD path (Fed-BioMed FL reference).
 
