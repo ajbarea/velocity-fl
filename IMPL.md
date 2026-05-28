@@ -25,10 +25,10 @@ The leaderboard read/CLI side is now complete (4 axes + Pareto + robustness).
 What remains builds on it:
 
 1. **Broaden + surface the leaderboard.** The robustness producer now covers
-   `gaussian_noise`, `ipm`, `sign_flip`, `alie` (one malicious client). Still to
-   add: `fang_krum` (needs ≥2 malicious → a `num_malicious` param) and
-   `label_flip` (training-time, via a `local_train` label-attack callback, not
-   update replacement). Extend Pareto to 3-axis (fold in rounds-to-target) and
+   `gaussian_noise`, `ipm`, `sign_flip`, `alie`, `label_flip` (one malicious
+   client). Still to add: `fang_krum` (needs ≥2 malicious → a `num_malicious`
+   param, which also changes the MCP tool surface). Extend Pareto to 3-axis
+   (fold in rounds-to-target) and
    slice per (dataset × attack). Add sample-efficiency. Then the **MCP tool +
    Zensical page** surfaces (CLI ships all five views today; these need
    browser/MCP verification — WSL Chrome is broken, so do them where that can be
