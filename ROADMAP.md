@@ -321,7 +321,15 @@ rather than the curated, dumped arena CSV the first cut renders.
   call. Measure: communication bytes saved vs convergence delta per
   strategy. Honest target: roughly halve bytes-on-the-wire on 8-bit
   quantization with <2pp accuracy loss on MNIST+FedAvg as the smoke
-  bench.
+  bench. `research(2026-05)`: 8-bit uniform quantization is the unbiased,
+  simple baseline (QSGD family) — good convergence but a modest ratio, which
+  is why the honest target here is only ~2×; the high-compression path is
+  **Top-k sparsification + error feedback** (biased, but EF recovers
+  near-full-precision convergence), and 2026 hybrids (FedSparQ:
+  adaptive-threshold sparsification + fp16 + EF residuals) reach ~10× upload
+  reduction vs FedAvg. So ship 8-bit first as the honest unbiased baseline,
+  then add Top-k + EF for the real bandwidth win. Source: FedSparQ
+  (arXiv:2511.05591); FL gradient-compression + error-feedback surveys.
 - **Heterogeneous client model support** — element-wise masking so
   clients with differently-shaped tensors (edge variants vs server
   variants) can participate in the same aggregation. Today's kernel
