@@ -54,6 +54,10 @@ from prefab_ui.components import (
 )
 from prefab_ui.components.charts import ChartSeries, LineChart, Sparkline
 
+# prefab_ui chart kwargs use the camelCase field alias (dataKey, xAxis, showDots),
+# not the snake_case attr name: ty (astral-sh/ty#1425) resolves only the alias for
+# populate_by_name models. Both are runtime-equivalent (same field, same serialized
+# output); the alias keeps `make lint` green without per-call ignores.
 from velocity import db
 from velocity import memory as mem
 from velocity.arena import (
@@ -75,7 +79,7 @@ def logged_tool[F: Callable[..., Any]](fn: F) -> F:
     so FastMCP sees the wrapped function's preserved signature.
     """
     sig = inspect.signature(fn)
-    tool_name = fn.__name__
+    tool_name = getattr(fn, "__name__", "<tool>")
 
     def _strip(call_args: dict[str, Any]) -> dict[str, Any]:
         call_args.pop("ctx", None)
@@ -388,7 +392,7 @@ def run_rounds_history(run_id: str) -> ToolResult:
         children=[
             LineChart(
                 data=rows,
-                x_axis="round_num",
+                xAxis="round_num",
                 series=[ChartSeries(dataKey="global_loss", label="Global loss")],
             ),
             DataTable(
@@ -439,7 +443,7 @@ def compare_runs(run_id_a: str, run_id_b: str) -> ToolResult:
         children=[
             LineChart(
                 data=rows,
-                x_axis="round",
+                xAxis="round",
                 series=[
                     ChartSeries(dataKey="loss_a", label=run_id_a),
                     ChartSeries(dataKey="loss_b", label=run_id_b),
@@ -550,11 +554,11 @@ def _arena_attack_panel(attack: str) -> Column:
                 children=[
                     LineChart(
                         data=rows,
-                        x_axis="round",
+                        xAxis="round",
                         series=[ChartSeries(dataKey=s, label=s) for s in ARENA_STRATEGIES],
                         height=380,
                         curve="smooth",
-                        show_dots=True,
+                        showDots=True,
                     )
                 ]
             ),
