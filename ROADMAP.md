@@ -302,12 +302,21 @@ rather than the curated, dumped arena CSV the first cut renders.
   one `CostAxis` when its DP lands, and the per-(dataset × attack) slicer generalises
   to per-(forge / task-type / split-level). robustness-delta as a further cost axis
   still carries the attacked/baseline-pairs caveat.
-- **Theoretical complexity labels, not rankings** — tag aggregators
-  with their asymptotic cost (FedAvg: O(n·d); Krum: O(n²·d);
-  Bulyan: O(n²·d + n·d·log n)). Static lookup, surfaced next to each
-  strategy's measured row. Explicitly *not* a ranking input —
-  asymptotic class doesn't predict wall-clock inside the regimes we
-  measure.
+- **Theoretical complexity labels, not rankings** — _in flight 2026-05-30._
+  Tag each kernel with its per-round server-side aggregation cost, stated
+  **per the actual `vfl-core` implementation**: `O(n·d)` for FedAvg, FedProx,
+  FedMedian, TrimmedMean (the latter two use introselect per coordinate, not a
+  sort); `O(T·n·d)` for GeometricMedian (T = Weiszfeld `max_iter`); `O(n²·d)`
+  for Krum, MultiKrum, Bulyan, ArKrum (the pairwise distance matrix dominates).
+  Note: **Bulyan is `O(n²·d)`, not `O(n²·d + n·d·log n)`** — the implementation
+  reuses one distance matrix for the single Multi-Krum selection and the
+  trimmed-mean phase is selection-based (`O(n·d)`), so no `n·d·log n` sort term.
+  Lives as `AGGREGATION_COMPLEXITY` in `strategy.py` (single source of truth, by
+  the kernel citations); surfaced in `velocity strategies` (static reference) and
+  the wall-clock board (beside the measured row). Explicitly *not* a ranking
+  input — asymptotic class doesn't predict wall-clock inside the regimes we
+  measure (small n, large d), and the caveat ships next to the label. The future
+  `complexity_labeller` A2A tool below reads this registry rather than re-deriving.
 - **Cross-config normalisation** — the hard part. Can a FEMNIST run
   be compared to a CIFAR-10 run? Only on normalised axes
   (accuracy-relative-to-centralised-ceiling, not raw accuracy; rounds

@@ -4,9 +4,11 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 from velocity.strategy import (
+    AGGREGATION_COMPLEXITY,
     ALL_STRATEGIES,
     ArKrum,
     Bulyan,
+    Complexity,
     FedAvg,
     FedMedian,
     FedProx,
@@ -14,6 +16,7 @@ from velocity.strategy import (
     Krum,
     MultiKrum,
     TrimmedMean,
+    complexity_for,
     parse_strategy,
     strategy_name,
 )
@@ -123,3 +126,65 @@ def test_parse_strategy_errors():
         parse_strategy("TrimmedMean")  # k is required
     with pytest.raises(ValueError, match="unknown parameter"):
         parse_strategy({"type": "Krum", "f": 2, "bogus": 1})
+
+
+# --- Aggregation complexity registry ------------------------------------
+
+
+def test_complexity_registry_covers_exactly_all_strategies():
+    # Every kernel has a label, and no label points at a kernel that no
+    # longer exists — the registry can't silently drift from the sum type.
+    assert set(AGGREGATION_COMPLEXITY) == {cls.__name__ for cls in ALL_STRATEGIES}
+
+
+def test_complexity_n_scaling_matches_rust_kernels():
+    # The cross-strategy differentiator is the n-term (clients); d is shared.
+    # Linear: a single pass / per-coordinate introselect / T Weiszfeld iters.
+    # Quadratic: the pairwise distance matrix the Krum family computes.
+    linear = {"FedAvg", "FedProx", "FedMedian", "TrimmedMean", "GeometricMedian"}
+    quadratic = {"Krum", "MultiKrum", "Bulyan", "ArKrum"}
+    for name in linear:
+        assert AGGREGATION_COMPLEXITY[name].client_scaling == "linear", name
+    for name in quadratic:
+        assert AGGREGATION_COMPLEXITY[name].client_scaling == "quadratic", name
+
+
+def test_complexity_big_o_grounded_in_implementation():
+    c = AGGREGATION_COMPLEXITY
+    assert c["FedAvg"].big_o == "O(n·d)"
+    assert c["FedProx"].big_o == "O(n·d)"
+    # introselect per coordinate (not a sort) → no n·log n term
+    assert c["FedMedian"].big_o == "O(n·d)"
+    assert c["TrimmedMean"].big_o == "O(n·d)"
+    # T = Weiszfeld max_iter
+    assert c["GeometricMedian"].big_o == "O(T·n·d)"
+    # pairwise distance matrix dominates
+    assert c["Krum"].big_o == "O(n²·d)"
+    assert c["MultiKrum"].big_o == "O(n²·d)"
+    assert c["ArKrum"].big_o == "O(n²·d)"
+    # one shared distance matrix + selection-based trim → clean n²·d, NOT
+    # n²·d + n·d·log n
+    assert c["Bulyan"].big_o == "O(n²·d)"
+
+
+def test_complexity_entries_are_frozen_and_described():
+    for name, entry in AGGREGATION_COMPLEXITY.items():
+        assert isinstance(entry, Complexity)
+        assert entry.client_scaling in {"linear", "quadratic"}
+        assert entry.big_o.startswith("O(")
+        assert entry.dominated_by, f"{name} missing a dominant-term note"
+        with pytest.raises(FrozenInstanceError):
+            entry.big_o = "O(1)"  # type: ignore[misc]
+
+
+def test_complexity_for_accepts_name_and_instance():
+    by_name = complexity_for("Krum")
+    by_instance = complexity_for(Krum(f=2))
+    assert by_name is by_instance  # same registry singleton
+    assert by_name.client_scaling == "quadratic"
+    assert complexity_for(FedAvg()).big_o == "O(n·d)"
+
+
+def test_complexity_for_unknown_name_raises():
+    with pytest.raises(KeyError):
+        complexity_for("FedNope")

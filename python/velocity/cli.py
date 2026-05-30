@@ -12,7 +12,7 @@ import typer
 from velocity import __version__
 from velocity.attacks import VALID_ATTACKS
 from velocity.server import VelocityServer
-from velocity.strategy import ALL_STRATEGIES, Strategy, parse_strategy
+from velocity.strategy import AGGREGATION_COMPLEXITY, ALL_STRATEGIES, Strategy, parse_strategy
 
 app = typer.Typer(
     name="velocity",
@@ -75,9 +75,18 @@ def version() -> None:
 
 @app.command()
 def strategies() -> None:
-    """List available aggregation strategies."""
+    """List aggregation strategies with their per-round server-side cost."""
+    typer.echo("Aggregation strategies — per-round server-side cost (n = clients, d = model dim)")
+    typer.echo("")
+    typer.echo(f"{'strategy':<16} {'cost':<9} {'scaling':<10} dominated by")
     for cls in ALL_STRATEGIES:
-        typer.echo(cls.__name__)
+        c = AGGREGATION_COMPLEXITY[cls.__name__]
+        typer.echo(f"{cls.__name__:<16} {c.big_o:<9} {c.client_scaling:<10} {c.dominated_by}")
+    typer.echo("")
+    typer.echo(
+        "Cost is descriptive, not a ranking input — asymptotic class doesn't predict "
+        "measured wall-clock inside benchmarked regimes (small n, large d)."
+    )
 
 
 # Single source of truth for the leaderboard ranking axes — keeps the validation,
@@ -177,15 +186,23 @@ def leaderboard(
             return
         typer.echo(f"Wall-clock leaderboard (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_ms':>10}  {'std_ms':>8}"
+            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_ms':>10}  "
+            f"{'std_ms':>8}  {'cost':<9}"
         )
         for rank, row in enumerate(board, start=1):
             std = "n/a" if row["std_wall_clock_ms"] is None else f"{row['std_wall_clock_ms']:.0f}"
             dataset = row["dataset"] or "-"
+            entry = AGGREGATION_COMPLEXITY.get(row["strategy"])
+            cost = entry.big_o if entry else "?"
             typer.echo(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
-                f"{row['mean_wall_clock_ms']:>10.0f}  {std:>8}"
+                f"{row['mean_wall_clock_ms']:>10.0f}  {std:>8}  {cost:<9}"
             )
+        typer.echo("")
+        typer.echo(
+            "cost = theoretical per-round aggregation complexity (n clients, d params); "
+            "descriptive, not a ranking input — it doesn't predict measured wall-clock at this n."
+        )
         return
 
     if metric == "comm-cost":

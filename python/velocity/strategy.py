@@ -265,3 +265,95 @@ def _lookup(name: str) -> type[Strategy]:
             return cls
     valid = ", ".join(_NAME_TO_CLASS)
     raise ValueError(f"unknown strategy {name!r}. Valid: {valid}")
+
+
+@dataclass(frozen=True)
+class Complexity:
+    """Per-round server-side *aggregation* cost of a strategy.
+
+    ``n`` = participating clients, ``d`` = model dimension (total parameters).
+    Excludes client-side local training, which is identical across strategies.
+    Stated per the actual ``vfl-core`` Rust kernel, not an idealised variant:
+    the coordinate-wise kernels use introselect (``select_nth_unstable``), not a
+    sort, so they carry no ``n·log n`` term, and Bulyan reuses one distance
+    matrix rather than recomputing per selection round.
+
+    Descriptive, **not a ranking input** — asymptotic class doesn't predict
+    wall-clock inside the regimes we benchmark (small ``n``, large ``d``).
+    """
+
+    big_o: str
+    """Asymptotic cost label, e.g. ``"O(n²·d)"``."""
+
+    client_scaling: str
+    """The ``n`` term alone — ``"linear"`` or ``"quadratic"``. The
+    cross-strategy differentiator, since ``d`` is shared by every kernel."""
+
+    dominated_by: str
+    """One line naming the operation that dominates the cost."""
+
+
+AGGREGATION_COMPLEXITY: dict[str, Complexity] = {
+    "FedAvg": Complexity(
+        "O(n·d)",
+        "linear",
+        "one sample-weighted pass over n d-dimensional updates",
+    ),
+    "FedProx": Complexity(
+        "O(n·d)",
+        "linear",
+        "aggregation identical to FedAvg (the proximal term is client-side)",
+    ),
+    "FedMedian": Complexity(
+        "O(n·d)",
+        "linear",
+        "introselect median per coordinate (O(n) average) over d coordinates",
+    ),
+    "TrimmedMean": Complexity(
+        "O(n·d)",
+        "linear",
+        "two introselect passes per coordinate (O(n) average) over d coordinates",
+    ),
+    "GeometricMedian": Complexity(
+        "O(T·n·d)",
+        "linear",
+        "T Weiszfeld iterations (max_iter), each a weighted average over n points",
+    ),
+    "Krum": Complexity(
+        "O(n²·d)",
+        "quadratic",
+        "the n²·d pairwise squared-distance matrix",
+    ),
+    "MultiKrum": Complexity(
+        "O(n²·d)",
+        "quadratic",
+        "the same pairwise-distance matrix as Krum; averages the top-m",
+    ),
+    "Bulyan": Complexity(
+        "O(n²·d)",
+        "quadratic",
+        "one Multi-Krum selection (n²·d) then a selection-based trim (n·d)",
+    ),
+    "ArKrum": Complexity(
+        "O(n²·d)",
+        "quadratic",
+        "Krum-style pairwise distances; the median filter + change-point are lower-order",
+    ),
+}
+"""Per-round aggregation complexity for every kernel in :data:`ALL_STRATEGIES`.
+
+Single source of truth: the CLI surfaces it, and the future
+``complexity_labeller`` agent (see ROADMAP) reads it rather than re-deriving.
+Keyed by class name; :func:`complexity_for` resolves a name or instance.
+"""
+
+
+def complexity_for(strategy: str | Strategy) -> Complexity:
+    """Aggregation complexity for a strategy, by exact class name or instance.
+
+    Raises :class:`KeyError` for an unknown name. Names are the exact class
+    name (``"Krum"``); run :func:`parse_strategy` first if you need the
+    case-insensitive / dict coercion.
+    """
+    name = strategy if isinstance(strategy, str) else strategy_name(strategy)
+    return AGGREGATION_COMPLEXITY[name]

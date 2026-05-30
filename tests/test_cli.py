@@ -25,8 +25,26 @@ def test_cli_version():
 def test_cli_strategies():
     result = runner.invoke(app, ["strategies"])
     assert result.exit_code == 0
-    lines = {line.strip() for line in result.stdout.splitlines() if line.strip()}
-    assert {"FedAvg", "FedProx", "FedMedian", "TrimmedMean", "Krum", "MultiKrum"}.issubset(lines)
+    out = result.stdout
+    # every kernel is listed
+    for name in (
+        "FedAvg",
+        "FedProx",
+        "FedMedian",
+        "TrimmedMean",
+        "Krum",
+        "MultiKrum",
+        "Bulyan",
+        "GeometricMedian",
+        "ArKrum",
+    ):
+        assert name in out, name
+    # each row carries its complexity label + n-scaling class
+    assert "O(n²·d)" in out  # Krum family
+    assert "O(n·d)" in out  # FedAvg family
+    assert "quadratic" in out and "linear" in out
+    # and the honesty caveat travels with the labels
+    assert "not a ranking input" in out
 
 
 def test_cli_run_json_output():
@@ -273,6 +291,17 @@ def test_cli_leaderboard_wall_clock(_isolated_db):
     assert result.exit_code == 0, result.stdout
     assert "Wall-clock" in result.stdout
     assert "Krum" in result.stdout
+
+
+def test_cli_leaderboard_wall_clock_shows_theoretical_complexity(_isolated_db):
+    # Theory sits beside the measured row, with the asymptotic≠measured caveat.
+    _seed_run_duration(
+        _isolated_db, "alice", {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}, 250
+    )
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "wall-clock"])
+    assert result.exit_code == 0, result.stdout
+    assert "O(n²·d)" in result.stdout  # Krum's per-round cost
+    assert "not a ranking input" in result.stdout
 
 
 def test_cli_leaderboard_wall_clock_json(_isolated_db):
