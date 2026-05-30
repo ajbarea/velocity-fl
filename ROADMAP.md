@@ -204,6 +204,24 @@ for medical-FL benchmarks specifically.
   the Rust lever is largest and is currently not measured. Depends on
   CodSpeed for a noise floor tight enough to see the effect. Listed as
   a follow-up in `docs/benchmarks.md:130-132`.
+- **Free-threaded Python (3.13t / 3.14t) + pyo3 0.23→0.28 / rust-numpy /
+  ndarray 0.16 upgrade** — vfl-core is on `pyo3 0.23.5` + `rust-numpy 0.23`
+  + `ndarray 0.15`, the pre-free-threading generation. The ecosystem moved:
+  `pyo3` is at 0.28 (free-threaded modules thread-safe by default since 0.28;
+  free-threading support since 0.23) and `rust-numpy` now builds against the
+  free-threaded interpreter (PyO3/rust-numpy#476 resolved — bumped to pyo3
+  0.24+, added ndarray 0.16 + numpy 2.0). The lever is on the speed thesis:
+  the Rust kernels already drop the GIL, but the Python-side orchestration
+  (partitioning, the round loop, client bookkeeping) is still GIL-serialised
+  — a no-GIL interpreter lets it parallelise alongside the kernels. Gates:
+  (a) the pyo3/numpy/ndarray bump is a real migration, not a dependabot patch
+  (five breaking pyo3 minors, 0.23→0.28); (b) widen `requires-python` past the
+  `<3.14` cap and build the free-threaded ABI (`3.13t`/`3.14t`) — vfl-core
+  uses `extension-module`, not abi3, so no stable-ABI conflict; (c) measure
+  GIL-bound vs free-threaded aggregation at the crowd-scale tier (pairs with
+  CodSpeed above). `research(2026-05)`: pyo3 0.28 free-threading defaults
+  (pyo3.rs free-threading guide); rust-numpy #476 resolution + ndarray 0.16 /
+  numpy 2.0 support; CPython 3.14 free-threaded build declared supported.
 
 ## Live experiment leaderboard
 
@@ -403,7 +421,7 @@ rather than the curated, dumped arena CSV the first cut renders.
 > Source: 2026-05-21 audit-of-audits review "Insights worth keeping". Mirror items live in the matching ROADMAP for the other active sisters.
 
 - **Cite Project Glasswing posture in README security framing** — Anthropic's April 2026 trustworthy-software initiative ([anthropic.com/glasswing](https://www.anthropic.com/glasswing)) is the 2026 frame for Byzantine-robust + privacy-aware FL work. vFL's Rust core ("auditable aggregation, no token-stealing prompts or hallucinations") fits this narrative cleanly.
-- **Stale-assumption audit (whenever the FL ecosystem or MCP/A2A spec moves)** — the FastMCP `_meta` annotation pattern, the Prefect Horizon deploy path, the `pyo3` 0.21-shaped Rust bindings, the A2A specialist-agent contracts in `## Live experiment leaderboard` (convergence auditor, robustness auditor) — each encodes assumptions about what the surrounding ecosystem couldn't do at the time it was written. When MCP / FastMCP / pyo3 / aggregation-paper publications / Flower majors land, audit which scaffolding exists to compensate for a now-closed gap and collapse what no longer earns its keep. **Inverse of speculative-generality YAGNI:** polices existing code as the ecosystem moves, not new code being written. `research(2026-05)`: pattern from [Anthropic engineering, Managed Agents](https://www.anthropic.com/engineering/managed-agents) (*"harnesses encode assumptions ... that can go stale"*); mirrored cross-sister from kourai-khryseai's M22-M25 sweep.
+- **Stale-assumption audit (whenever the FL ecosystem or MCP/A2A spec moves)** — the FastMCP `_meta` annotation pattern, the Prefect Horizon deploy path, the `pyo3` 0.23-shaped Rust bindings (audited 2026-05 → now a concrete item under `## Performance` → free-threaded Python), the A2A specialist-agent contracts in `## Live experiment leaderboard` (convergence auditor, robustness auditor) — each encodes assumptions about what the surrounding ecosystem couldn't do at the time it was written. When MCP / FastMCP / pyo3 / aggregation-paper publications / Flower majors land, audit which scaffolding exists to compensate for a now-closed gap and collapse what no longer earns its keep. **Inverse of speculative-generality YAGNI:** polices existing code as the ecosystem moves, not new code being written. `research(2026-05)`: pattern from [Anthropic engineering, Managed Agents](https://www.anthropic.com/engineering/managed-agents) (*"harnesses encode assumptions ... that can go stale"*); mirrored cross-sister from kourai-khryseai's M22-M25 sweep.
 - **Subagent contract discipline (Anthropic 4-part)** for vFL's A2A specialist agents — each agent in `## Live experiment leaderboard` (convergence auditor, robustness auditor, future drift/Pareto auditors) must declare (1) objective, (2) output format, (3) guidance on which tools / sources to use, (4) clear task boundaries. Anthropic's "How we built our multi-agent research system" calls out *"missing any of these causes the subagent to drift"*; the LLM equivalent of an under-specified `pyfunction` signature. Audit pending — file when the auditor agents move from spec to implementation. `research(2026-05)`: [Anthropic engineering, multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system); mirrored cross-sister from kourai-khryseai.
 
 ## Dependency hygiene
