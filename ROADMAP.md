@@ -242,16 +242,40 @@ rather than the curated, dumped arena CSV the first cut renders.
   `paper_attacks.craft_byzantine_updates` dispatch (N malicious slots; per-client
   for gaussian/sign_flip, one craft tiled across slots for ipm/alie/fang_krum).
   `fang_krum` requires `num_malicious >= 2` (Fang's binary search) and is rejected
-  at config time otherwise. Remaining axis: sample efficiency (accuracy per total
-  client sample). Per-axis because any weighted combination buries the tradeoffs
-  that make the comparison interesting.
+  at config time otherwise. Remaining axis — **sample efficiency: paused, needs a
+  crisp definition (grounded 2026-05-30).** research(2026-05): FL benchmarking
+  (FedScale; the 2026 edge-FL systematic reviews) frames efficiency as
+  time-to-accuracy / communication rounds / energy — there is no standard
+  "accuracy per sample" axis. And both obvious readings collapse into an axis we
+  already ship: accuracy / cumulative-client-samples ≈ accuracy / (rounds ×
+  per-round-samples) ranks like `rounds_to_target` within a same-dataset group;
+  accuracy / unique-federation-samples ≈ accuracy / const, i.e. it just re-ranks
+  by accuracy. It only *diverges* from `rounds_to_target` as **samples-to-target**
+  across configs with differing client-counts — a cross-config comparison the
+  "Cross-config normalisation" bullet below flags as not-yet-safe. AJ's call: drop
+  it as redundant with `rounds_to_target`, or ship it as samples-to-target *with*
+  the normalisation work, not before. Per-axis regardless — a weighted composite
+  buries the tradeoffs.
 - **Pareto frontier** — rather than a single "winner," surface the
   non-dominated set across axes. _First cut shipped 2026-05-28:_
   `db.pareto_frontier` over accuracy (max) vs total wall-clock (min),
   surfaced via `velocity leaderboard --metric pareto` (reuses the accuracy +
   wall-clock axis functions). The honest answer to "what should I use" —
-  there usually isn't one. Remaining: extend the frontier to rounds-to-target
-  and (once it ships) robustness delta, and slice it per (dataset × attack).
+  there usually isn't one. Remaining (design grounded 2026-05-30):
+  **(1) slice the existing 2-axis frontier per (dataset × attack)** — the clean
+  next build: directly answers "what strategy for FEMNIST under label-flip?",
+  needs no new axis, and groups the accuracy/wall-clock frontier by `dataset` +
+  the run's `attacks` row (one attack per `config_fingerprint`, so derive it once
+  per group). **(2) a rounds-to-target 3rd axis is deferred on a semantics call:**
+  it's target-dependent and undefined for non-converging configs, so a 3-axis
+  frontier would silently *drop* configs that miss the target (a fast, cheap
+  0.85-accuracy config vanishes under a 0.9 target) — losing the very tradeoff the
+  frontier exists to show. Either exclude them (consistent with how
+  `rounds_to_target` / `robustness` already behave, but can empty the frontier) or
+  penalise as worst-rtt (keeps them, but invents a modelling choice). AJ's
+  leaderboard-semantics call since it shapes the published frontier; **(1) ships
+  first**, the 3rd axis (and robustness-delta as a 4th, same attacked/baseline-
+  pairs caveat) after.
 - **Theoretical complexity labels, not rankings** — tag aggregators
   with their asymptotic cost (FedAvg: O(n·d); Krum: O(n²·d);
   Bulyan: O(n²·d + n·d·log n)). Static lookup, surfaced next to each
