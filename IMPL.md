@@ -1,4 +1,4 @@
-# IMPL: theoretical complexity labels for the aggregation kernels
+# IMPL: session break — awaiting next plan
 
 Session-by-session checklist for what's actively in flight. When a PR
 ships, its contents get replaced by the next session's plan; between
@@ -8,53 +8,19 @@ being in-flight.
 Long-horizon planning lives in [ROADMAP.md](ROADMAP.md). Session-scale
 execution lives here.
 
-## In flight — theoretical complexity labels
+## In flight
 
-**Why.** The leaderboard answers "what strategy should I use?" with *measured*
-cost (wall-clock, comm-cost). It can't yet say *why* a strategy is slow, or how
-that cost will scale as the client count grows past the tested regime. Tagging
-each kernel with its per-round server-side aggregation complexity closes that
-gap: a reader sees Krum is `O(n²·d)` (quadratic in clients) next to its measured
-wall-clock, and understands the cost is structural, not a fluke of this corpus.
-This is the ROADMAP's "Theoretical complexity labels, not rankings" item.
+_Nothing open._ The **theoretical complexity labels** shipped 2026-05-30 (see
+ROADMAP → Completed): `AGGREGATION_COMPLEXITY` in `strategy.py` tags each kernel
+with its per-round aggregation cost, surfaced in `velocity strategies` and the
+wall-clock board, both with the "descriptive, not a ranking input" caveat.
 
-**Decisions (research-grounded, web-searched 2026-05).**
-- Complexity is stated **per the actual `vfl-core` Rust implementation**, not an
-  idealized variant. The kernels use `select_nth_unstable_by` (introselect, O(n)
-  avg per coordinate), *not* sorting — so FedMedian / TrimmedMean are `O(n·d)`,
-  and Bulyan is a clean `O(n²·d)` (one Multi-Krum selection reusing a single
-  distance matrix, then a selection-based trimmed mean over survivors). This is
-  *tighter* than the ROADMAP's earlier offhand `O(n²·d + n·d·log n)` — corrected
-  there.
-- The cross-strategy differentiator is the **n-scaling** (clients), since `d` is
-  shared by all: linear (FedAvg, FedProx, FedMedian, TrimmedMean, GeometricMedian)
-  vs quadratic (Krum, MultiKrum, Bulyan, ArKrum). Krum's `O(n²·d)` is the
-  canonical figure (Blanchard 2017; confirmed current 2026-05).
-- **Not a ranking input.** Asymptotic class doesn't predict wall-clock inside the
-  regimes we measure (small n, large d). The label is descriptive; the caveat
-  ships next to it on every surface.
-- Single source of truth: an `AGGREGATION_COMPLEXITY` registry in `strategy.py`,
-  beside the kernel dataclasses that already carry each paper citation. The
-  future `complexity_labeller` A2A/MCP tool (ROADMAP) reads this registry rather
-  than re-deriving — so MCP surface is **left untouched this slice** (bounded).
-
-**Scope.**
-1. `strategy.py` — `Complexity` frozen dataclass + `AGGREGATION_COMPLEXITY` dict
-   (one entry per `ALL_STRATEGIES` class) + `complexity_for(name|instance)`.
-2. `cli.py` — `velocity strategies` becomes a static reference table (big-O,
-   n-scaling, dominant term) with the "descriptive, not a ranking" caveat; the
-   `wall-clock` leaderboard gains a complexity column beside `mean_ms`.
-3. Tests — registry covers exactly `ALL_STRATEGIES`; per-kernel big-O/scaling
-   asserted; `complexity_for` accepts name + instance; CLI rendering smoke.
-
-**Out of scope.** MCP `complexity_labeller` agent (separate ROADMAP item).
-Per-axis complexity on every board (static fact → one reference + the wall-clock
-pairing is enough; repeating it on every row of every axis is noise).
-Cross-config normalisation (the hard, deferred item).
-
-**Definition of done.** Whole-repo `make lint` green; full `pytest` green;
-`velocity strategies` and `velocity leaderboard --metric wall-clock` render the
-labels + caveat; IMPL/ROADMAP reconciled.
+Same session fixed a pre-existing red `make lint`: the prefab-ui chart calls in
+`mcp_app.py` now use the camelCase aliases (`xAxis`, `showDots`) so ty passes
+(astral-sh/ty#1425 resolves only the alias for `populate_by_name` models) — the
+constructed model and serialized MCP surface are byte-identical. CI never caught
+the red lint because only `test` + `pin-check` are required checks and ty runs
+non-blocking.
 
 ## Next up (queued, not active)
 

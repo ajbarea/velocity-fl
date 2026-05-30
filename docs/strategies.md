@@ -31,6 +31,30 @@ FedProx(mu=0.01) != FedProx(mu=0.1)   # True
 
 ---
 
+## Computational cost
+
+Per-round **server-side aggregation** cost, where `n` = participating clients and
+`d` = model dimension (total parameters). This excludes client-side local
+training, which is identical across strategies. Stated per the actual `vfl-core`
+implementation (the coordinate-wise kernels use introselect, not a sort) and
+surfaced live by `velocity strategies`.
+
+| Strategy | Per-round cost | Scaling in `n` |
+| --- | --- | --- |
+| `FedAvg`, `FedProx` | `O(n·d)` | linear |
+| `FedMedian`, `TrimmedMean` | `O(n·d)` | linear |
+| `GeometricMedian` | `O(T·n·d)` | linear (`T` = Weiszfeld iterations) |
+| `Krum`, `MultiKrum`, `Bulyan`, `ArKrum` | `O(n²·d)` | quadratic |
+
+The Krum family is quadratic in clients because each computes the full `n²·d`
+pairwise distance matrix. Bulyan is a clean `O(n²·d)` (one shared distance matrix
+plus a selection-based trim), not `O(n²·d + n·d·log n)`.
+
+This is **descriptive, not a ranking input**: asymptotic class doesn't predict
+measured wall-clock at the `n`/`d` actually benchmarked (small `n`, large `d`).
+Pair it with the [leaderboard](leaderboard.md)'s measured wall-clock and
+communication-cost axes for the empirical picture.
+
 ## `FedAvg`
 
 Weighted average by local sample count — the McMahan et al. (2017) baseline.
