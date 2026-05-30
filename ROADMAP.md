@@ -382,6 +382,15 @@ rather than the curated, dumped arena CSV the first cut renders.
 - **Incremental aggregation API** — `VelocityServer(streaming=True)` with `aggregate_partial(client_update)` returning a running estimate. Researchers can inspect convergence mid-round without waiting for stragglers. Measure: latency to "good enough" estimate (e.g., 80% of final accuracy) vs full barrier aggregation; this is the metric that determines whether the approach has legs. Research-tier; only worth picking up once the kernel suite is more complete and the perf story has the headroom.
 - **Federated attack detection layer** — orthogonal to robust aggregation: anomaly-detection (distance-based, statistical) over the client-update distribution before aggregation. Filter suspicious clients out and aggregate cleanly, or aggregate robustly without filtering — both options for practitioners. Measure: detection rate vs false-positive rate under each attack already in the security module. Sibling to `## Attacks`.
 
+## Federated Forge bridge (kourai integration)
+
+> The FL-in-the-game enhancement for **kourai-khryseai** — personalized multi-agent FL with player-anchored privacy. Full spec: `kourai-khryseai/docs/research/federated-forge/`. vFL is the FL backend; these are the vFL-side items it drives. **Architecture decision (2026-05-30): build in place, not a fork** — these are general vFL capabilities (the "commons" principle says improvements flow to all vFL users), and a fork would diverge from two actively-evolving repos.
+
+- **LoRA-FAIR aggregation strategy** — server-side correction for vanilla FedAvg's divergence on stacked LoRA matrices (ICCV 2025). New `velocity.strategy` entry; needed once FF's per-agent LoRA adapters land. Research-tier.
+- **Multi-tensor named-parameter aggregation** — aggregation today assumes flat `layer_shapes`; FF needs nested `{agent_name: {layer_name: tensor}}`. Extends `VelocityServer` — the enabling capability for multi-agent federation.
+- **Style-poisoning attack class** — a new `velocity.attacks` entry specific to FF's anti-slop (Aidos) training signal; composes with the existing attack suite + the robustness axis.
+- **Eval substrate — shipped 2026-05-30.** FF's evaluation is a *family* of pairwise tradeoffs (privacy/utility, robustness, comm) with no global leaderboard. The pareto cost-axis registry (`COST_AXES`) + per-(dataset × attack) slicer already provide it; **privacy-ε registers as one `CostAxis`** once FF's DP (`privacy.py`) produces it — pairing with the server-side-DP work under `## Privacy`. research(2026-05): personalized adaptive DP clipping (PAC-DP, arXiv:2603.24003) beats fixed-threshold; CMOFL (arXiv:2305.00312) / RPFed frame the multi-objective, no-leaderboard evaluation.
+
 ## Audit-of-audit follow-ups (2026-05-21)
 
 > Source: 2026-05-21 audit-of-audits review (deleted after extraction). Items that survived verdict review but don't fit Compression / Privacy / Streaming cleanly.
