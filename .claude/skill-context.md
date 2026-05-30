@@ -79,6 +79,15 @@ Sources of truth for numeric performance / scale claims:
 
 Any quantitative perf/scale claim not traceable to one of those is slop.
 
+## fragile_docs
+
+README / docs rosters that trace to code, gated by `tests/test_readme_claims.py` (runs in the `test` CI check):
+
+- Strategy roster — every `ALL_STRATEGIES` name (`python/velocity/strategy.py`) must appear in `README.md`, backtick-wrapped.
+- CLI commands — every command in the Typer `app` (`python/velocity/cli.py`) must have a `velocity <name>` section in `docs/cli.md`.
+
+Add a roster → add a membership assertion to that test. Prose surface mentions (the MCP server, the attack arena) aren't auto-checked; keep those in sync by hand.
+
 ## scan_scope
 
 Skip paths:
