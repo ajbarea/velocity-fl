@@ -80,6 +80,19 @@ def strategies() -> None:
         typer.echo(cls.__name__)
 
 
+# Single source of truth for the leaderboard ranking axes — keeps the validation,
+# the error message, and the README/docs axis count in lockstep (the count is gated
+# by tests/test_readme_claims.py).
+LEADERBOARD_METRICS = (
+    "accuracy",
+    "rounds-to-target",
+    "wall-clock",
+    "pareto",
+    "pareto-slices",
+    "robustness",
+)
+
+
 @app.command()
 def leaderboard(
     user: str = typer.Option(
@@ -109,18 +122,8 @@ def leaderboard(
     from velocity import db
     from velocity.memory import default_user_id
 
-    if metric not in {
-        "accuracy",
-        "rounds-to-target",
-        "wall-clock",
-        "pareto",
-        "pareto-slices",
-        "robustness",
-    }:
-        raise typer.BadParameter(
-            "metric must be 'accuracy', 'rounds-to-target', 'wall-clock', 'pareto', "
-            "'pareto-slices', or 'robustness'"
-        )
+    if metric not in LEADERBOARD_METRICS:
+        raise typer.BadParameter("metric must be one of: " + ", ".join(LEADERBOARD_METRICS))
 
     user_id = user or default_user_id()
 
