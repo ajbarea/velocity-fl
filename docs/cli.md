@@ -6,7 +6,7 @@ Velocity-FL ships a [Typer](https://typer.tiangolo.com/)-based CLI called `veloc
 uv run velocity --help
 ```
 
-All subcommands emit **JSON on stdout** and logs on stderr, so they pipe cleanly into `jq`, files, or downstream tooling.
+The data subcommands — `run`, `simulate-attack`, and `leaderboard --json` — emit **JSON on stdout** with logs on stderr, so they pipe cleanly into `jq`, files, or downstream tooling. `version`, `strategies`, `sweep`, and the default `leaderboard` table print human-readable text.
 
 ---
 
@@ -30,8 +30,12 @@ uv run velocity strategies
 # FedAvg
 # FedProx
 # FedMedian
+# TrimmedMean
 # Krum
 # MultiKrum
+# Bulyan
+# GeometricMedian
+# ArKrum
 ```
 
 ---
@@ -88,6 +92,58 @@ uv run velocity simulate-attack gaussian_noise --intensity 0.1
 > shape — they have to compose with a real data loader. Use
 > [`velocity.data_attacks`](attacks.md#data-pipeline-attacks-velocitydata_attacks)
 > from a Python script instead.
+
+---
+
+## `velocity leaderboard`
+
+Ranks stored experiment runs from the live run store (`velocity.db`), grouped by config fingerprint and averaged across seeds. See [Leaderboard](leaderboard.md) for the published attack-arena rankings.
+
+```bash
+uv run velocity leaderboard
+uv run velocity leaderboard --metric rounds-to-target --target 0.9
+uv run velocity leaderboard --metric robustness
+uv run velocity leaderboard --json
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--user` | `str` | `$VFL_USER_ID`, then OS user | Whose stored runs to rank. |
+| `--metric` | `str` | `accuracy` | `accuracy` (final-round), `rounds-to-target` (convergence speed), `wall-clock` (aggregation time), `pareto` (accuracy-vs-wall-clock frontier), or `robustness` (accuracy drop under attack). |
+| `--target` | `float` | `0.9` | Target accuracy (0–1) for the `rounds-to-target` metric. |
+| `--min-runs` | `int ≥ 1` | `1` | Drop config groups with fewer than N runs. |
+| `--json` | flag | off | Emit JSON instead of the formatted table. |
+
+**Output** — a ranked table (or JSON with `--json`). An empty store prints a friendly "no runs yet" message rather than failing.
+
+---
+
+## `velocity sweep`
+
+Runs a strategy × attack matrix across seeds and writes a comparison report. Drive it from a TOML experiment file or ad-hoc flags. Full spec: [Sweep spec](sweep-spec.md).
+
+```bash
+# From a TOML experiment file
+uv run velocity sweep experiments/robust.toml
+
+# Ad-hoc: every strategy × attack (a no-attack baseline is always included)
+uv run velocity sweep --strategies FedAvg,FedMedian --attacks gaussian_noise,model_poisoning --rounds 10
+```
+
+| Argument / Option | Type | Default | Description |
+|---|---|---|---|
+| `CONFIG` (positional) | `path` | none | TOML experiment file. Omit when using `--strategies`. |
+| `--strategies` | `str` | `""` | Comma-separated strategies for ad-hoc mode. |
+| `--attacks` | `str` | `""` | Comma-separated attacks (`model_poisoning` \| `sybil_nodes` \| `gaussian_noise`); a baseline run is always added. |
+| `--rounds` | `int ≥ 1` | `5` | Rounds per run (ad-hoc mode). |
+| `--min-clients` | `int ≥ 1` | `2` | Min clients per round (ad-hoc mode). |
+| `--seed` | `int` | `0` | Base seed; run *i* uses `seed + i`. |
+| `--model-id` | `str` | `demo/model` | Model id (ad-hoc mode). |
+| `--dataset` | `str` | `demo/dataset` | Dataset (ad-hoc mode). |
+| `--out` | `path` | `out/<timestamp>-sweep` | Output directory. |
+| `--parallel` | `int` | `min(cpu, #runs)` | Process-pool size. |
+
+**Output** — a timestamped `out/<ts>-sweep/` directory with per-run records and a `comparison.md` ranking report.
 
 ---
 

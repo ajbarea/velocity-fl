@@ -17,6 +17,7 @@ Velocity-FL provides:
 - 🦀 **Rust core (`vfl-core`)** for aggregation, attack simulation, and round orchestration
 - 🐍 **Python package (`python/velocity`)** for researcher-facing APIs and a fallback pure-Python orchestrator
 - 🖥️ **Typer CLI (`velocity`)** for local experimentation and quick capability inspection
+- 🤖 **MCP server (`velocity.mcp_app`)** exposing the framework to a Claude agent as MCP tools
 - 📚 **Zensical docs (`docs/`)** deployed via GitHub Actions
 
 ---
@@ -36,6 +37,7 @@ algorithms and unit-test fixtures derived from each paper.
 - `MultiKrum` — top-m by Krum score (El Mhamdi et al., ICML 2018)
 - `Bulyan` — Multi-Krum → trimmed-mean composition (El Mhamdi et al., ICML 2018)
 - `GeometricMedian` — RFA Weiszfeld iteration, sample-weighted (Pillutla et al., IEEE TSP 2022)
+- `ArKrum` — parameter-free Byzantine-robust Krum; estimates the adversary count per round, no `f` to tune (Yang, Imam, et al. 2025, arXiv:2505.17226)
 
 ### Round-level attacks (`velocity.attacks`)
 - `model_poisoning` — sign-flip a fraction of one client's weights
@@ -45,6 +47,11 @@ algorithms and unit-test fixtures derived from each paper.
 ### Data-pipeline attacks (`velocity.data_attacks`)
 - `apply_label_flipping` — bijective derangement of the label space (Biggio et al., ICML 2012)
 - `apply_targeted_label_flipping` — source→target with `flip_ratio` (Tolpegin et al., ESORICS 2020)
+
+### Experiment store & attack arena
+- **Persistent run store** (`velocity.db`) — every run is recorded; `velocity sweep` runs strategy × attack matrices (a TOML spec or ad-hoc flags) across seeds in parallel.
+- **`velocity leaderboard`** ranks stored runs on five axes: accuracy, rounds-to-target, wall-clock, the accuracy-vs-wall-clock Pareto frontier, and robustness (accuracy drop under attack).
+- **Attack arena** ([`docs/leaderboard.md`](docs/leaderboard.md)) — five aggregators (FedAvg baseline, Krum, MultiKrum, Bulyan, ArKrum) ranked against a fixed six-attack Byzantine corpus (Gaussian, IPM, label-flip, sign-flip, ALIE, Fang-Krum).
 
 ---
 
@@ -115,6 +122,8 @@ velocity version
 velocity strategies
 velocity run --model-id test/model --dataset test/dataset --rounds 1 --min-clients 1
 velocity simulate-attack model_poisoning --intensity 0.2
+velocity sweep --strategies FedAvg,Krum --attacks gaussian_noise --rounds 5
+velocity leaderboard --metric robustness
 ```
 
 ---
@@ -125,6 +134,8 @@ velocity simulate-attack model_poisoning --intensity 0.2
 - `velocity strategies` — list available strategies
 - `velocity run ...` — run rounds and print JSON summaries
 - `velocity simulate-attack ...` — register one attack and run a round
+- `velocity sweep ...` — run a strategy × attack matrix across seeds (see [`docs/sweep-spec.md`](docs/sweep-spec.md))
+- `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / pareto / robustness)
 
 Full reference: [`docs/cli.md`](docs/cli.md)
 
