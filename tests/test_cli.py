@@ -286,6 +286,31 @@ def test_cli_leaderboard_wall_clock_json(_isolated_db):
     assert payload[0]["mean_wall_clock_ms"] == 250
 
 
+def test_cli_leaderboard_comm_cost(_isolated_db):
+    db = _isolated_db
+    rid = db.start_run("alice", {"strategy": "Krum", "model_id": "m", "dataset": "mnist"})
+    db.record_round(rid, {"round": 1, "num_clients": 5, "num_params": 1000, "global_accuracy": 0.5})
+    db.complete_run(rid)
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "comm-cost"])
+    assert result.exit_code == 0, result.stdout
+    assert "Communication-cost" in result.stdout
+    assert "Krum" in result.stdout
+
+
+def test_cli_leaderboard_comm_cost_json(_isolated_db):
+    db = _isolated_db
+    rid = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m"})
+    db.record_round(rid, {"round": 1, "num_clients": 2, "num_params": 1000, "global_accuracy": 0.5})
+    db.complete_run(rid)
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "comm-cost", "--json"]
+    )
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload[0]["strategy"] == "FedAvg"
+    assert payload[0]["mean_total_bytes"] == 2 * 2 * 1000 * 4  # 1 round, 2 clients, 1000 params
+
+
 def _seed_run_full(db, user: str, config: dict, acc: float, dur: int) -> None:
     run_id = db.start_run(user, config)
     db.record_round(

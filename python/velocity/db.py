@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS rounds (
     global_loss     REAL,
     global_accuracy REAL,
     num_clients     INTEGER,
+    num_params      INTEGER,
     duration_ms     INTEGER,
     timestamp       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (run_id, round_num)
@@ -130,6 +131,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
     round_cols = {r[1] for r in conn.execute("PRAGMA table_info(rounds)")}
     if "global_accuracy" not in round_cols:
         conn.execute("ALTER TABLE rounds ADD COLUMN global_accuracy REAL")
+    if "num_params" not in round_cols:
+        conn.execute("ALTER TABLE rounds ADD COLUMN num_params INTEGER")
 
 
 def init_db(path: Path | None = None) -> Path:
@@ -269,14 +272,16 @@ def record_round(run_id: str, summary: dict[str, Any]) -> None:
     with connect() as c:
         c.execute(
             """INSERT OR REPLACE INTO rounds(run_id, round_num, global_loss,
-                                             global_accuracy, num_clients, duration_ms)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+                                             global_accuracy, num_clients, num_params,
+                                             duration_ms)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
                 run_id,
                 summary["round"],
                 summary.get("global_loss"),
                 summary.get("global_accuracy"),
                 summary.get("num_clients"),
+                summary.get("num_params"),
                 summary.get("duration_ms"),
             ),
         )
@@ -513,6 +518,69 @@ def wall_clock_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str,
         board.append(g)
 
     board.sort(key=lambda r: r["mean_wall_clock_ms"])  # ascending: faster first
+    return board
+
+
+def comm_cost_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """Total bytes communicated per experiment, ranked ascending (cheaper first).
+
+    For each *completed* run, total communication is the sum over rounds of
+    ``2 * num_clients * num_params * 4`` bytes — each participating client uploads
+    its model update and downloads the global model (bidirectional), at 4 bytes per
+    float32 parameter. Runs with no recorded ``num_params`` (e.g. synthetic demo
+    runs) are excluded. Grouped by ``config_fingerprint``, aggregated mean ± sample-
+    std across the group, ordered ascending; ``std`` is ``None`` for a single run.
+
+    research(2026-05): total communication cost (parameters / bytes transmitted) is
+    the standard FL efficiency axis (FedScale; the 2026 communication-efficient-FL
+    surveys), distinct from rounds (ignores model size + per-round client count) and
+    wall-clock (hardware-dependent). Always-defined — no target dependence — so it
+    sidesteps the non-converged gap that blocks a rounds-to-target Pareto axis, and
+    is the hardware-independent efficiency axis an FL artifact should report. Fed by
+    the ``num_params`` recorded in ``run_real_training``; replaced the dropped
+    sample-efficiency axis (not a standard FL metric; redundant with rounds-to-target).
+    """
+    with connect() as c:
+        rows = c.execute(
+            """
+            SELECT r.config_fingerprint AS fp, r.strategy, r.dataset,
+                   (SELECT SUM(2 * num_clients * num_params * 4) FROM rounds
+                    WHERE run_id = r.run_id AND num_params IS NOT NULL
+                          AND num_clients IS NOT NULL) AS total_bytes
+            FROM runs r
+            WHERE r.user_id = ?
+              AND r.status = 'complete'
+              AND r.config_fingerprint IS NOT NULL
+            """,
+            (user_id,),
+        ).fetchall()
+
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if row["total_bytes"] is None:
+            continue  # no per-round num_params recorded (e.g. synthetic demo run)
+        g = groups.setdefault(
+            row["fp"],
+            {
+                "config_fingerprint": row["fp"],
+                "strategy": row["strategy"],
+                "dataset": row["dataset"],
+                "_totals": [],
+            },
+        )
+        g["_totals"].append(row["total_bytes"])
+
+    board: list[dict[str, Any]] = []
+    for g in groups.values():
+        totals = g.pop("_totals")
+        if len(totals) < min_runs:
+            continue
+        g["n_runs"] = len(totals)
+        g["mean_total_bytes"] = statistics.fmean(totals)
+        g["std_total_bytes"] = statistics.stdev(totals) if len(totals) > 1 else None
+        board.append(g)
+
+    board.sort(key=lambda r: r["mean_total_bytes"])  # ascending: cheaper first
     return board
 
 
