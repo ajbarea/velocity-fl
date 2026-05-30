@@ -87,7 +87,9 @@ def leaderboard(
     ),
     metric: str = typer.Option(
         "accuracy",
-        help="Ranking axis: 'accuracy' (final-round) or 'rounds-to-target' (convergence speed).",
+        help="Ranking axis: 'accuracy' (final-round), 'rounds-to-target' (convergence "
+        "speed), 'wall-clock' (aggregation time), 'pareto' (accuracy-vs-wall-clock "
+        "frontier), or 'robustness' (accuracy drop under attack).",
     ),
     target: float = typer.Option(
         0.9, help="Target accuracy for the 'rounds-to-target' metric (0-1)."
@@ -97,9 +99,11 @@ def leaderboard(
 ) -> None:
     """Rank stored experiments across seeds, grouped by config fingerprint.
 
-    Reads the live experiment store (`velocity.db`). Two axes: final-round
-    accuracy (default) and rounds-to-target convergence speed (`--metric
-    rounds-to-target --target 0.9`).
+    Reads the live experiment store (`velocity.db`). Five axes via `--metric`:
+    `accuracy` (final-round, default), `rounds-to-target` (convergence speed,
+    pair with `--target`), `wall-clock` (aggregation time), `pareto` (the
+    accuracy-vs-wall-clock frontier), and `robustness` (accuracy drop under
+    attack).
     """
     from velocity import db
     from velocity.memory import default_user_id
