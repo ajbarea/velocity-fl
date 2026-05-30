@@ -20,8 +20,9 @@ import sqlite3
 import statistics
 import threading
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any
@@ -584,23 +585,48 @@ def comm_cost_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, 
     return board
 
 
-def _pareto_front(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Non-dominated set over accuracy (maximised) vs wall-clock (minimised).
+@dataclass(frozen=True)
+class CostAxis:
+    """A minimisable cost dimension for the Pareto frontier.
+
+    Accuracy is always the benefit axis (maximise); each registered axis is a cost
+    (minimise). A new tradeoff — privacy-epsilon, robustness-delta — joins by
+    registering its leaderboard function and the mean-cost key it produces, with no
+    change to the frontier logic. Built this way so kourai's Federated Forge
+    privacy/utility frontier (accuracy vs DP-epsilon) drops in as one entry.
+    """
+
+    leaderboard: Callable[..., list[dict[str, Any]]]
+    field: str  # the mean-cost key each leaderboard row lands under
+    label: str  # human label, e.g. "total wall-clock (ms)"
+
+
+COST_AXES: dict[str, CostAxis] = {
+    "wall-clock": CostAxis(wall_clock_leaderboard, "mean_wall_clock_ms", "total wall-clock (ms)"),
+    "comm-cost": CostAxis(comm_cost_leaderboard, "mean_total_bytes", "communication (bytes)"),
+}
+
+
+def _resolve_cost_axis(cost: str) -> CostAxis:
+    if cost not in COST_AXES:
+        raise ValueError(f"unknown cost axis {cost!r}; choose one of {sorted(COST_AXES)}")
+    return COST_AXES[cost]
+
+
+def _pareto_front(points: list[dict[str, Any]], cost_field: str) -> list[dict[str, Any]]:
+    """Non-dominated set: accuracy maximised vs `cost_field` minimised; accuracy desc.
 
     A point is dominated when another is no worse on both axes and strictly better
-    on one. Returns the survivors ordered by accuracy descending. Shared by the
-    global `pareto_frontier` and the per-slice `pareto_slices`.
+    on one. Shared by the global `pareto_frontier` and the per-slice `pareto_slices`
+    over any registered cost axis.
     """
 
     def _dominated(p: dict[str, Any]) -> bool:
         return any(
             q is not p
             and q["mean_accuracy"] >= p["mean_accuracy"]
-            and q["mean_wall_clock_ms"] <= p["mean_wall_clock_ms"]
-            and (
-                q["mean_accuracy"] > p["mean_accuracy"]
-                or q["mean_wall_clock_ms"] < p["mean_wall_clock_ms"]
-            )
+            and q[cost_field] <= p[cost_field]
+            and (q["mean_accuracy"] > p["mean_accuracy"] or q[cost_field] < p[cost_field])
             for q in points
         )
 
@@ -609,18 +635,23 @@ def _pareto_front(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return frontier
 
 
-def _pareto_point(
-    fp: str, acc_row: dict[str, Any], wc_row: dict[str, Any], attack: str
-) -> dict[str, Any]:
-    return {
-        "config_fingerprint": fp,
-        "strategy": acc_row["strategy"],
-        "dataset": acc_row["dataset"],
-        "attack": attack,
-        "n_runs": acc_row["n_runs"],
-        "mean_accuracy": acc_row["mean_accuracy"],
-        "mean_wall_clock_ms": wc_row["mean_wall_clock_ms"],
-    }
+def _pareto_points(user_id: str, axis: CostAxis, min_runs: int) -> list[dict[str, Any]]:
+    """Join accuracy + the chosen cost axis per fingerprint into self-describing points."""
+    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
+    cost = {r["config_fingerprint"]: r for r in axis.leaderboard(user_id, min_runs=min_runs)}
+    attack_of = _attack_by_fingerprint(user_id)
+    return [
+        {
+            "config_fingerprint": fp,
+            "strategy": acc[fp]["strategy"],
+            "dataset": acc[fp]["dataset"],
+            "attack": attack_of.get(fp, "none"),
+            "n_runs": acc[fp]["n_runs"],
+            "mean_accuracy": acc[fp]["mean_accuracy"],
+            axis.field: cost[fp][axis.field],
+        }
+        for fp in acc.keys() & cost.keys()
+    ]
 
 
 def _attack_by_fingerprint(user_id: str) -> dict[str, str]:
@@ -640,60 +671,58 @@ def _attack_by_fingerprint(user_id: str) -> dict[str, str]:
     return {r["fp"]: (json.loads(r["config_json"]).get("attack") or "none") for r in rows}
 
 
-def pareto_frontier(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
-    """Non-dominated experiments across accuracy (max) vs total wall-clock (min).
+def pareto_frontier(
+    user_id: str, *, cost: str = "wall-clock", min_runs: int = 1
+) -> list[dict[str, Any]]:
+    """Non-dominated experiments across accuracy (max) vs a cost axis (min).
 
-    The honest answer to "what should I use": rather than a single winner, the
-    set of experiments where you can't gain accuracy without spending more
-    wall-clock (or vice versa). Reuses `accuracy_leaderboard` +
-    `wall_clock_leaderboard`, joined per `config_fingerprint` (only configs
-    measured on both axes qualify), returning the non-dominated set ordered by
-    accuracy descending. This is the *global* frontier (all datasets/attacks
-    mixed); `pareto_slices` splits it per (dataset x attack) for apples-to-apples
-    comparison.
+    The honest answer to "what should I use": the set of experiments where you can't
+    gain accuracy without spending more of the cost axis (or vice versa). `cost`
+    selects the minimised axis from `COST_AXES` (default `wall-clock`; `comm-cost`
+    for the FL-standard communication frontier). Joined per `config_fingerprint`
+    (only configs measured on accuracy + that cost qualify), ordered by accuracy
+    descending. This is the *global* frontier (datasets/attacks mixed); `pareto_slices`
+    splits it per (dataset x attack).
 
-    research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL
-    multi-objective tradeoff framing (resource-efficiency + fast-convergence work,
-    MDPI Sensors 2024); per-axis leaderboards bury the tradeoff a frontier shows.
+    research(2026-05): for >2 objectives the standard is parallel 2-axis frontiers,
+    not one 3-D plot that flattens to ambiguity in a static artifact (arXiv:2406.06146);
+    accuracy-vs-communication is FL's canonical tradeoff. A registry of cost axes keeps
+    each tradeoff its own legible frontier and lets new ones (privacy-epsilon for
+    kourai's Federated Forge) register without touching the frontier logic.
     """
-    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
-    wc = {r["config_fingerprint"]: r for r in wall_clock_leaderboard(user_id, min_runs=min_runs)}
-    attack_of = _attack_by_fingerprint(user_id)
-    return _pareto_front(
-        [
-            _pareto_point(fp, acc[fp], wc[fp], attack_of.get(fp, "none"))
-            for fp in acc.keys() & wc.keys()
-        ]
-    )
+    axis = _resolve_cost_axis(cost)
+    return _pareto_front(_pareto_points(user_id, axis, min_runs), axis.field)
 
 
-def pareto_slices(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
-    """The accuracy-vs-wall-clock Pareto frontier split per (dataset x attack).
+def pareto_slices(
+    user_id: str, *, cost: str = "wall-clock", min_runs: int = 1
+) -> list[dict[str, Any]]:
+    """The accuracy-vs-cost Pareto frontier split per (dataset x attack).
 
-    `pareto_frontier` mixes datasets and attacks onto one frontier, but accuracy
-    isn't comparable across datasets — so it can't answer "what should I reach for
-    on FEMNIST under label-flipping?". This computes an independent frontier within
-    each (dataset, attack) problem (attack `"none"` = the honest baseline). Slices
-    are ordered by (dataset, attack); each `frontier` is the non-dominated set,
-    accuracy descending.
+    `pareto_frontier` mixes datasets/attacks onto one frontier, but accuracy isn't
+    comparable across datasets — so it can't answer "what should I reach for on
+    FEMNIST under label-flipping?". This computes an independent frontier within each
+    (dataset, attack) problem over the chosen `cost` axis (`"none"` attack = honest
+    baseline). Slices are ordered by (dataset, attack); each carries the `cost` key
+    and a `frontier` (non-dominated set, accuracy descending).
 
-    research(2026-05): cross-dataset accuracy comparison is unsafe without
-    normalisation (FL benchmark surveys), so slicing keeps the frontier honest by
-    only ranking strategies within one (dataset, attack). ROADMAP "Live experiment
-    leaderboard" → Pareto: the clean extension of the 2-axis frontier.
+    research(2026-05): per-context slicing keeps cross-dataset comparison honest; for
+    kourai's Federated Forge the same slicer generalises to per-(forge / task-type /
+    split-level) and `cost` to privacy-epsilon — the personalized, no-global-leaderboard
+    "commons" evaluation (CMOFL arXiv:2305.00312; RPFed).
     """
-    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
-    wc = {r["config_fingerprint"]: r for r in wall_clock_leaderboard(user_id, min_runs=min_runs)}
-    attack_of = _attack_by_fingerprint(user_id)
-
+    axis = _resolve_cost_axis(cost)
     by_slice: dict[tuple[str | None, str], list[dict[str, Any]]] = {}
-    for fp in acc.keys() & wc.keys():
-        attack = attack_of.get(fp, "none")
-        point = _pareto_point(fp, acc[fp], wc[fp], attack)
-        by_slice.setdefault((point["dataset"], attack), []).append(point)
+    for point in _pareto_points(user_id, axis, min_runs):
+        by_slice.setdefault((point["dataset"], point["attack"]), []).append(point)
 
     slices = [
-        {"dataset": dataset, "attack": attack, "frontier": _pareto_front(points)}
+        {
+            "dataset": dataset,
+            "attack": attack,
+            "cost": cost,
+            "frontier": _pareto_front(points, axis.field),
+        }
         for (dataset, attack), points in by_slice.items()
     ]
     slices.sort(key=lambda s: (s["dataset"] or "", s["attack"]))

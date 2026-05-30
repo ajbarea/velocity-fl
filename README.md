@@ -50,7 +50,7 @@ algorithms and unit-test fixtures derived from each paper.
 
 ### Experiment store & attack arena
 - **Persistent run store** (`velocity.db`) — every run is recorded; `velocity sweep` runs strategy × attack matrices (a TOML spec or ad-hoc flags) across seeds in parallel.
-- **`velocity leaderboard`** ranks stored runs on seven axes: accuracy, rounds-to-target, wall-clock, communication cost (total bytes sent), the accuracy-vs-wall-clock Pareto frontier, its per-(dataset × attack) slices, and robustness (accuracy drop under attack).
+- **`velocity leaderboard`** ranks stored runs on seven axes: accuracy, rounds-to-target, wall-clock, communication cost (total bytes sent), the accuracy-vs-cost Pareto frontier (`--cost` selects wall-clock or communication), its per-(dataset × attack) slices, and robustness (accuracy drop under attack).
 - **Attack arena** ([`docs/leaderboard.md`](docs/leaderboard.md)) — five aggregators (FedAvg baseline, Krum, MultiKrum, Bulyan, ArKrum) ranked against a fixed six-attack Byzantine corpus (Gaussian, IPM, label-flip, sign-flip, ALIE, Fang-Krum).
 
 ---

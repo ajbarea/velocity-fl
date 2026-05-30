@@ -270,12 +270,20 @@ rather than the curated, dumped arena CSV the first cut renders.
   target-dependent and undefined for non-converging configs, so a 3-axis frontier
   would silently *drop* configs that miss the target (a fast, cheap 0.85-accuracy
   config vanishes under a 0.9 target) — losing the very tradeoff the frontier
-  exists to show, with no web-search-backed convention for handling it. The
-  always-defined efficiency axis to fold in instead is **`comm-cost`** (total bytes
-  communicated; see the sample-efficiency note above) — an accuracy-vs-comm-cost
-  frontier is more FL-standard than accuracy-vs-wall-clock *and* has no
-  non-converged gap. Tracked as the next Pareto extension; robustness-delta as a
-  further axis still carries the attacked/baseline-pairs caveat.
+  exists to show, with no web-search-backed convention for handling it. **Instead
+  the Pareto became a pluggable cost-axis registry — shipped 2026-05-30**
+  (`db.COST_AXES`; `pareto` / `pareto-slices` take `--cost`): accuracy vs
+  `{wall-clock | comm-cost}`, each tradeoff its own legible 2-D frontier rather than
+  one hard-to-read 3-D plot. research(2026-05): for >2 objectives, parallel 2-D
+  projections beat a 3-D scatter that flattens to ambiguity in a static artifact
+  (arXiv:2406.06146); accuracy-vs-communication is FL's canonical tradeoff. Chosen
+  to integrate with **kourai's Federated Forge** (FL-in-the-game): its evaluation is
+  a *family* of pairwise tradeoffs — privacy/utility (accuracy vs DP-ε), robustness,
+  comm — with **no global leaderboard** (a commons, not a ranking; CMOFL
+  arXiv:2305.00312, RPFed). The registry lets Forge's privacy-ε frontier drop in as
+  one `CostAxis` when its DP lands, and the per-(dataset × attack) slicer generalises
+  to per-(forge / task-type / split-level). robustness-delta as a further cost axis
+  still carries the attacked/baseline-pairs caveat.
 - **Theoretical complexity labels, not rankings** — tag aggregators
   with their asymptotic cost (FedAvg: O(n·d); Krum: O(n²·d);
   Bulyan: O(n²·d + n·d·log n)). Static lookup, surfaced next to each

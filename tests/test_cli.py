@@ -371,6 +371,26 @@ def test_cli_leaderboard_pareto_slices_json(_isolated_db):
     assert payload[0]["frontier"][0]["strategy"] == "FedAvg"
 
 
+def test_cli_leaderboard_pareto_cost_comm(_isolated_db):
+    db = _isolated_db
+    rid = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist"})
+    db.record_round(rid, {"round": 1, "global_accuracy": 0.9, "num_clients": 2, "num_params": 1000})
+    db.complete_run(rid)
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "pareto", "--cost", "comm-cost"]
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "accuracy vs comm-cost" in result.stdout
+    assert "FedAvg" in result.stdout
+
+
+def test_cli_leaderboard_rejects_unknown_cost(_isolated_db):
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "pareto", "--cost", "bogus"]
+    )
+    assert result.exit_code != 0
+
+
 def test_cli_leaderboard_robustness(_isolated_db):
     base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
     _seed_run(_isolated_db, "alice", base, 0.90)  # baseline

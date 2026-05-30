@@ -105,14 +105,16 @@ uv run velocity leaderboard --metric rounds-to-target --target 0.9
 uv run velocity leaderboard --metric comm-cost
 uv run velocity leaderboard --metric robustness
 uv run velocity leaderboard --metric pareto-slices
+uv run velocity leaderboard --metric pareto --cost comm-cost
 uv run velocity leaderboard --json
 ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `--user` | `str` | `$VFL_USER_ID`, then OS user | Whose stored runs to rank. |
-| `--metric` | `str` | `accuracy` | `accuracy` (final-round), `rounds-to-target` (convergence speed), `wall-clock` (aggregation time), `comm-cost` (total bytes communicated, uplink + downlink), `pareto` (accuracy-vs-wall-clock frontier), `pareto-slices` (that frontier per dataset × attack), or `robustness` (accuracy drop under attack). |
+| `--metric` | `str` | `accuracy` | `accuracy` (final-round), `rounds-to-target` (convergence speed), `wall-clock` (aggregation time), `comm-cost` (total bytes communicated, uplink + downlink), `pareto` (accuracy-vs-cost frontier — see `--cost`), `pareto-slices` (that frontier per dataset × attack), or `robustness` (accuracy drop under attack). |
 | `--target` | `float` | `0.9` | Target accuracy (0–1) for the `rounds-to-target` metric. |
+| `--cost` | `str` | `wall-clock` | Cost axis for `pareto` / `pareto-slices`: `wall-clock` or `comm-cost`. A registry (`db.COST_AXES`) — new tradeoff axes (e.g. privacy-ε) register here. |
 | `--min-runs` | `int ≥ 1` | `1` | Drop config groups with fewer than N runs. |
 | `--json` | flag | off | Emit JSON instead of the formatted table. |
 
