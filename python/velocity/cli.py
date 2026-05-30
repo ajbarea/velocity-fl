@@ -93,6 +93,14 @@ LEADERBOARD_METRICS = (
     "robustness",
 )
 
+# Display for each `--cost` axis the pareto frontiers can rank against:
+# (frontier label, the db row field, column header, value formatter). Mirrors
+# `db.COST_AXES`; a new axis (privacy-epsilon) registers in both.
+_PARETO_COST = {
+    "wall-clock": ("wall-clock", "mean_wall_clock_ms", "mean_ms", lambda v: f"{v:.0f}"),
+    "comm-cost": ("comm-cost (MB)", "mean_total_bytes", "mean_MB", lambda v: f"{v / 1e6:.2f}"),
+}
+
 
 @app.command()
 def leaderboard(
@@ -109,6 +117,9 @@ def leaderboard(
     target: float = typer.Option(
         0.9, help="Target accuracy for the 'rounds-to-target' metric (0-1)."
     ),
+    cost: str = typer.Option(
+        "wall-clock", help="Cost axis for 'pareto' / 'pareto-slices': 'wall-clock' or 'comm-cost'."
+    ),
     min_runs: int = typer.Option(1, min=1, help="Drop experiments with fewer than N runs."),
     json_out: bool = typer.Option(False, "--json", help="Emit JSON instead of a table."),
 ) -> None:
@@ -117,15 +128,17 @@ def leaderboard(
     Reads the live experiment store (`velocity.db`). Seven axes via `--metric`:
     `accuracy` (final-round, default), `rounds-to-target` (convergence speed,
     pair with `--target`), `wall-clock` (aggregation time), `comm-cost` (total
-    bytes communicated), `pareto` (the accuracy-vs-wall-clock frontier),
-    `pareto-slices` (that frontier split per dataset x attack), and `robustness`
-    (accuracy drop under attack).
+    bytes communicated), `pareto` (accuracy-vs-cost frontier; `--cost` picks
+    wall-clock or comm-cost), `pareto-slices` (that frontier split per dataset x
+    attack), and `robustness` (accuracy drop under attack).
     """
     from velocity import db
     from velocity.memory import default_user_id
 
     if metric not in LEADERBOARD_METRICS:
         raise typer.BadParameter("metric must be one of: " + ", ".join(LEADERBOARD_METRICS))
+    if cost not in _PARETO_COST:
+        raise typer.BadParameter("cost must be one of: " + ", ".join(_PARETO_COST))
 
     user_id = user or default_user_id()
 
@@ -197,49 +210,47 @@ def leaderboard(
         return
 
     if metric == "pareto":
-        board = db.pareto_frontier(user_id, min_runs=min_runs)
+        board = db.pareto_frontier(user_id, cost=cost, min_runs=min_runs)
         if json_out:
             typer.echo(json.dumps(board))
             return
+        label, field, col, fmt = _PARETO_COST[cost]
         if not board:
             typer.echo(
-                f"No completed runs measured on both accuracy and wall-clock "
-                f"for user {user_id!r} yet."
+                f"No completed runs measured on both accuracy and {label} for user {user_id!r} yet."
             )
             return
-        typer.echo(f"Pareto frontier — accuracy vs wall-clock (user: {user_id})")
+        typer.echo(f"Pareto frontier — accuracy vs {label} (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_acc':>8}  {'mean_ms':>10}"
+            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_acc':>8}  {col:>10}"
         )
         for rank, row in enumerate(board, start=1):
             dataset = row["dataset"] or "-"
             typer.echo(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
-                f"{row['mean_accuracy']:>8.4f}  {row['mean_wall_clock_ms']:>10.0f}"
+                f"{row['mean_accuracy']:>8.4f}  {fmt(row[field]):>10}"
             )
         return
 
     if metric == "pareto-slices":
-        slices = db.pareto_slices(user_id, min_runs=min_runs)
+        slices = db.pareto_slices(user_id, cost=cost, min_runs=min_runs)
         if json_out:
             typer.echo(json.dumps(slices))
             return
+        label, field, col, fmt = _PARETO_COST[cost]
         if not slices:
             typer.echo(
-                f"No completed runs measured on both accuracy and wall-clock "
-                f"for user {user_id!r} yet."
+                f"No completed runs measured on both accuracy and {label} for user {user_id!r} yet."
             )
             return
-        typer.echo(
-            f"Pareto slices — accuracy vs wall-clock per (dataset x attack) (user: {user_id})"
-        )
+        typer.echo(f"Pareto slices — accuracy vs {label} per (dataset x attack) (user: {user_id})")
         for sl in slices:
             typer.echo(f"\n[{sl['dataset'] or '-'} x {sl['attack']}]")
-            typer.echo(f"{'#':>2}  {'strategy':<14} {'n':>3}  {'mean_acc':>8}  {'mean_ms':>10}")
+            typer.echo(f"{'#':>2}  {'strategy':<14} {'n':>3}  {'mean_acc':>8}  {col:>10}")
             for rank, row in enumerate(sl["frontier"], start=1):
                 typer.echo(
                     f"{rank:>2}  {row['strategy']:<14} {row['n_runs']:>3}  "
-                    f"{row['mean_accuracy']:>8.4f}  {row['mean_wall_clock_ms']:>10.0f}"
+                    f"{row['mean_accuracy']:>8.4f}  {fmt(row[field]):>10}"
                 )
         return
 

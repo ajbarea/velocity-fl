@@ -325,6 +325,7 @@ def leaderboard(
     user_id: str,
     metric: str = "accuracy",
     target: float = 0.9,
+    cost: str = "wall-clock",
     min_runs: int = 1,
 ) -> ToolResult:
     """Rank stored experiments across seeds by a leaderboard metric.
@@ -333,10 +334,10 @@ def leaderboard(
     (rounds to reach ``target`` accuracy), ``wall-clock`` (total run time),
     ``comm-cost`` (total bytes communicated, uplink + downlink),
     ``robustness`` (accuracy drop under attack vs the matched no-attack
-    baseline), ``pareto`` (non-dominated accuracy-vs-wall-clock set), or
-    ``pareto-slices`` (that frontier per dataset x attack, flattened into one
-    searchable table). Runs are grouped by config fingerprint so seed-repeats
-    collapse into one row.
+    baseline), ``pareto`` (non-dominated accuracy-vs-cost set; ``cost`` selects
+    ``wall-clock`` or ``comm-cost``), or ``pareto-slices`` (that frontier per
+    dataset x attack, flattened into one searchable table). Runs are grouped by
+    config fingerprint so seed-repeats collapse into one row.
 
     The model reads a compact text summary; the user sees the rendered
     DataTable. May 2026 best practice (gofastmcp.com/servers/tools): text in
@@ -350,9 +351,11 @@ def leaderboard(
         "wall-clock": lambda: db.wall_clock_leaderboard(user_id, min_runs=min_runs),
         "comm-cost": lambda: db.comm_cost_leaderboard(user_id, min_runs=min_runs),
         "robustness": lambda: db.robustness_delta_leaderboard(user_id, min_runs=min_runs),
-        "pareto": lambda: db.pareto_frontier(user_id, min_runs=min_runs),
+        "pareto": lambda: db.pareto_frontier(user_id, cost=cost, min_runs=min_runs),
         "pareto-slices": lambda: [
-            point for sl in db.pareto_slices(user_id, min_runs=min_runs) for point in sl["frontier"]
+            point
+            for sl in db.pareto_slices(user_id, cost=cost, min_runs=min_runs)
+            for point in sl["frontier"]
         ],
     }
     if metric not in boards:

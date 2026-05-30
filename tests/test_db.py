@@ -781,3 +781,58 @@ def test_comm_cost_is_user_scoped():
     _run_with_params("bob", {"strategy": "Krum", "model_id": "m"}, [(3, 1000)])
     board = db.comm_cost_leaderboard("alice")
     assert [r["strategy"] for r in board] == ["FedAvg"]
+
+
+# ---------------------------------------------------------------------------
+# Pareto cost-axis registry — pareto_frontier / pareto_slices over any cost axis
+# ---------------------------------------------------------------------------
+
+
+def _run_acc_params(user: str, config: dict, acc: float, clients: int, params: int) -> str:
+    run_id = db.start_run(user, config)
+    db.record_round(
+        run_id, {"round": 1, "global_accuracy": acc, "num_clients": clients, "num_params": params}
+    )
+    db.complete_run(run_id)
+    return run_id
+
+
+def test_pareto_cost_axes_registry_exposes_known_axes():
+    assert set(db.COST_AXES) == {"wall-clock", "comm-cost"}
+
+
+def test_pareto_frontier_over_comm_cost_axis():
+    # accuracy (max) vs comm-cost (min): FedAvg cheap/0.90, Krum pricier/0.95 -> both
+    # on the frontier; Bulyan priciest/0.85 -> dominated by both. (cost scales with clients.)
+    base = {"model_id": "m", "dataset": "mnist"}
+    _run_acc_params("alice", {**base, "strategy": "FedAvg"}, 0.90, clients=2, params=1000)
+    _run_acc_params("alice", {**base, "strategy": "Krum"}, 0.95, clients=5, params=1000)
+    _run_acc_params("alice", {**base, "strategy": "Bulyan"}, 0.85, clients=6, params=1000)
+    front = db.pareto_frontier("alice", cost="comm-cost")
+    assert {p["strategy"] for p in front} == {"FedAvg", "Krum"}
+    assert "mean_total_bytes" in front[0]  # the row carries the selected cost axis
+
+
+def test_pareto_frontier_default_cost_is_wall_clock_backward_compatible():
+    # Default cost reproduces the original accuracy-vs-wall-clock frontier.
+    _completed_run_full("alice", {"strategy": "Krum", "model_id": "m"}, [(0.95, 500)])
+    row = db.pareto_frontier("alice")[0]
+    assert "mean_wall_clock_ms" in row and row["mean_wall_clock_ms"] == pytest.approx(500)
+
+
+def test_pareto_slices_over_comm_cost_axis():
+    base = {"model_id": "m", "dataset": "femnist", "attack": "ipm"}
+    _run_acc_params("alice", {**base, "strategy": "FedAvg"}, 0.90, clients=2, params=1000)
+    _run_acc_params(
+        "alice", {**base, "strategy": "Krum"}, 0.80, clients=9, params=1000
+    )  # dominated
+    slices = db.pareto_slices("alice", cost="comm-cost")
+    assert len(slices) == 1
+    sl = slices[0]
+    assert (sl["dataset"], sl["attack"], sl["cost"]) == ("femnist", "ipm", "comm-cost")
+    assert [p["strategy"] for p in sl["frontier"]] == ["FedAvg"]  # Krum: lower acc + pricier
+
+
+def test_pareto_rejects_unknown_cost_axis():
+    with pytest.raises(ValueError, match="cost"):
+        db.pareto_frontier("alice", cost="bogus")
