@@ -135,7 +135,7 @@ velocity leaderboard --metric robustness
 - `velocity run ...` — run rounds and print JSON summaries
 - `velocity simulate-attack ...` — register one attack and run a round
 - `velocity sweep ...` — run a strategy × attack matrix across seeds (see [`docs/sweep-spec.md`](docs/sweep-spec.md))
-- `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / pareto / robustness)
+- `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / pareto / pareto-slices / robustness)
 
 Full reference: [`docs/cli.md`](docs/cli.md)
 

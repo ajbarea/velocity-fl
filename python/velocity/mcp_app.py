@@ -332,8 +332,10 @@ def leaderboard(
     ``metric`` is one of ``accuracy`` (final-round), ``rounds-to-target``
     (rounds to reach ``target`` accuracy), ``wall-clock`` (total run time),
     ``robustness`` (accuracy drop under attack vs the matched no-attack
-    baseline), or ``pareto`` (non-dominated accuracy-vs-wall-clock set). Runs are
-    grouped by config fingerprint so seed-repeats collapse into one row.
+    baseline), ``pareto`` (non-dominated accuracy-vs-wall-clock set), or
+    ``pareto-slices`` (that frontier per dataset x attack, flattened into one
+    searchable table). Runs are grouped by config fingerprint so seed-repeats
+    collapse into one row.
 
     The model reads a compact text summary; the user sees the rendered
     DataTable. May 2026 best practice (gofastmcp.com/servers/tools): text in
@@ -347,6 +349,9 @@ def leaderboard(
         "wall-clock": lambda: db.wall_clock_leaderboard(user_id, min_runs=min_runs),
         "robustness": lambda: db.robustness_delta_leaderboard(user_id, min_runs=min_runs),
         "pareto": lambda: db.pareto_frontier(user_id, min_runs=min_runs),
+        "pareto-slices": lambda: [
+            point for sl in db.pareto_slices(user_id, min_runs=min_runs) for point in sl["frontier"]
+        ],
     }
     if metric not in boards:
         raise ValueError(f"metric must be one of {sorted(boards)}, got {metric!r}")

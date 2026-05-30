@@ -261,21 +261,20 @@ rather than the curated, dumped arena CSV the first cut renders.
   `db.pareto_frontier` over accuracy (max) vs total wall-clock (min),
   surfaced via `velocity leaderboard --metric pareto` (reuses the accuracy +
   wall-clock axis functions). The honest answer to "what should I use" —
-  there usually isn't one. Remaining (design grounded 2026-05-30):
-  **(1) slice the existing 2-axis frontier per (dataset × attack)** — the clean
-  next build: directly answers "what strategy for FEMNIST under label-flip?",
-  needs no new axis, and groups the accuracy/wall-clock frontier by `dataset` +
-  the run's `attacks` row (one attack per `config_fingerprint`, so derive it once
-  per group). **(2) a rounds-to-target 3rd axis is deferred on a semantics call:**
-  it's target-dependent and undefined for non-converging configs, so a 3-axis
-  frontier would silently *drop* configs that miss the target (a fast, cheap
-  0.85-accuracy config vanishes under a 0.9 target) — losing the very tradeoff the
-  frontier exists to show. Either exclude them (consistent with how
-  `rounds_to_target` / `robustness` already behave, but can empty the frontier) or
-  penalise as worst-rtt (keeps them, but invents a modelling choice). AJ's
-  leaderboard-semantics call since it shapes the published frontier; **(1) ships
-  first**, the 3rd axis (and robustness-delta as a 4th, same attacked/baseline-
-  pairs caveat) after.
+  there usually isn't one. **(1) per-(dataset × attack) slicing — shipped
+  2026-05-30** (`pareto_slices`, `velocity leaderboard --metric pareto-slices`):
+  an independent accuracy-vs-wall-clock frontier within each (dataset, attack)
+  problem, answering "what strategy for FEMNIST under label-flip?" without the
+  cross-dataset accuracy confound the global frontier carries. **(2) a
+  rounds-to-target 3rd axis is still deferred on a semantics call:** it's
+  target-dependent and undefined for non-converging configs, so a 3-axis frontier
+  would silently *drop* configs that miss the target (a fast, cheap 0.85-accuracy
+  config vanishes under a 0.9 target) — losing the very tradeoff the frontier
+  exists to show. Either exclude them (consistent with how `rounds_to_target` /
+  `robustness` already behave, but can empty the frontier) or penalise as
+  worst-rtt (keeps them, but invents a modelling choice). AJ's leaderboard-
+  semantics call since it shapes the published frontier; the 3rd axis (and
+  robustness-delta as a 4th, same attacked/baseline-pairs caveat) wait on it.
 - **Theoretical complexity labels, not rankings** — tag aggregators
   with their asymptotic cost (FedAvg: O(n·d); Krum: O(n²·d);
   Bulyan: O(n²·d + n·d·log n)). Static lookup, surfaced next to each
@@ -413,6 +412,19 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-05-30 — **Pareto slices — frontier per (dataset × attack) (`db.pareto_slices`).**
+  The global `pareto_frontier` mixes datasets, so it can't answer the leaderboard's
+  north-star question ("what should I use on FEMNIST under label-flip?") — accuracy
+  isn't comparable across datasets. `pareto_slices` computes an independent
+  accuracy-vs-wall-clock non-dominated set within each (dataset, attack) problem
+  (attack `"none"` = honest baseline, the same per-run attack identity
+  `robustness_delta` matches on), surfaced via `velocity leaderboard --metric
+  pareto-slices` (sectioned table) and the MCP leaderboard tool (frontiers flattened
+  into one searchable table). Dominance logic extracted to a shared `_pareto_front`
+  (DRY with `pareto_frontier`). Grounded first in #70 — the contested rounds-to-target
+  3rd axis stays deferred. research(2026-05): cross-dataset accuracy comparison is
+  unsafe without normalisation (FL benchmark surveys); slicing keeps the frontier
+  honest. TDD (failing tests → impl → green); live render eyeballed.
 - 2026-05-29 — **README/docs roster guard (`tests/test_readme_claims.py`).** A drift audit
   found `ArKrum` missing from the README strategy roster and the `leaderboard` / `sweep`
   commands absent from `docs/cli.md` (both fixed in #68). Added a pytest gate (runs in the

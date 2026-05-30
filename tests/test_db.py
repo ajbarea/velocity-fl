@@ -582,6 +582,81 @@ def test_pareto_row_carries_both_axes():
 
 
 # ---------------------------------------------------------------------------
+# pareto_slices — the accuracy-vs-wall-clock frontier sliced per (dataset x attack)
+# ---------------------------------------------------------------------------
+
+
+def test_pareto_slices_group_and_frontier_per_dataset_attack():
+    # femnist / label_flip: Krum best-acc, FedAvg fastest (both frontier); Bulyan dominated by both.
+    _completed_run_full(
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "femnist", "attack": "label_flip"},
+        [(0.95, 500)],
+    )
+    _completed_run_full(
+        "alice",
+        {"strategy": "FedAvg", "model_id": "m", "dataset": "femnist", "attack": "label_flip"},
+        [(0.90, 100)],
+    )
+    _completed_run_full(
+        "alice",
+        {"strategy": "Bulyan", "model_id": "m", "dataset": "femnist", "attack": "label_flip"},
+        [(0.85, 600)],
+    )
+    # different dataset, same attack -> its own slice.
+    _completed_run_full(
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "cifar", "attack": "label_flip"},
+        [(0.70, 300)],
+    )
+    # no attack in config -> the honest "none" baseline slice.
+    _completed_run_full(
+        "alice", {"strategy": "FedAvg", "model_id": "m", "dataset": "femnist"}, [(0.92, 120)]
+    )
+
+    keyed = {(s["dataset"], s["attack"]): s for s in db.pareto_slices("alice")}
+    assert set(keyed) == {("femnist", "label_flip"), ("cifar", "label_flip"), ("femnist", "none")}
+    # frontier keeps Krum + FedAvg (Bulyan dominated), ordered by accuracy descending.
+    assert [p["strategy"] for p in keyed[("femnist", "label_flip")]["frontier"]] == [
+        "Krum",
+        "FedAvg",
+    ]
+    assert [p["strategy"] for p in keyed[("cifar", "label_flip")]["frontier"]] == ["Krum"]
+    assert [p["strategy"] for p in keyed[("femnist", "none")]["frontier"]] == ["FedAvg"]
+
+
+def test_pareto_slices_ordered_by_dataset_then_attack():
+    _completed_run_full(
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "femnist", "attack": "ipm"},
+        [(0.9, 100)],
+    )
+    _completed_run_full(
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "cifar", "attack": "alie"},
+        [(0.8, 100)],
+    )
+    slices = db.pareto_slices("alice")
+    assert [(s["dataset"], s["attack"]) for s in slices] == [("cifar", "alie"), ("femnist", "ipm")]
+
+
+def test_pareto_slices_is_user_scoped():
+    _completed_run_full(
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "femnist", "attack": "ipm"},
+        [(0.9, 100)],
+    )
+    _completed_run_full(
+        "bob",
+        {"strategy": "FedAvg", "model_id": "m", "dataset": "femnist", "attack": "ipm"},
+        [(0.99, 50)],
+    )
+    slices = db.pareto_slices("alice")
+    assert len(slices) == 1
+    assert {p["strategy"] for p in slices[0]["frontier"]} == {"Krum"}
+
+
+# ---------------------------------------------------------------------------
 # robustness_delta_leaderboard — accuracy drop under attack vs matched baseline
 # ---------------------------------------------------------------------------
 
