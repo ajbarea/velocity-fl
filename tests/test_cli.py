@@ -304,6 +304,27 @@ def test_cli_leaderboard_wall_clock_shows_theoretical_complexity(_isolated_db):
     assert "not a ranking input" in result.stdout
 
 
+def test_cli_leaderboard_long_strategy_name_stays_aligned(_isolated_db):
+    # "GeometricMedian" (15 chars) must not overflow the strategy column and
+    # shove its row out of alignment with shorter-named strategies.
+    _seed_run_duration(
+        _isolated_db,
+        "alice",
+        {"strategy": "GeometricMedian", "model_id": "m", "dataset": "mnist"},
+        100,
+    )
+    _seed_run_duration(
+        _isolated_db, "alice", {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist"}, 200
+    )
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "wall-clock"])
+    assert result.exit_code == 0, result.stdout
+    data_rows = [ln for ln in result.stdout.splitlines() if "mnist" in ln]
+    assert len(data_rows) == 2, result.stdout
+    # the dataset column must start at the same offset in every data row
+    offsets = {ln.index("mnist") for ln in data_rows}
+    assert len(offsets) == 1, f"strategy column misaligned: 'mnist' at {offsets}"
+
+
 def test_cli_leaderboard_wall_clock_json(_isolated_db):
     _seed_run_duration(_isolated_db, "alice", {"strategy": "FedAvg", "model_id": "m"}, 250)
     result = runner.invoke(

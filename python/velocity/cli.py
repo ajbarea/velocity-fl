@@ -20,6 +20,11 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+# Strategy-name column width for every table that prints a strategy. Derived from
+# the longest class name (currently "GeometricMedian", 15) so no name overflows —
+# adding a longer-named strategy widens the column automatically, no magic number.
+_STRAT_COL = max(len(cls.__name__) for cls in ALL_STRATEGIES) + 1
+
 
 def _parse_strategy_cli(value: str) -> Strategy:
     """Parse a CLI-supplied strategy string, surfacing errors as BadParameter.
@@ -78,10 +83,12 @@ def strategies() -> None:
     """List aggregation strategies with their per-round server-side cost."""
     typer.echo("Aggregation strategies — per-round server-side cost (n = clients, d = model dim)")
     typer.echo("")
-    typer.echo(f"{'strategy':<16} {'cost':<9} {'scaling':<10} dominated by")
+    typer.echo(f"{'strategy':<{_STRAT_COL}} {'cost':<9} {'scaling':<10} dominated by")
     for cls in ALL_STRATEGIES:
         c = AGGREGATION_COMPLEXITY[cls.__name__]
-        typer.echo(f"{cls.__name__:<16} {c.big_o:<9} {c.client_scaling:<10} {c.dominated_by}")
+        typer.echo(
+            f"{cls.__name__:<{_STRAT_COL}} {c.big_o:<9} {c.client_scaling:<10} {c.dominated_by}"
+        )
     typer.echo("")
     typer.echo(
         "Cost is descriptive, not a ranking input — asymptotic class doesn't predict "
@@ -161,7 +168,8 @@ def leaderboard(
             return
         typer.echo(f"Rounds-to-target ({target:g}) leaderboard (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_rounds':>11}  {'std':>6}"
+            f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'dataset':<14} {'n':>3}  "
+            f"{'mean_rounds':>11}  {'std':>6}"
         )
         for rank, row in enumerate(board, start=1):
             std = (
@@ -171,7 +179,7 @@ def leaderboard(
             )
             dataset = row["dataset"] or "-"
             typer.echo(
-                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_reached']:>3}  "
+                f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {dataset:<14} {row['n_reached']:>3}  "
                 f"{row['mean_rounds_to_target']:>11.2f}  {std:>6}"
             )
         return
@@ -186,7 +194,7 @@ def leaderboard(
             return
         typer.echo(f"Wall-clock leaderboard (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_ms':>10}  "
+            f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'dataset':<14} {'n':>3}  {'mean_ms':>10}  "
             f"{'std_ms':>8}  {'cost':<9}"
         )
         for rank, row in enumerate(board, start=1):
@@ -195,7 +203,7 @@ def leaderboard(
             entry = AGGREGATION_COMPLEXITY.get(row["strategy"])
             cost = entry.big_o if entry else "?"
             typer.echo(
-                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+                f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_wall_clock_ms']:>10.0f}  {std:>8}  {cost:<9}"
             )
         typer.echo("")
@@ -215,13 +223,14 @@ def leaderboard(
             return
         typer.echo(f"Communication-cost leaderboard — total MB sent (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_MB':>10}  {'std_MB':>8}"
+            f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'dataset':<14} {'n':>3}  "
+            f"{'mean_MB':>10}  {'std_MB':>8}"
         )
         for rank, row in enumerate(board, start=1):
             std = "n/a" if row["std_total_bytes"] is None else f"{row['std_total_bytes'] / 1e6:.2f}"
             dataset = row["dataset"] or "-"
             typer.echo(
-                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+                f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_total_bytes'] / 1e6:>10.2f}  {std:>8}"
             )
         return
@@ -239,12 +248,13 @@ def leaderboard(
             return
         typer.echo(f"Pareto frontier — accuracy vs {label} (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_acc':>8}  {col:>10}"
+            f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'dataset':<14} {'n':>3}  "
+            f"{'mean_acc':>8}  {col:>10}"
         )
         for rank, row in enumerate(board, start=1):
             dataset = row["dataset"] or "-"
             typer.echo(
-                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+                f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_accuracy']:>8.4f}  {fmt(row[field]):>10}"
             )
         return
@@ -263,10 +273,10 @@ def leaderboard(
         typer.echo(f"Pareto slices — accuracy vs {label} per (dataset x attack) (user: {user_id})")
         for sl in slices:
             typer.echo(f"\n[{sl['dataset'] or '-'} x {sl['attack']}]")
-            typer.echo(f"{'#':>2}  {'strategy':<14} {'n':>3}  {'mean_acc':>8}  {col:>10}")
+            typer.echo(f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'n':>3}  {'mean_acc':>8}  {col:>10}")
             for rank, row in enumerate(sl["frontier"], start=1):
                 typer.echo(
-                    f"{rank:>2}  {row['strategy']:<14} {row['n_runs']:>3}  "
+                    f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {row['n_runs']:>3}  "
                     f"{row['mean_accuracy']:>8.4f}  {fmt(row[field]):>10}"
                 )
         return
@@ -281,12 +291,12 @@ def leaderboard(
             return
         typer.echo(f"Robustness — accuracy drop under attack (user: {user_id})")
         typer.echo(
-            f"{'#':>2}  {'strategy':<12} {'attack':<16} "
+            f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'attack':<16} "
             f"{'baseline':>8}  {'attacked':>8}  {'delta':>7}"
         )
         for rank, row in enumerate(board, start=1):
             typer.echo(
-                f"{rank:>2}  {row['strategy']:<12} {row['attack']:<16} "
+                f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {row['attack']:<16} "
                 f"{row['baseline_accuracy']:>8.4f}  {row['attacked_accuracy']:>8.4f}  "
                 f"{row['robustness_delta']:>7.4f}"
             )
@@ -301,13 +311,14 @@ def leaderboard(
         return
     typer.echo(f"Accuracy leaderboard (user: {user_id})")
     typer.echo(
-        f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_acc':>8}  {'std_acc':>8}"
+        f"{'#':>2}  {'strategy':<{_STRAT_COL}} {'dataset':<14} {'n':>3}  "
+        f"{'mean_acc':>8}  {'std_acc':>8}"
     )
     for rank, row in enumerate(board, start=1):
         std = "n/a" if row["std_accuracy"] is None else f"{row['std_accuracy']:.4f}"
         dataset = row["dataset"] or "-"
         typer.echo(
-            f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+            f"{rank:>2}  {row['strategy']:<{_STRAT_COL}} {dataset:<14} {row['n_runs']:>3}  "
             f"{row['mean_accuracy']:>8.4f}  {std:>8}"
         )
 
