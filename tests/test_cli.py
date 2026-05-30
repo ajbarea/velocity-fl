@@ -313,6 +313,39 @@ def test_cli_leaderboard_pareto_json(_isolated_db):
     assert payload[0]["mean_accuracy"] == pytest.approx(0.9)
 
 
+def test_cli_leaderboard_pareto_slices(_isolated_db):
+    _seed_run_full(
+        _isolated_db,
+        "alice",
+        {"strategy": "Krum", "model_id": "m", "dataset": "mnist", "attack": "ipm"},
+        0.95,
+        500,
+    )
+    result = runner.invoke(app, ["leaderboard", "--user", "alice", "--metric", "pareto-slices"])
+    assert result.exit_code == 0, result.stdout
+    assert "Pareto slices" in result.stdout
+    assert "mnist x ipm" in result.stdout
+    assert "Krum" in result.stdout
+
+
+def test_cli_leaderboard_pareto_slices_json(_isolated_db):
+    _seed_run_full(
+        _isolated_db,
+        "alice",
+        {"strategy": "FedAvg", "model_id": "m", "dataset": "mnist", "attack": "ipm"},
+        0.9,
+        100,
+    )
+    result = runner.invoke(
+        app, ["leaderboard", "--user", "alice", "--metric", "pareto-slices", "--json"]
+    )
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload[0]["dataset"] == "mnist"
+    assert payload[0]["attack"] == "ipm"
+    assert payload[0]["frontier"][0]["strategy"] == "FedAvg"
+
+
 def test_cli_leaderboard_robustness(_isolated_db):
     base = {"strategy": "Krum", "model_id": "m", "dataset": "mnist"}
     _seed_run(_isolated_db, "alice", base, 0.90)  # baseline

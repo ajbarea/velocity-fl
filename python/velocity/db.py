@@ -516,39 +516,15 @@ def wall_clock_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str,
     return board
 
 
-def pareto_frontier(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
-    """Non-dominated experiments across accuracy (max) vs total wall-clock (min).
+def _pareto_front(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Non-dominated set over accuracy (maximised) vs wall-clock (minimised).
 
-    The honest answer to "what should I use": rather than a single winner, the
-    set of experiments where you can't gain accuracy without spending more
-    wall-clock (or vice versa). Reuses `accuracy_leaderboard` +
-    `wall_clock_leaderboard`, joined per `config_fingerprint` (only configs
-    measured on both axes qualify), returning the non-dominated set ordered by
-    accuracy descending.
-
-    research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL
-    multi-objective tradeoff framing (resource-efficiency + fast-convergence work,
-    MDPI Sensors 2024); per-axis leaderboards bury the tradeoff a frontier shows.
-    First cut is 2-axis (accuracy / wall-clock); rounds-to-target + robustness
-    delta join the frontier once robustness ships.
+    A point is dominated when another is no worse on both axes and strictly better
+    on one. Returns the survivors ordered by accuracy descending. Shared by the
+    global `pareto_frontier` and the per-slice `pareto_slices`.
     """
-    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
-    wc = {r["config_fingerprint"]: r for r in wall_clock_leaderboard(user_id, min_runs=min_runs)}
-    points = [
-        {
-            "config_fingerprint": fp,
-            "strategy": acc[fp]["strategy"],
-            "dataset": acc[fp]["dataset"],
-            "n_runs": acc[fp]["n_runs"],
-            "mean_accuracy": acc[fp]["mean_accuracy"],
-            "mean_wall_clock_ms": wc[fp]["mean_wall_clock_ms"],
-        }
-        for fp in acc.keys() & wc.keys()
-    ]
 
     def _dominated(p: dict[str, Any]) -> bool:
-        # q dominates p if q is no worse on both axes and strictly better on one
-        # (accuracy maximised, wall-clock minimised).
         return any(
             q is not p
             and q["mean_accuracy"] >= p["mean_accuracy"]
@@ -563,6 +539,97 @@ def pareto_frontier(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
     frontier = [p for p in points if not _dominated(p)]
     frontier.sort(key=lambda r: r["mean_accuracy"], reverse=True)
     return frontier
+
+
+def _pareto_point(
+    fp: str, acc_row: dict[str, Any], wc_row: dict[str, Any], attack: str
+) -> dict[str, Any]:
+    return {
+        "config_fingerprint": fp,
+        "strategy": acc_row["strategy"],
+        "dataset": acc_row["dataset"],
+        "attack": attack,
+        "n_runs": acc_row["n_runs"],
+        "mean_accuracy": acc_row["mean_accuracy"],
+        "mean_wall_clock_ms": wc_row["mean_wall_clock_ms"],
+    }
+
+
+def _attack_by_fingerprint(user_id: str) -> dict[str, str]:
+    """One attack identity per fingerprint (`"none"` = honest baseline).
+
+    Runs sharing a `config_fingerprint` share the config, so the attack is
+    constant within a group — the same per-run attack identity `robustness_delta`
+    matches baselines on.
+    """
+    with connect() as c:
+        rows = c.execute(
+            """SELECT config_fingerprint AS fp, config_json FROM runs
+               WHERE user_id = ? AND config_fingerprint IS NOT NULL
+               GROUP BY config_fingerprint""",
+            (user_id,),
+        ).fetchall()
+    return {r["fp"]: (json.loads(r["config_json"]).get("attack") or "none") for r in rows}
+
+
+def pareto_frontier(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """Non-dominated experiments across accuracy (max) vs total wall-clock (min).
+
+    The honest answer to "what should I use": rather than a single winner, the
+    set of experiments where you can't gain accuracy without spending more
+    wall-clock (or vice versa). Reuses `accuracy_leaderboard` +
+    `wall_clock_leaderboard`, joined per `config_fingerprint` (only configs
+    measured on both axes qualify), returning the non-dominated set ordered by
+    accuracy descending. This is the *global* frontier (all datasets/attacks
+    mixed); `pareto_slices` splits it per (dataset x attack) for apples-to-apples
+    comparison.
+
+    research(2026-05): accuracy-vs-resource Pareto optimality is the standard FL
+    multi-objective tradeoff framing (resource-efficiency + fast-convergence work,
+    MDPI Sensors 2024); per-axis leaderboards bury the tradeoff a frontier shows.
+    """
+    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
+    wc = {r["config_fingerprint"]: r for r in wall_clock_leaderboard(user_id, min_runs=min_runs)}
+    attack_of = _attack_by_fingerprint(user_id)
+    return _pareto_front(
+        [
+            _pareto_point(fp, acc[fp], wc[fp], attack_of.get(fp, "none"))
+            for fp in acc.keys() & wc.keys()
+        ]
+    )
+
+
+def pareto_slices(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:
+    """The accuracy-vs-wall-clock Pareto frontier split per (dataset x attack).
+
+    `pareto_frontier` mixes datasets and attacks onto one frontier, but accuracy
+    isn't comparable across datasets — so it can't answer "what should I reach for
+    on FEMNIST under label-flipping?". This computes an independent frontier within
+    each (dataset, attack) problem (attack `"none"` = the honest baseline). Slices
+    are ordered by (dataset, attack); each `frontier` is the non-dominated set,
+    accuracy descending.
+
+    research(2026-05): cross-dataset accuracy comparison is unsafe without
+    normalisation (FL benchmark surveys), so slicing keeps the frontier honest by
+    only ranking strategies within one (dataset, attack). ROADMAP "Live experiment
+    leaderboard" → Pareto: the clean extension of the 2-axis frontier.
+    """
+    acc = {r["config_fingerprint"]: r for r in accuracy_leaderboard(user_id, min_runs=min_runs)}
+    wc = {r["config_fingerprint"]: r for r in wall_clock_leaderboard(user_id, min_runs=min_runs)}
+    attack_of = _attack_by_fingerprint(user_id)
+
+    by_slice: dict[tuple[str | None, str], list[dict[str, Any]]] = {}
+    for fp in acc.keys() & wc.keys():
+        attack = attack_of.get(fp, "none")
+        point = _pareto_point(fp, acc[fp], wc[fp], attack)
+        by_slice.setdefault((point["dataset"], attack), []).append(point)
+
+    slices = [
+        {"dataset": dataset, "attack": attack, "frontier": _pareto_front(points)}
+        for (dataset, attack), points in by_slice.items()
+    ]
+    slices.sort(key=lambda s: (s["dataset"] or "", s["attack"]))
+    return slices
 
 
 def robustness_delta_leaderboard(user_id: str, *, min_runs: int = 1) -> list[dict[str, Any]]:

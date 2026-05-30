@@ -89,7 +89,8 @@ def leaderboard(
         "accuracy",
         help="Ranking axis: 'accuracy' (final-round), 'rounds-to-target' (convergence "
         "speed), 'wall-clock' (aggregation time), 'pareto' (accuracy-vs-wall-clock "
-        "frontier), or 'robustness' (accuracy drop under attack).",
+        "frontier), 'pareto-slices' (that frontier per dataset x attack), or "
+        "'robustness' (accuracy drop under attack).",
     ),
     target: float = typer.Option(
         0.9, help="Target accuracy for the 'rounds-to-target' metric (0-1)."
@@ -99,18 +100,26 @@ def leaderboard(
 ) -> None:
     """Rank stored experiments across seeds, grouped by config fingerprint.
 
-    Reads the live experiment store (`velocity.db`). Five axes via `--metric`:
+    Reads the live experiment store (`velocity.db`). Six axes via `--metric`:
     `accuracy` (final-round, default), `rounds-to-target` (convergence speed,
     pair with `--target`), `wall-clock` (aggregation time), `pareto` (the
-    accuracy-vs-wall-clock frontier), and `robustness` (accuracy drop under
-    attack).
+    accuracy-vs-wall-clock frontier), `pareto-slices` (that frontier split per
+    dataset x attack), and `robustness` (accuracy drop under attack).
     """
     from velocity import db
     from velocity.memory import default_user_id
 
-    if metric not in {"accuracy", "rounds-to-target", "wall-clock", "pareto", "robustness"}:
+    if metric not in {
+        "accuracy",
+        "rounds-to-target",
+        "wall-clock",
+        "pareto",
+        "pareto-slices",
+        "robustness",
+    }:
         raise typer.BadParameter(
-            "metric must be 'accuracy', 'rounds-to-target', 'wall-clock', 'pareto', or 'robustness'"
+            "metric must be 'accuracy', 'rounds-to-target', 'wall-clock', 'pareto', "
+            "'pareto-slices', or 'robustness'"
         )
 
     user_id = user or default_user_id()
@@ -182,6 +191,30 @@ def leaderboard(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_accuracy']:>8.4f}  {row['mean_wall_clock_ms']:>10.0f}"
             )
+        return
+
+    if metric == "pareto-slices":
+        slices = db.pareto_slices(user_id, min_runs=min_runs)
+        if json_out:
+            typer.echo(json.dumps(slices))
+            return
+        if not slices:
+            typer.echo(
+                f"No completed runs measured on both accuracy and wall-clock "
+                f"for user {user_id!r} yet."
+            )
+            return
+        typer.echo(
+            f"Pareto slices — accuracy vs wall-clock per (dataset x attack) (user: {user_id})"
+        )
+        for sl in slices:
+            typer.echo(f"\n[{sl['dataset'] or '-'} x {sl['attack']}]")
+            typer.echo(f"{'#':>2}  {'strategy':<14} {'n':>3}  {'mean_acc':>8}  {'mean_ms':>10}")
+            for rank, row in enumerate(sl["frontier"], start=1):
+                typer.echo(
+                    f"{rank:>2}  {row['strategy']:<14} {row['n_runs']:>3}  "
+                    f"{row['mean_accuracy']:>8.4f}  {row['mean_wall_clock_ms']:>10.0f}"
+                )
         return
 
     if metric == "robustness":
