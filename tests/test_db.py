@@ -733,3 +733,51 @@ def test_robustness_delta_is_user_scoped():
     board = db.robustness_delta_leaderboard("alice")
     assert len(board) == 1
     assert board[0]["robustness_delta"] == pytest.approx(0.20)
+
+
+# ---------------------------------------------------------------------------
+# comm_cost_leaderboard — total bytes communicated (uplink + downlink), per run
+# ---------------------------------------------------------------------------
+
+
+def _run_with_params(user_id: str, config: dict, rounds: list[tuple[int, int]]) -> str:
+    """rounds: list of (num_clients, num_params) per round."""
+    run_id = db.start_run(user_id, config)
+    for i, (nc, npar) in enumerate(rounds, start=1):
+        db.record_round(
+            run_id, {"round": i, "num_clients": nc, "num_params": npar, "global_accuracy": 0.5}
+        )
+    db.complete_run(run_id)
+    return run_id
+
+
+def test_comm_cost_sums_bidirectional_float32_bytes():
+    # 2 rounds x 3 clients x 1000 params → per round 2*3*1000*4 = 24000 B; total 48000 B.
+    _run_with_params("alice", {"strategy": "FedAvg", "model_id": "m"}, [(3, 1000), (3, 1000)])
+    board = db.comm_cost_leaderboard("alice")
+    assert len(board) == 1
+    assert board[0]["strategy"] == "FedAvg"
+    assert board[0]["mean_total_bytes"] == pytest.approx(2 * (2 * 3 * 1000 * 4))
+
+
+def test_comm_cost_ranks_cheaper_first():
+    # FedAvg: 2 clients; Krum: 5 clients (same model + rounds) → Krum costs more.
+    _run_with_params("alice", {"strategy": "FedAvg", "model_id": "m"}, [(2, 1000)])
+    _run_with_params("alice", {"strategy": "Krum", "model_id": "m"}, [(5, 1000)])
+    board = db.comm_cost_leaderboard("alice")
+    assert [r["strategy"] for r in board] == ["FedAvg", "Krum"]  # ascending: cheaper first
+
+
+def test_comm_cost_excludes_runs_without_params():
+    # A run that recorded rounds but no num_params (e.g. synthetic demo) is excluded.
+    rid = db.start_run("alice", {"strategy": "FedAvg", "model_id": "m"})
+    db.record_round(rid, {"round": 1, "num_clients": 3, "global_accuracy": 0.5})
+    db.complete_run(rid)
+    assert db.comm_cost_leaderboard("alice") == []
+
+
+def test_comm_cost_is_user_scoped():
+    _run_with_params("alice", {"strategy": "FedAvg", "model_id": "m"}, [(3, 1000)])
+    _run_with_params("bob", {"strategy": "Krum", "model_id": "m"}, [(3, 1000)])
+    board = db.comm_cost_leaderboard("alice")
+    assert [r["strategy"] for r in board] == ["FedAvg"]

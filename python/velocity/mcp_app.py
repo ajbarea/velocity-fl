@@ -331,6 +331,7 @@ def leaderboard(
 
     ``metric`` is one of ``accuracy`` (final-round), ``rounds-to-target``
     (rounds to reach ``target`` accuracy), ``wall-clock`` (total run time),
+    ``comm-cost`` (total bytes communicated, uplink + downlink),
     ``robustness`` (accuracy drop under attack vs the matched no-attack
     baseline), ``pareto`` (non-dominated accuracy-vs-wall-clock set), or
     ``pareto-slices`` (that frontier per dataset x attack, flattened into one
@@ -347,6 +348,7 @@ def leaderboard(
             user_id, target=target, min_runs=min_runs
         ),
         "wall-clock": lambda: db.wall_clock_leaderboard(user_id, min_runs=min_runs),
+        "comm-cost": lambda: db.comm_cost_leaderboard(user_id, min_runs=min_runs),
         "robustness": lambda: db.robustness_delta_leaderboard(user_id, min_runs=min_runs),
         "pareto": lambda: db.pareto_frontier(user_id, min_runs=min_runs),
         "pareto-slices": lambda: [
@@ -1110,6 +1112,10 @@ def _run_real_training_sync(
         config["num_malicious"] = num_malicious
     run_id = db.start_run(user_id, config)
 
+    # Federated weights communicated per client per round (the model size); constant
+    # across rounds, recorded so comm_cost_leaderboard can total the bytes sent.
+    num_params = sum(int(w.size) for w in orch.global_weights().values())
+
     summaries: list[dict[str, Any]] = []
     for _round_idx in range(rounds):
         round_start = time.perf_counter()
@@ -1189,6 +1195,7 @@ def _run_real_training_sync(
         summary = {
             "round": summary_obj.round,
             "num_clients": summary_obj.num_clients,
+            "num_params": num_params,
             "global_loss": float(post_loss),
             "global_accuracy": float(post_acc),
             "duration_ms": int((time.perf_counter() - round_start) * 1000),

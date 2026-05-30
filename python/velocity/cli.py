@@ -87,6 +87,7 @@ LEADERBOARD_METRICS = (
     "accuracy",
     "rounds-to-target",
     "wall-clock",
+    "comm-cost",
     "pareto",
     "pareto-slices",
     "robustness",
@@ -101,9 +102,9 @@ def leaderboard(
     metric: str = typer.Option(
         "accuracy",
         help="Ranking axis: 'accuracy' (final-round), 'rounds-to-target' (convergence "
-        "speed), 'wall-clock' (aggregation time), 'pareto' (accuracy-vs-wall-clock "
-        "frontier), 'pareto-slices' (that frontier per dataset x attack), or "
-        "'robustness' (accuracy drop under attack).",
+        "speed), 'wall-clock' (aggregation time), 'comm-cost' (total bytes "
+        "communicated), 'pareto' (accuracy-vs-wall-clock frontier), 'pareto-slices' "
+        "(that frontier per dataset x attack), or 'robustness' (accuracy drop under attack).",
     ),
     target: float = typer.Option(
         0.9, help="Target accuracy for the 'rounds-to-target' metric (0-1)."
@@ -113,11 +114,12 @@ def leaderboard(
 ) -> None:
     """Rank stored experiments across seeds, grouped by config fingerprint.
 
-    Reads the live experiment store (`velocity.db`). Six axes via `--metric`:
+    Reads the live experiment store (`velocity.db`). Seven axes via `--metric`:
     `accuracy` (final-round, default), `rounds-to-target` (convergence speed,
-    pair with `--target`), `wall-clock` (aggregation time), `pareto` (the
-    accuracy-vs-wall-clock frontier), `pareto-slices` (that frontier split per
-    dataset x attack), and `robustness` (accuracy drop under attack).
+    pair with `--target`), `wall-clock` (aggregation time), `comm-cost` (total
+    bytes communicated), `pareto` (the accuracy-vs-wall-clock frontier),
+    `pareto-slices` (that frontier split per dataset x attack), and `robustness`
+    (accuracy drop under attack).
     """
     from velocity import db
     from velocity.memory import default_user_id
@@ -170,6 +172,27 @@ def leaderboard(
             typer.echo(
                 f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
                 f"{row['mean_wall_clock_ms']:>10.0f}  {std:>8}"
+            )
+        return
+
+    if metric == "comm-cost":
+        board = db.comm_cost_leaderboard(user_id, min_runs=min_runs)
+        if json_out:
+            typer.echo(json.dumps(board))
+            return
+        if not board:
+            typer.echo(f"No completed runs with a recorded model size for user {user_id!r} yet.")
+            return
+        typer.echo(f"Communication-cost leaderboard — total MB sent (user: {user_id})")
+        typer.echo(
+            f"{'#':>2}  {'strategy':<14} {'dataset':<14} {'n':>3}  {'mean_MB':>10}  {'std_MB':>8}"
+        )
+        for rank, row in enumerate(board, start=1):
+            std = "n/a" if row["std_total_bytes"] is None else f"{row['std_total_bytes'] / 1e6:.2f}"
+            dataset = row["dataset"] or "-"
+            typer.echo(
+                f"{rank:>2}  {row['strategy']:<14} {dataset:<14} {row['n_runs']:>3}  "
+                f"{row['mean_total_bytes'] / 1e6:>10.2f}  {std:>8}"
             )
         return
 

@@ -50,7 +50,7 @@ algorithms and unit-test fixtures derived from each paper.
 
 ### Experiment store & attack arena
 - **Persistent run store** (`velocity.db`) — every run is recorded; `velocity sweep` runs strategy × attack matrices (a TOML spec or ad-hoc flags) across seeds in parallel.
-- **`velocity leaderboard`** ranks stored runs on six axes: accuracy, rounds-to-target, wall-clock, the accuracy-vs-wall-clock Pareto frontier, its per-(dataset × attack) slices, and robustness (accuracy drop under attack).
+- **`velocity leaderboard`** ranks stored runs on seven axes: accuracy, rounds-to-target, wall-clock, communication cost (total bytes sent), the accuracy-vs-wall-clock Pareto frontier, its per-(dataset × attack) slices, and robustness (accuracy drop under attack).
 - **Attack arena** ([`docs/leaderboard.md`](docs/leaderboard.md)) — five aggregators (FedAvg baseline, Krum, MultiKrum, Bulyan, ArKrum) ranked against a fixed six-attack Byzantine corpus (Gaussian, IPM, label-flip, sign-flip, ALIE, Fang-Krum).
 
 ---
@@ -135,7 +135,7 @@ velocity leaderboard --metric robustness
 - `velocity run ...` — run rounds and print JSON summaries
 - `velocity simulate-attack ...` — register one attack and run a round
 - `velocity sweep ...` — run a strategy × attack matrix across seeds (see [`docs/sweep-spec.md`](docs/sweep-spec.md))
-- `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / pareto / pareto-slices / robustness)
+- `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / comm-cost / pareto / pareto-slices / robustness)
 
 Full reference: [`docs/cli.md`](docs/cli.md)
 

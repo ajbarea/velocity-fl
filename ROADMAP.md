@@ -242,20 +242,20 @@ rather than the curated, dumped arena CSV the first cut renders.
   `paper_attacks.craft_byzantine_updates` dispatch (N malicious slots; per-client
   for gaussian/sign_flip, one craft tiled across slots for ipm/alie/fang_krum).
   `fang_krum` requires `num_malicious >= 2` (Fang's binary search) and is rejected
-  at config time otherwise. Remaining axis — **sample efficiency: paused, needs a
-  crisp definition (grounded 2026-05-30).** research(2026-05): FL benchmarking
-  (FedScale; the 2026 edge-FL systematic reviews) frames efficiency as
-  time-to-accuracy / communication rounds / energy — there is no standard
-  "accuracy per sample" axis. And both obvious readings collapse into an axis we
-  already ship: accuracy / cumulative-client-samples ≈ accuracy / (rounds ×
-  per-round-samples) ranks like `rounds_to_target` within a same-dataset group;
-  accuracy / unique-federation-samples ≈ accuracy / const, i.e. it just re-ranks
-  by accuracy. It only *diverges* from `rounds_to_target` as **samples-to-target**
-  across configs with differing client-counts — a cross-config comparison the
-  "Cross-config normalisation" bullet below flags as not-yet-safe. AJ's call: drop
-  it as redundant with `rounds_to_target`, or ship it as samples-to-target *with*
-  the normalisation work, not before. Per-axis regardless — a weighted composite
-  buries the tradeoffs.
+  at config time otherwise. **Sample efficiency — DROPPED 2026-05-30; replaced by
+  `comm_cost_leaderboard`.** research(2026-05): a second web-search confirmed FL
+  benchmarking (FedScale; the 2026 communication-efficient-FL surveys) has **no
+  "accuracy per sample" axis** — FL measures *communication* efficiency (rounds +
+  bytes), not sample efficiency, because the bottleneck is communication, not local
+  data. And both readings of "accuracy per total client sample" collapse into
+  `rounds_to_target` (cumulative ≈ rounds × const within a dataset group; unique ≈
+  const, i.e. just accuracy). The genuinely-standard axis the leaderboard *lacked*
+  was **communication cost** — total bytes transmitted = Σ_rounds(2 · clients ·
+  params · 4), shipped as `db.comm_cost_leaderboard` (`--metric comm-cost`). It's
+  distinct from rounds (ignores model size + per-round client count) and wall-clock
+  (hardware-dependent), and always-defined (no target dependence), which is also why
+  it — not a `rounds_to_target` 3rd axis — is the right efficiency axis to pair on
+  the Pareto frontier.
 - **Pareto frontier** — rather than a single "winner," surface the
   non-dominated set across axes. _First cut shipped 2026-05-28:_
   `db.pareto_frontier` over accuracy (max) vs total wall-clock (min),
@@ -266,15 +266,16 @@ rather than the curated, dumped arena CSV the first cut renders.
   an independent accuracy-vs-wall-clock frontier within each (dataset, attack)
   problem, answering "what strategy for FEMNIST under label-flip?" without the
   cross-dataset accuracy confound the global frontier carries. **(2) a
-  rounds-to-target 3rd axis is still deferred on a semantics call:** it's
+  rounds-to-target 3rd axis is REJECTED 2026-05-30 (decided):** it's
   target-dependent and undefined for non-converging configs, so a 3-axis frontier
   would silently *drop* configs that miss the target (a fast, cheap 0.85-accuracy
   config vanishes under a 0.9 target) — losing the very tradeoff the frontier
-  exists to show. Either exclude them (consistent with how `rounds_to_target` /
-  `robustness` already behave, but can empty the frontier) or penalise as
-  worst-rtt (keeps them, but invents a modelling choice). AJ's leaderboard-
-  semantics call since it shapes the published frontier; the 3rd axis (and
-  robustness-delta as a 4th, same attacked/baseline-pairs caveat) wait on it.
+  exists to show, with no web-search-backed convention for handling it. The
+  always-defined efficiency axis to fold in instead is **`comm-cost`** (total bytes
+  communicated; see the sample-efficiency note above) — an accuracy-vs-comm-cost
+  frontier is more FL-standard than accuracy-vs-wall-clock *and* has no
+  non-converged gap. Tracked as the next Pareto extension; robustness-delta as a
+  further axis still carries the attacked/baseline-pairs caveat.
 - **Theoretical complexity labels, not rankings** — tag aggregators
   with their asymptotic cost (FedAvg: O(n·d); Krum: O(n²·d);
   Bulyan: O(n²·d + n·d·log n)). Static lookup, surfaced next to each
@@ -411,6 +412,21 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 ## Completed
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
+
+- 2026-05-30 — **Communication-cost leaderboard axis (`db.comm_cost_leaderboard`),
+  replacing the dropped sample-efficiency axis.** A second web-search confirmed FL
+  benchmarking has no "accuracy per sample" axis (the bottleneck is communication,
+  not local data) and that the standard efficiency axis the leaderboard lacked is
+  total communication cost. Records `num_params` (federated model size) per round in
+  `run_real_training`; `comm_cost = Σ_rounds(2 · num_clients · num_params · 4)` bytes
+  (bidirectional float32), surfaced via `velocity leaderboard --metric comm-cost`
+  (MB table; raw bytes in `--json`) and the MCP tool. Always-defined (no target
+  dependence) and hardware-independent — the efficiency axis an IEEE FL artifact
+  should report, and the right axis to pair on the Pareto frontier (vs the rejected
+  rounds-to-target 3rd axis). Drops the non-standard, `rounds_to_target`-redundant
+  sample-efficiency idea. `rounds` schema gains `num_params` (idempotent migration);
+  axis count guard now expects "seven axes". research(2026-05): FedScale + the 2026
+  communication-efficient-FL surveys. TDD (db + cli); live MB render eyeballed.
 
 - 2026-05-30 — **Pareto slices — frontier per (dataset × attack) (`db.pareto_slices`).**
   The global `pareto_frontier` mixes datasets, so it can't answer the leaderboard's
