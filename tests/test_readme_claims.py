@@ -1,10 +1,11 @@
-"""Guard: README + docs must list every strategy and CLI command.
+"""Guard: README + docs must track the code's leaderboard surface.
 
-These rosters trace to code (``ALL_STRATEGIES`` and the Typer ``app``) but live
-in prose, so they drift silently when a strategy or command is added without a
-docs edit — exactly how ``ArKrum`` and the ``leaderboard`` / ``sweep`` commands
-went missing from the docs before this gate existed. Runs in the existing
-``test`` CI check.
+The strategy roster, the CLI commands, and the leaderboard axis count all trace
+to code (``ALL_STRATEGIES``, the Typer ``app``, ``LEADERBOARD_METRICS``) but live
+in prose, so they drift silently when one is added without a docs edit — exactly
+how ``ArKrum``, the ``leaderboard`` / ``sweep`` commands, and the "five axes" → six
+count all went stale before these gates existed. Runs in the existing ``test`` CI
+check.
 """
 
 from __future__ import annotations
@@ -12,10 +13,24 @@ from __future__ import annotations
 from pathlib import Path
 
 import typer
-from velocity.cli import app
+from velocity.cli import LEADERBOARD_METRICS, app
 from velocity.strategy import ALL_STRATEGIES
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Spelled-out small counts so the README reads "six axes", not "6 axes".
+_COUNT_WORDS = {
+    1: "one",
+    2: "two",
+    3: "three",
+    4: "four",
+    5: "five",
+    6: "six",
+    7: "seven",
+    8: "eight",
+    9: "nine",
+    10: "ten",
+}
 
 
 def _cli_command_names() -> set[str]:
@@ -35,3 +50,13 @@ def test_cli_doc_documents_every_command() -> None:
     cli_doc = (ROOT / "docs" / "cli.md").read_text(encoding="utf-8")
     missing = [name for name in _cli_command_names() if f"velocity {name}" not in cli_doc]
     assert not missing, f"docs/cli.md is missing CLI command sections for: {sorted(missing)}"
+
+
+def test_readme_states_correct_leaderboard_axis_count() -> None:
+    """The README's "<n> axes" count tracks the number of leaderboard metrics."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    word = _COUNT_WORDS[len(LEADERBOARD_METRICS)]
+    assert f"{word} axes" in readme, (
+        f"README should say '{word} axes' — the leaderboard has "
+        f"{len(LEADERBOARD_METRICS)} metrics ({', '.join(LEADERBOARD_METRICS)})"
+    )

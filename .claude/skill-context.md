@@ -85,6 +85,7 @@ README / docs rosters that trace to code, gated by `tests/test_readme_claims.py`
 
 - Strategy roster — every `ALL_STRATEGIES` name (`python/velocity/strategy.py`) must appear in `README.md`, backtick-wrapped.
 - CLI commands — every command in the Typer `app` (`python/velocity/cli.py`) must have a `velocity <name>` section in `docs/cli.md`.
+- Leaderboard axis count — the README's "N axes" word must match `len(LEADERBOARD_METRICS)` (`python/velocity/cli.py`, the single source for the `--metric` validation). Caught the "five axes" → six drift when `pareto-slices` shipped.
 
 Add a roster → add a membership assertion to that test. Prose surface mentions (the MCP server, the attack arena) aren't auto-checked; keep those in sync by hand.
 
