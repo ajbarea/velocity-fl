@@ -389,6 +389,14 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-05-29 — **README/docs roster guard (`tests/test_readme_claims.py`).** A drift audit
+  found `ArKrum` missing from the README strategy roster and the `leaderboard` / `sweep`
+  commands absent from `docs/cli.md` (both fixed in #68). Added a pytest gate (runs in the
+  `test` CI check) asserting every `ALL_STRATEGIES` name appears in the README, backtick-wrapped,
+  and every Typer command has a `velocity <name>` section in `docs/cli.md` — so a new strategy
+  or command can't ship undocumented. Registered under `## fragile_docs` in skill-context;
+  prose surface mentions (MCP server, attack arena) stay hand-maintained. Verified the guard
+  fails on injected drift (`ArKrum` removed) and passes on the post-#68 tree.
 - 2026-05-28 — **Public Zensical leaderboard page (first cut).** `docs/leaderboard.md`
   renders the committed attack-arena corpus as a static page — worst-case defender
   ranking + per-attack final-accuracy matrix — finally putting the leaderboard on the
