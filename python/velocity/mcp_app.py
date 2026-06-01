@@ -67,6 +67,7 @@ from velocity.arena import (
     load_arena_corpus,
     worst_case_leaderboard,
 )
+from velocity.strategy import AGGREGATION_COMPLEXITY
 
 
 def logged_tool[F: Callable[..., Any]](fn: F) -> F:
@@ -376,6 +377,61 @@ def leaderboard(
     for r in rows[:5]:
         summary_lines.append("  " + " | ".join(f"{k}={r[k]}" for k in rows[0]))
     return ToolResult(content="\n".join(summary_lines), structured_content=table.to_json())
+
+
+@mcp.tool
+@logged_tool
+def complexity_labeller(strategy: str = "") -> ToolResult:
+    """Theoretical per-round aggregation complexity for vFL's kernels.
+
+    A static asymptotic lookup over the ``AGGREGATION_COMPLEXITY`` registry —
+    the same table ``velocity strategies`` surfaces — so it reports the cost,
+    it does not estimate from run data. Pass a strategy class name (e.g.
+    ``"Krum"``, case-insensitive) for one row, or omit ``strategy`` for the
+    whole table. ``n`` = participating clients, ``d`` = model parameters.
+
+    Descriptive, **not a ranking input**: asymptotic class doesn't predict
+    measured wall-clock inside the benchmarked regime (small ``n``, large ``d``).
+    """
+    canon = {name.lower(): name for name in AGGREGATION_COMPLEXITY}
+    if strategy.strip():
+        key = canon.get(strategy.strip().lower())
+        if key is None:
+            valid = ", ".join(AGGREGATION_COMPLEXITY)
+            raise ValueError(f"unknown strategy {strategy!r}. Valid: {valid}")
+        names = [key]
+    else:
+        names = list(AGGREGATION_COMPLEXITY)
+    rows = [
+        {
+            "strategy": name,
+            "big_o": AGGREGATION_COMPLEXITY[name].big_o,
+            "client_scaling": AGGREGATION_COMPLEXITY[name].client_scaling,
+            "dominated_by": AGGREGATION_COMPLEXITY[name].dominated_by,
+        }
+        for name in names
+    ]
+    table = DataTable(
+        columns=[
+            DataTableColumn(key="strategy", header="Strategy", sortable=True),
+            DataTableColumn(key="big_o", header="Per-round cost", sortable=True),
+            DataTableColumn(key="client_scaling", header="n scaling", sortable=True),
+            DataTableColumn(key="dominated_by", header="Dominated by", sortable=False),
+        ],
+        rows=rows,  # ty: ignore[invalid-argument-type]
+        search=True,
+    )
+    header = (
+        f"Aggregation complexity for {rows[0]['strategy']}"
+        if len(rows) == 1
+        else f"Aggregation complexity — {len(rows)} kernels"
+    )
+    lines = [f"{header} (n = clients, d = params; descriptive, not a ranking input):"]
+    for r in rows:
+        lines.append(
+            f"  - {r['strategy']}: {r['big_o']} ({r['client_scaling']} in n) — {r['dominated_by']}"
+        )
+    return ToolResult(content="\n".join(lines), structured_content=table.to_json())
 
 
 @mcp.tool

@@ -315,8 +315,8 @@ rather than the curated, dumped arena CSV the first cut renders.
   Candidates: `convergence_auditor` (why did run X diverge — class
   imbalance from the partition? LR too high?), `robustness_auditor`
   (how much did attack Y drop accuracy vs the no-attack baseline on
-  matched configs?), `complexity_labeller` (static asymptotic lookup,
-  above), `hyperparameter_sage` (given a target config, returns the
+  matched configs?), `complexity_labeller` (static asymptotic lookup —
+  **shipped 2026-06-01**, see Completed), `hyperparameter_sage` (given a target config, returns the
   top-k α / μ / f values observed in matched runs, with sample
   count + variance, and flags when sample size is too low to
   recommend).
@@ -442,6 +442,16 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-06-01 — **`complexity_labeller` MCP tool (first A2A specialist agent).** A static
+  asymptotic-cost lookup over `AGGREGATION_COMPLEXITY` — the same registry `velocity
+  strategies` surfaces — exposed as an MCP tool so an agent can ask a kernel's per-round
+  cost (`O(n²·d)` for Krum, etc.) without re-deriving it. Resolves the strategy name
+  case-insensitively, returns one row or the whole table, raises on an unknown name (no
+  guessing), and carries the "descriptive, not a ranking input" caveat verbatim from the
+  CLI. The cacheable MCP surface hash was re-pinned (deliberate tool addition; INSTRUCTIONS
+  unchanged). TDD (failing tests → impl → green); whole-repo ruff/ty lint green. The first
+  of the four A2A specialist agents and the only pure-lookup one — convergence / robustness /
+  hyperparameter remain LLM-backed analysis, design pass pending.
 - 2026-05-30 — **Theoretical complexity labels for the aggregation kernels.**
   `AGGREGATION_COMPLEXITY` in `strategy.py` tags each kernel with its per-round
   server-side cost, grounded in the `vfl-core` implementation: `O(n·d)` (FedAvg,
