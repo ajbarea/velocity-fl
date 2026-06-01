@@ -224,8 +224,10 @@ def config_fingerprint(config: dict[str, Any]) -> str:
     Two runs that differ only in ``seed`` (or per-commit ``git_sha``) share a
     fingerprint, so the leaderboard can group repeats and report mean±std the
     way ``scripts/dump_attack_arena.py`` already does across seeds. Everything
-    else — dataset, partition, strategy, attack, their params, ``vfl_version``
-    — is identity and participates in the hash.
+    else — dataset, partition, strategy (with its hyperparameters, recorded
+    under the ``strategy_params`` key by the producer so Krum f=2 and f=3 don't
+    collide), attack and its params, ``vfl_version`` — is identity and
+    participates in the hash.
 
     research(2026-05): RFC 8785 (JSON Canonicalization Scheme) → SHA-256 is the
     cross-language standard for content-addressing JSON. This fingerprint is
