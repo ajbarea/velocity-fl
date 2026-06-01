@@ -151,6 +151,28 @@ uv run velocity sweep --strategies FedAvg,FedMedian --attacks gaussian_noise,mod
 
 ---
 
+## `velocity archive`
+
+Packages a sweep output directory into a single-file reproducibility bundle — an [RO-Crate](https://www.researchobject.org/ro-crate/) (Process Run Crate profile) `.zip` a collaborator or reviewer can re-run from. Bundles the sweep artifacts plus a dependency lock, a how-to-reproduce `README.md`, and a machine-readable `ro-crate-metadata.json`.
+
+```bash
+# Archive a sweep, auto-discovering uv.lock and naming <out_dir>.crate.zip
+uv run velocity archive out/20260601T100000Z-sweep
+
+# Explicit output path
+uv run velocity archive out/20260601T100000Z-sweep -o paper-artifact.zip
+```
+
+| Argument / Option | Type | Default | Description |
+|---|---|---|---|
+| `OUT_DIR` (positional) | `path` | none | A sweep output directory (`out/<ts>-sweep`). |
+| `-o` / `--output` | `path` | `<out_dir>.crate.zip` | Archive path to write. |
+| `--lockfile` | `path` | discover `uv.lock` | Dependency lock to bundle; falls back to an `installed-packages.txt` snapshot of the environment if none is found. |
+
+**Output** — a `.zip` with `ro-crate-metadata.json` at its root (a Process Run Crate describing the run, its inputs, and outputs), the dependency lock, a how-to-reproduce `README.md`, and the original sweep artifacts.
+
+---
+
 ## Exit codes
 
 | Code | Meaning |

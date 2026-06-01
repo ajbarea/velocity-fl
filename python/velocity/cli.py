@@ -437,3 +437,32 @@ def sweep(
     result = run_sweep(specs, out_dir=out, parallel=parallel)
     typer.echo(f"Wrote {result.out_dir} ({len(result.runs)} runs, {result.parallel} parallel)")
     typer.echo(f"See {result.out_dir}/comparison.md for ranking.")
+
+
+@app.command()
+def archive(
+    out_dir: Path = typer.Argument(  # noqa: B008
+        ..., help="A sweep output directory (e.g. out/<ts>-sweep)."
+    ),
+    output: Path | None = typer.Option(  # noqa: B008
+        None, "-o", "--output", help="Archive path (default: <out_dir>.crate.zip)."
+    ),
+    lockfile: Path | None = typer.Option(  # noqa: B008
+        None,
+        "--lockfile",
+        help="Dependency lock to bundle (default: discover uv.lock, else snapshot env).",
+    ),
+) -> None:
+    """Package a sweep output directory into a single-file reproducibility archive.
+
+    Produces an RO-Crate (Process Run Crate) zip — the sweep artifacts plus a
+    dependency lock, a how-to-reproduce README, and a machine-readable
+    ``ro-crate-metadata.json`` — that a collaborator or reviewer can re-run from.
+    """
+    from velocity.archive import create_archive
+
+    try:
+        written = create_archive(out_dir, archive_path=output, lockfile=lockfile)
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+    typer.echo(f"Wrote {written}")
