@@ -81,13 +81,14 @@ Any quantitative perf/scale claim not traceable to one of those is slop.
 
 ## fragile_docs
 
-README / docs rosters that trace to code, gated by `tests/test_readme_claims.py` (runs in the `test` CI check):
+README / docs rosters that trace to code, gated by CI roster tests (the `test` check). `tests/test_readme_claims.py` covers the first three; `tests/test_mcp_apps_doc.py` the fourth:
 
 - Strategy roster — every `ALL_STRATEGIES` name (`python/velocity/strategy.py`) must appear in `README.md`, backtick-wrapped.
 - CLI commands — every command in the Typer `app` (`python/velocity/cli.py`) must have a `velocity <name>` section in `docs/cli.md`.
 - Leaderboard axis count — the README's "N axes" word must match `len(LEADERBOARD_METRICS)` (`python/velocity/cli.py`, the single source for the `--metric` validation). Caught the "five axes" → six drift when `pareto-slices` shipped.
+- MCP tool catalog — every `-> ToolResult` tool (`python/velocity/mcp_app.py`, found via AST) must be backtick-named in `docs/mcp-apps.md`. Caught `complexity_labeller` shipping uncatalogued (and `leaderboard` before it).
 
-Add a roster → add a membership assertion to that test. Prose surface mentions (the MCP server, the attack arena) aren't auto-checked; keep those in sync by hand.
+Add a roster → add a membership assertion to the matching test. The `docs/mcp-apps.md` tool catalog is now guarded; other prose surface mentions (the attack-arena narrative, README's MCP framing) still aren't auto-checked, so keep those in sync by hand.
 
 ## scan_scope
 
