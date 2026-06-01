@@ -30,6 +30,8 @@ where the LLM writes Prefab Python on the fly.
 | Tool | Returns | What it renders |
 | --- | --- | --- |
 | `list_runs` | `ToolResult` wrapping `DataTable` | Sortable, searchable table of recent runs. |
+| `leaderboard` | `ToolResult` wrapping `DataTable` | Experiments ranked along one axis (accuracy / rounds-to-target / wall-clock / comm-cost / robustness / pareto), grouped by config fingerprint. |
+| `complexity_labeller` | `ToolResult` wrapping `DataTable` | Per-round aggregation cost per kernel; a static asymptotic lookup over `AGGREGATION_COMPLEXITY`. |
 | `run_rounds_history` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Per-run convergence curve + raw rounds table. |
 | `compare_runs` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Two-series overlay LineChart of two runs + delta table. |
 | `memory_ledger` | `ToolResult` wrapping `DataTable` | Audit log of memory writes. |
@@ -38,7 +40,7 @@ where the LLM writes Prefab Python on the fly.
 | `generate_prefab_ui` | rendered Prefab tree | LLM-authored UI. Code runs in a Pyodide sandbox. |
 | `search_prefab_components` | `dict` | Component discovery for the LLM. |
 
-The first six are typed tools: the function signature determines the
+The first eight are typed tools: the function signature determines the
 output shape, the picker form (or chat client) renders the result
 deterministically. The last two come from
 `mcp.add_provider(GenerativeUI())` and let the LLM compose UIs by
@@ -46,7 +48,7 @@ writing Prefab Python at call time.
 
 ### `ToolResult` dual content (May 2026 token-efficiency pattern)
 
-All six Prefab-returning tools listed above return
+All eight Prefab-returning tools listed above return
 [`fastmcp.tools.ToolResult`](https://gofastmcp.com/apps/prefab) rather
 than a bare Prefab component:
 
@@ -69,6 +71,9 @@ The text summary's shape varies by tool:
 
 - `list_runs` lists count + the first five run IDs with strategy /
   status / timestamps.
+- `leaderboard` reports the metric, the row count, and the top five ranked rows.
+- `complexity_labeller` lists each kernel's big-O per-round cost and its
+  dominating operation (or one row, for a named strategy).
 - `run_rounds_history` reports "N rounds, loss X → Y, K clients at
   final round".
 - `compare_runs` reports the two final losses + delta + winner.
