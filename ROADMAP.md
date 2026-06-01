@@ -407,12 +407,6 @@ rather than the curated, dumped arena CSV the first cut renders.
 
 > Source: 2026-05-21 audit-of-audits review (deleted after extraction). Items that survived verdict review but don't fit Compression / Privacy / Streaming cleanly.
 
-- **`velocity reproduce <archive.zip>`** — the inverse of the now-shipped
-  `velocity archive` (see Completed): unpack a reproducibility crate, recover the
-  per-run `RunSpec`s from the bundled `config.json`s, re-run via `run_sweep`, and
-  diff against the bundled results. The archive's README already documents the
-  manual round-trip (verified working end-to-end); this automates it. Cheaply
-  testable — the demo/stub server runs offline, no GPU/HF. Tier 1.
 - **Cross-silo Pareto benchmark suite** — power-law (Pareto: 20% clients hold 80% data) realistic distribution as a benchmark axis alongside the existing IID + Dirichlet partitioners. Measure convergence + per-client accuracy variance + robustness-under-attack on the same skew. Real FL deployments are cross-silo, not equal-sized; benchmarks should reflect that. Fits under `## Performance`. Tier 3 research.
 
 ## Cross-sister polish (2026-05-21)
@@ -447,6 +441,20 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-06-01 — **`velocity reproduce` — re-run an archived sweep (closes the loop).**
+  The inverse of `velocity archive`: `read_archive` recovers the per-run `RunSpec`s
+  (and the original `comparison.json`) straight from the crate zip; `reproduce_archive`
+  re-runs them through the existing `run_sweep` (DRY). `velocity reproduce <archive.zip>
+  [--out] [--check] [--tolerance]`; `--check` compares each run's reproduced final loss
+  against the archived value within a relative tolerance and exits non-zero on a real
+  mismatch. Tolerance-based, **not** bit-exact — ML / float aggregation isn't bitwise
+  reproducible across runs/hardware — and nan-safe (pydantic serializes an in-memory nan
+  loss to JSON null, so a present run with null loss is read as nan and doesn't
+  false-mismatch a reproduced nan; an absent run is a real mismatch). TDD (spec recovery
+  + end-to-end re-run on the offline stub + tolerance/nan logic + CLI); full suite + lint
+  green; documented in docs/cli.md (roster guard). research(2026-06): ACM/NISO "reproduced"
+  = same config + code re-executed (acm.org/publications/badging-terms); numerical
+  non-determinism in ML → tolerance not equality (arXiv:2506.09501, arXiv:2302.12691).
 - 2026-06-01 — **Reproducibility archive generator (`velocity archive`).** Packages a
   sweep output directory into a single-file **RO-Crate** (Process Run Crate profile,
   `.zip`): the existing sweep artifacts (`manifest.json`, `comparison.{json,md}`,

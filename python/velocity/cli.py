@@ -466,3 +466,48 @@ def archive(
     except ValueError as e:
         raise typer.BadParameter(str(e)) from e
     typer.echo(f"Wrote {written}")
+
+
+@app.command()
+def reproduce(
+    archive: Path = typer.Argument(  # noqa: B008
+        ..., help="A reproducibility archive (.zip produced by `velocity archive`)."
+    ),
+    out: Path | None = typer.Option(  # noqa: B008
+        None, "--out", help="Output dir for the re-run (default: out/<ts>-reproduce)."
+    ),
+    check: bool = typer.Option(
+        False, "--check", help="Compare the re-run's results against the archived ones."
+    ),
+    tolerance: float = typer.Option(
+        1e-6, "--tolerance", help="Relative tolerance for --check (not bit-exact)."
+    ),
+) -> None:
+    """Re-run an archived sweep — a reproduction (same config + code, re-executed).
+
+    With ``--check``, compares each run's reproduced final loss against the
+    archived value within ``--tolerance`` (tolerance-based, since float
+    aggregation isn't bitwise reproducible) and exits non-zero on any mismatch.
+    """
+    from velocity.archive import compare_results, read_archive, reproduce_archive
+
+    if out is None:
+        ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        out = Path("out") / f"{ts}-reproduce"
+    try:
+        result = reproduce_archive(archive, out_dir=out)
+    except (ValueError, FileNotFoundError) as e:
+        raise typer.BadParameter(str(e)) from e
+    typer.echo(f"Reproduced {len(result.runs)} run(s) into {out}")
+
+    if check:
+        original = read_archive(archive).original
+        if original is None:
+            typer.echo("No archived results to check against (comparison.json absent).")
+            return
+        diffs = compare_results(original, result, rel_tol=tolerance)
+        for d in diffs:
+            mark = "ok" if d.ok else "MISMATCH"
+            typer.echo(f"  [{mark}] {d.name}: archived={d.original} reproduced={d.reproduced}")
+        if any(not d.ok for d in diffs):
+            raise typer.Exit(code=1)

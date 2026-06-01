@@ -13,7 +13,10 @@ from velocity.archive import (
     RO_CRATE_CONTEXT,
     RO_CRATE_PROFILE,
     build_ro_crate_metadata,
+    compare_results,
     create_archive,
+    read_archive,
+    reproduce_archive,
 )
 from velocity.cli import app
 
@@ -150,3 +153,91 @@ def test_cli_archive_command_writes_zip(tmp_path):
     assert str(dest) in result.output
     with zipfile.ZipFile(dest) as zf:
         assert "ro-crate-metadata.json" in zf.namelist()
+
+
+def _real_sweep(tmp_path: Path, seed: int = 7) -> Path:
+    """A real (offline-stub) sweep dir with valid RunSpec config.json files."""
+    from velocity.strategy import FedAvg
+    from velocity.sweep import RunSpec, run_sweep
+
+    out = tmp_path / "orig-sweep"
+    run_sweep(
+        [RunSpec(name="fedavg-baseline", strategy=FedAvg(), rounds=1, min_clients=1, seed=seed)],
+        out_dir=out,
+    )
+    return out
+
+
+def test_read_archive_recovers_specs(tmp_path):
+    archive = create_archive(
+        _real_sweep(tmp_path, seed=7), archive_path=tmp_path / "a.zip", lockfile=tmp_path / "none"
+    )
+    contents = read_archive(archive)
+    assert [s.name for s in contents.specs] == ["fedavg-baseline"]
+    assert contents.specs[0].seed == 7
+    assert type(contents.specs[0].strategy).__name__ == "FedAvg"
+    assert contents.original is not None  # comparison.json recovered for --check
+
+
+def test_reproduce_archive_reruns(tmp_path):
+    archive = create_archive(
+        _real_sweep(tmp_path, seed=7), archive_path=tmp_path / "a.zip", lockfile=tmp_path / "none"
+    )
+    result = reproduce_archive(archive, out_dir=tmp_path / "repro")
+    assert {r.spec.name for r in result.runs} == {"fedavg-baseline"}
+    assert (tmp_path / "repro" / "comparison.json").exists()  # fresh sweep output written
+
+
+def test_compare_results_tolerance_and_nan():
+    from velocity.strategy import FedAvg
+    from velocity.sweep import RunResult, RunSpec, SweepResult
+
+    def mk(name: str, loss: float) -> RunResult:
+        return RunResult(
+            spec=RunSpec(name=name, strategy=FedAvg()),
+            rounds=[],
+            final_loss=loss,
+            mean_loss=loss,
+            elapsed_seconds=0.0,
+        )
+
+    reproduced = SweepResult(
+        runs=[mk("a", 0.5000001), mk("b", 9.9), mk("c", float("nan"))],
+        total_elapsed=1.0,
+        serial_elapsed=1.0,
+        parallel=1,
+        out_dir="x",
+    )
+    original = {
+        "runs": [
+            {"spec": {"name": "a"}, "final_loss": 0.5},
+            {"spec": {"name": "b"}, "final_loss": 1.0},
+            {"spec": {"name": "c"}, "final_loss": float("nan")},
+        ]
+    }
+    diffs = {d.name: d for d in compare_results(original, reproduced, rel_tol=1e-3)}
+    assert diffs["a"].ok  # 0.5000001 vs 0.5 within 1e-3
+    assert not diffs["b"].ok  # 9.9 vs 1.0 — clear mismatch
+    assert diffs["c"].ok  # both nan → undefined, not a mismatch (stub case)
+
+
+def test_cli_reproduce_command(tmp_path):
+    archive = create_archive(
+        _real_sweep(tmp_path, seed=3), archive_path=tmp_path / "a.zip", lockfile=tmp_path / "none"
+    )
+    out = tmp_path / "repro-out"
+    result = CliRunner().invoke(app, ["reproduce", str(archive), "--out", str(out)])
+    assert result.exit_code == 0, result.output
+    assert (out / "comparison.json").exists()
+
+
+def test_cli_reproduce_check_reports(tmp_path):
+    archive = create_archive(
+        _real_sweep(tmp_path, seed=3), archive_path=tmp_path / "a.zip", lockfile=tmp_path / "none"
+    )
+    result = CliRunner().invoke(
+        app, ["reproduce", str(archive), "--out", str(tmp_path / "r"), "--check"]
+    )
+    # Stub losses are nan (both-nan = ok), so --check passes and prints a report.
+    assert result.exit_code == 0, result.output
+    assert "fedavg-baseline" in result.output

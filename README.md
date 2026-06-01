@@ -124,6 +124,8 @@ velocity run --model-id test/model --dataset test/dataset --rounds 1 --min-clien
 velocity simulate-attack model_poisoning --intensity 0.2
 velocity sweep --strategies FedAvg,Krum --attacks gaussian_noise --rounds 5
 velocity leaderboard --metric robustness
+velocity archive out/<ts>-sweep -o run.crate.zip   # bundle a sweep into a reproducibility archive
+velocity reproduce run.crate.zip --check            # re-run it elsewhere and verify results match
 ```
 
 ---
@@ -136,6 +138,8 @@ velocity leaderboard --metric robustness
 - `velocity simulate-attack ...` — register one attack and run a round
 - `velocity sweep ...` — run a strategy × attack matrix across seeds (see [`docs/sweep-spec.md`](docs/sweep-spec.md))
 - `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / comm-cost / pareto / pareto-slices / robustness)
+- `velocity archive ...` — package a sweep output into a single-file reproducibility archive (RO-Crate)
+- `velocity reproduce ...` — re-run an archived sweep (`--check` verifies results within tolerance)
 
 Full reference: [`docs/cli.md`](docs/cli.md)
 

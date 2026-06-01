@@ -173,6 +173,29 @@ uv run velocity archive out/20260601T100000Z-sweep -o paper-artifact.zip
 
 ---
 
+## `velocity reproduce`
+
+Re-runs an archived sweep — a *reproduction* (same config and code, re-executed) of a bundle produced by [`velocity archive`](#velocity-archive). Optionally verifies the re-run matches the archived results.
+
+```bash
+# Re-run an archive into out/<ts>-reproduce
+uv run velocity reproduce paper-artifact.zip
+
+# Re-run and verify results match the archived ones, within a relative tolerance
+uv run velocity reproduce paper-artifact.zip --check --tolerance 1e-4
+```
+
+| Argument / Option | Type | Default | Description |
+|---|---|---|---|
+| `ARCHIVE` (positional) | `path` | none | A reproducibility archive `.zip` from `velocity archive`. |
+| `--out` | `path` | `out/<timestamp>-reproduce` | Output directory for the re-run. |
+| `--check` | flag | off | Compare reproduced per-run final loss against the archived values. |
+| `--tolerance` | `float` | `1e-6` | Relative tolerance for `--check`. Not bit-exact — float aggregation isn't bitwise reproducible across runs/hardware. |
+
+**Output** — a fresh sweep output directory. With `--check`, a per-run `ok` / `MISMATCH` report that exits non-zero if any run's result diverges beyond tolerance.
+
+---
+
 ## Exit codes
 
 | Code | Meaning |
