@@ -52,7 +52,7 @@ torch = [
 # where Prefab support landed natively (`from fastmcp.apps import ...`).
 # Direct `prefab-ui` pin per the May 2026 FastMCP Apps docs — prefab-ui is
 # pre-1.0 and patch releases routinely break component APIs; rely on the
-# transitive constraint and you'll get bitten on a Bulyan-scale dep update.
+# transitive constraint and you'll get bitten on a Bulkan-scale dep update.
 agent = [
     "fastmcp[apps]>=3.3.1",
     "prefab-ui>=0.20.1,<0.21",
@@ -72,9 +72,9 @@ all = [
 dev = [
     "maturin>=1.13.3,<2.0",
     "pytest>=9.0.3",
-    "pytest-asyncio>=0.23",
+    "pytest-asyncio>=0.24",
     "pytest-benchmark>=4.0",
-    "pytest-cov>=5.0",
+    "pytest-cov>=6.0.0",
     "hypothesis>=6.152.9",
     "ruff>=0.15.14",
     "ty>=0.0.39,<0.1",
