@@ -1,53 +1,34 @@
-# IMPL: session break — awaiting next plan
+# IMPL: reproducibility archive shipped — `velocity reproduce` next
 
-Session-by-session checklist for what's actively in flight. When a PR
-ships, its contents get replaced by the next session's plan; between
-sessions this file sits as a brief placeholder so it doesn't lie about
-being in-flight.
-
-Long-horizon planning lives in [ROADMAP.md](ROADMAP.md). Session-scale
-execution lives here.
+Session-by-session checklist for what's actively in flight. Long-horizon
+planning lives in [ROADMAP.md](ROADMAP.md).
 
 ## In flight
 
-_Nothing open._ The **`complexity_labeller` MCP tool** shipped 2026-06-01 (ROADMAP
-→ Completed) — the first A2A specialist tool: a static asymptotic lookup over the
-`AGGREGATION_COMPLEXITY` registry (added by the 2026-05-30 complexity-labels slice),
-exposed via MCP so an agent can query a kernel's per-round cost (`O(n²·d)` for Krum,
-etc.) without re-deriving. The remaining three A2A agents (convergence / robustness /
-hyperparameter) are LLM-backed analysis, not lookups — they still need a design pass.
+_Nothing open._ The **`velocity archive`** reproducibility-archive generator
+shipped 2026-06-01 (ROADMAP → Completed): it packages a `velocity sweep` output
+directory into a single-file **RO-Crate** (Process Run Crate profile, `.zip`) —
+the sweep artifacts plus a `uv.lock` snapshot (fallback `installed-packages.txt`),
+a how-to-reproduce `README.md`, and a hand-rolled, spec-conformant
+`ro-crate-metadata.json` — with **zero new dependency**. New importable
+`velocity.archive` module; `velocity archive <out-dir> [-o] [--lockfile]` CLI,
+reusing the sweep-time `capture_manifest()` provenance (DRY).
 
-Same session fixed a pre-existing red `make lint`: the prefab-ui chart calls in
-`mcp_app.py` now use the camelCase aliases (`xAxis`, `showDots`) so ty passes
-(astral-sh/ty#1425 resolves only the alias for `populate_by_name` models) — the
-constructed model and serialized MCP surface are byte-identical. CI never caught
-the red lint because only `test` + `pin-check` are required checks and ty runs
-non-blocking.
+The web-search at the format decision point paid off: the ROADMAP had guessed a
+hand-rolled `.tar.gz`, but RO-Crate (Process Run Crate) is the 2026 standard for
+packaging a run with machine-readable provenance, and the spec lets us emit the
+JSON-LD by hand (no `rocrate` dep). Also corrected the ROADMAP's inaccurate
+`velocity run --save-reproducible-archive` host — `velocity run` is
+stateless/seedless, so the archive operates on `velocity sweep` output instead.
 
-## Next up (queued, not active)
+## Next pickup
 
-The leaderboard read side is largely complete — four axes (accuracy,
-rounds-to-target, wall-clock, comm-cost), robustness-delta, the pluggable
-cost-axis Pareto (`--cost wall-clock|comm-cost`) + per-(dataset × attack) slices,
-and the static public page all shipped by 2026-05-30. (Sample-efficiency was
-**dropped** with a research note — FL measures communication efficiency, not
-sample efficiency; the rounds-to-target 3rd Pareto axis was **rejected** as
-target-dependent. See ROADMAP.) What genuinely remains:
-
-1. **Cross-config normalisation** (ROADMAP → leaderboard) — the hard one: measure
-   and store per-dataset reference ceilings so a FEMNIST run can be compared to a
-   CIFAR-10 run on normalised axes. Don't ship cross-dataset ranking until solid.
-2. **A2A specialist agents over the store** — `convergence_auditor`,
-   `robustness_auditor`, `hyperparameter_sage` (with sample-size/variance
-   guard-rails). `complexity_labeller` shipped 2026-06-01 (the static-lookup
-   one); the remaining three are LLM-backed analysis, not registry lookups.
-3. **Public page — live per-axis store** — render the live ranked store (needs a
-   public dumped corpus like the arena's) + an interactive Pareto scatter.
-4. **Server-side DP-FedAvg in Rust core** (ROADMAP → Privacy, research-tier) —
-   only once the perf story has headroom and the Rust-vs-Python DP comparison is
-   honest.
-5. **MedMNIST 2D** (ROADMAP → Datasets) — gated: add when a MedMNIST benchmark is
-   actually run (per-variant channels/classes + the [-1,1] convention).
+- **`velocity reproduce <archive.zip>`** (ROADMAP → Audit-of-audit follow-ups) —
+  the inverse of `archive`: unpack a crate, recover the per-run `RunSpec`s from
+  the bundled `config.json`s, re-run via `run_sweep`, diff against the bundled
+  results. The archive's README already documents the manual round-trip (this
+  session verified it executes); this automates it. Offline-testable via the
+  demo/stub server — no GPU/HF.
 
 When picking one up, replace this file with a full session plan
 (Why / Decisions / Scope / Out of scope / Definition of done).

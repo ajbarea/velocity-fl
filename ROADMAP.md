@@ -407,7 +407,12 @@ rather than the curated, dumped arena CSV the first cut renders.
 
 > Source: 2026-05-21 audit-of-audits review (deleted after extraction). Items that survived verdict review but don't fit Compression / Privacy / Streaming cleanly.
 
-- **Reproducibility archive generator** — `velocity run --save-reproducible-archive` emits a single `.tar.gz` bundling config.yaml + python_version.txt + dependencies.lock + random_seeds.json + results.jsonl + how-to-reproduce README. Re-runnable via `velocity reproduce <archive>` on another box. Not transformative — the pieces already exist as artifacts — but stitching them into one bundle removes a real friction step for collaborators and reviewers. Tier 1 low-priority; lands after the items above.
+- **`velocity reproduce <archive.zip>`** — the inverse of the now-shipped
+  `velocity archive` (see Completed): unpack a reproducibility crate, recover the
+  per-run `RunSpec`s from the bundled `config.json`s, re-run via `run_sweep`, and
+  diff against the bundled results. The archive's README already documents the
+  manual round-trip (verified working end-to-end); this automates it. Cheaply
+  testable — the demo/stub server runs offline, no GPU/HF. Tier 1.
 - **Cross-silo Pareto benchmark suite** — power-law (Pareto: 20% clients hold 80% data) realistic distribution as a benchmark axis alongside the existing IID + Dirichlet partitioners. Measure convergence + per-client accuracy variance + robustness-under-attack on the same skew. Real FL deployments are cross-silo, not equal-sized; benchmarks should reflect that. Fits under `## Performance`. Tier 3 research.
 
 ## Cross-sister polish (2026-05-21)
@@ -442,6 +447,28 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-06-01 — **Reproducibility archive generator (`velocity archive`).** Packages a
+  sweep output directory into a single-file **RO-Crate** (Process Run Crate profile,
+  `.zip`): the existing sweep artifacts (`manifest.json`, `comparison.{json,md}`,
+  per-run `config.json`/`rounds.csv`/`summary.json`) plus a snapshot of `uv.lock`
+  (fallback: `installed-packages.txt` from `importlib.metadata`), a how-to-reproduce
+  `README.md`, and a hand-rolled, spec-conformant `ro-crate-metadata.json` (`@context`
+  + Process Run Crate `CreateAction` / `SoftwareApplication`; every bundled file a data
+  entity; inputs = the configs, outputs = the results). **Zero new dependency** — the
+  RO-Crate spec blesses emitting the JSON-LD with stdlib `json`. New `velocity.archive`
+  module (importable, mirrors `sweep`), reusing the sweep-time `capture_manifest()`
+  provenance (DRY). The ROADMAP's original `velocity run --save-reproducible-archive`
+  framing was **corrected**: `velocity run` is stateless/seedless and produces no
+  artifacts, so the archive hangs off `velocity sweep`'s on-disk output via a
+  standalone, composable `velocity archive <out-dir>` (retroactively archivable;
+  doesn't touch run/sweep contracts). TDD (manifest builder + bundler + CLI + lockfile
+  fallback + validation); smoke-verified end-to-end on a real offline stub sweep,
+  RO-Crate structurally validated, and the README reproduce path executed. `velocity
+  reproduce` (the inverse) is the next slice. research(2026-06): RO-Crate
+  Workflow-Run / Process-Run-Crate profiles + RO-Crate 1.1 spec (hand-emit allowed);
+  ACM/IEEE artifact-evaluation norms favor a single, openly-licensed, machine-readable,
+  Zenodo-archivable bundle; Croissant 1.1 (MLCommons 2026) rejected as a dataset-layer
+  standard, wrong for an experiment run.
 - 2026-06-01 — **`complexity_labeller` MCP tool (first A2A specialist agent).** A static
   asymptotic-cost lookup over `AGGREGATION_COMPLEXITY` — the same registry `velocity
   strategies` surfaces — exposed as an MCP tool so an agent can ask a kernel's per-round
