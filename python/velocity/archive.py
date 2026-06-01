@@ -22,10 +22,15 @@ from __future__ import annotations
 
 import importlib.metadata
 import json
+import math
 import zipfile
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from velocity.sweep import RunSpec, SweepResult
 
 RO_CRATE_CONTEXT = "https://w3id.org/ro/crate/1.1/context"
 RO_CRATE_PROFILE = "https://w3id.org/ro/crate/1.1"
@@ -250,3 +255,98 @@ def create_archive(
         zf.writestr("README.md", readme)
         zf.writestr("ro-crate-metadata.json", json.dumps(metadata, indent=2))
     return archive_path
+
+
+@dataclass
+class ArchiveContents:
+    """What `read_archive` recovers from a reproducibility crate."""
+
+    specs: list[RunSpec]
+    original: dict[str, Any] | None  # parsed comparison.json (a SweepResult dump), if present
+
+
+def read_archive(archive_path: Path) -> ArchiveContents:
+    """Recover the per-run `RunSpec`s (and original results) from a crate zip.
+
+    Reads the bundled `<run>/config.json` entries and `comparison.json` directly
+    from the archive — no extraction to disk needed to inspect or re-run it.
+    """
+    from velocity.sweep import RunSpec
+
+    archive_path = Path(archive_path)
+    specs: list[RunSpec] = []
+    original: dict[str, Any] | None = None
+    with zipfile.ZipFile(archive_path) as zf:
+        names = set(zf.namelist())
+        for name in sorted(n for n in names if n.endswith("/config.json")):
+            specs.append(RunSpec.model_validate_json(zf.read(name)))
+        if "comparison.json" in names:
+            original = json.loads(zf.read("comparison.json"))
+    if not specs:
+        raise ValueError(f"{archive_path} has no <run>/config.json — not a velocity archive")
+    return ArchiveContents(specs=specs, original=original)
+
+
+def reproduce_archive(archive_path: Path, *, out_dir: Path) -> SweepResult:
+    """Re-run an archived sweep from its bundled configs into ``out_dir``.
+
+    A reproduction in the ACM/NISO sense: same configs + code, re-executed. Reuses
+    the existing ``run_sweep`` runner (DRY) over the recovered specs.
+    """
+    from velocity.sweep import run_sweep
+
+    contents = read_archive(archive_path)
+    return run_sweep(contents.specs, out_dir=Path(out_dir))
+
+
+@dataclass
+class ResultDiff:
+    """One run's archived vs reproduced final loss, and whether they agree."""
+
+    name: str
+    original: float | None
+    reproduced: float
+    ok: bool
+
+
+def _loss_close(a: float | None, b: float, rel_tol: float) -> bool:
+    if a is None:
+        return False  # run absent from the original results
+    a_nan = isinstance(a, float) and a != a
+    b_nan = isinstance(b, float) and b != b
+    if a_nan and b_nan:
+        return True  # both undefined → not a mismatch (the offline stub's losses are nan)
+    if a_nan or b_nan:
+        return False
+    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=0.0)
+
+
+def compare_results(
+    original: dict[str, Any], reproduced: SweepResult, *, rel_tol: float = 1e-6
+) -> list[ResultDiff]:
+    """Per-run final-loss agreement within a relative tolerance (nan-safe).
+
+    Tolerance-based, not bit-exact: ML / float aggregation is not bitwise
+    deterministic across runs and hardware, so asserting equality would emit false
+    failures. ``original`` is a parsed ``comparison.json`` (a ``SweepResult`` dump).
+    """
+    orig_runs = {r["spec"]["name"]: r for r in original.get("runs", [])}
+    diffs: list[ResultDiff] = []
+    for run in reproduced.runs:
+        name = run.spec.name
+        if name in orig_runs:
+            raw = orig_runs[name].get("final_loss")
+            # pydantic serializes an in-memory nan loss to JSON null, so a present
+            # run with null final_loss means nan, not "missing".
+            original_loss = float("nan") if raw is None else raw
+        else:
+            original_loss = None  # run absent from the archived results
+        diffs.append(
+            ResultDiff(
+                name=name,
+                original=original_loss,
+                reproduced=run.final_loss,
+                ok=_loss_close(original_loss, run.final_loss, rel_tol),
+            )
+        )
+    return diffs
