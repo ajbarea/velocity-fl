@@ -208,6 +208,18 @@ def strategy_name(strategy: Strategy) -> str:
     return type(strategy).__name__
 
 
+def strategy_params(strategy: Strategy) -> dict[str, Any]:
+    """Hyperparameters of a strategy instance as a dict — ``{"f": 2}`` for
+    ``Krum(f=2)``, ``{}`` for paramless strategies (FedAvg, FedMedian, ArKrum).
+
+    Recorded under ``config["strategy_params"]`` so a strategy's hyperparameters
+    participate in :func:`velocity.db.config_fingerprint`. Without it, runs that
+    differ only in a hyperparameter (Krum f=2 vs f=3) share a fingerprint and the
+    leaderboard conflates them.
+    """
+    return {f.name: getattr(strategy, f.name) for f in fields(strategy)}
+
+
 def parse_strategy(value: str | dict[str, Any] | Strategy) -> Strategy:
     """Coerce a user-supplied value into a strategy instance.
 

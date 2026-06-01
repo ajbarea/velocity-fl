@@ -393,3 +393,21 @@ def test_real_training_model_poisoning_attacks_route_through_craft():
         )
         assert isinstance(updates[0], _core.ClientUpdate), attack
         assert updates[0].num_samples == 10, attack
+
+
+def test_real_run_config_records_strategy_params() -> None:
+    """A run config records strategy hyperparameters so the fingerprint resolves them.
+
+    Before this, only the strategy *name* was stored, so Krum f=2 and f=3
+    collapsed to one config_fingerprint and the leaderboard conflated them.
+    """
+    from velocity.strategy import FedAvg, Krum
+
+    c2 = mcp_app._real_run_config(Krum(f=2), dataset="mnist", rounds=5)
+    c3 = mcp_app._real_run_config(Krum(f=3), dataset="mnist", rounds=5)
+    assert c2["strategy"] == "Krum"  # name preserved for the runs.strategy column
+    assert c2["strategy_params"] == {"f": 2}
+    # Distinct hyperparameters → distinct fingerprints (no longer conflated).
+    assert db.config_fingerprint(c2) != db.config_fingerprint(c3)
+    # Paramless strategies carry an empty params dict (fingerprint unchanged).
+    assert mcp_app._real_run_config(FedAvg(), dataset="mnist")["strategy_params"] == {}

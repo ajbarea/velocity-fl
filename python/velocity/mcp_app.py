@@ -983,6 +983,23 @@ async def run_real_training(
     )
 
 
+def _real_run_config(strategy: Any, **fields: Any) -> dict[str, Any]:
+    """Run config for a real-training run.
+
+    Records the strategy *name* (for the ``runs.strategy`` column + display) and
+    its hyperparameters under ``strategy_params``, so ``config_fingerprint``
+    resolves runs that differ only in a hyperparameter (Krum f=2 vs f=3) rather
+    than conflating them. ``fields`` are the remaining config entries.
+    """
+    from velocity.strategy import strategy_name, strategy_params
+
+    return {
+        "strategy": strategy_name(strategy),
+        "strategy_params": strategy_params(strategy),
+        **fields,
+    }
+
+
 async def _execute_real_training(
     *,
     user_id: str,
@@ -1103,7 +1120,7 @@ def _run_real_training_sync(
     from velocity import _core
     from velocity.datasets import load_federated
     from velocity.paper_attacks import craft_byzantine_updates
-    from velocity.strategy import FedProx, strategy_name
+    from velocity.strategy import FedProx
     from velocity.training import (
         evaluate,
         layer_shapes,
@@ -1153,21 +1170,21 @@ def _run_real_training_sync(
     # strategy keeps the FedAvg-style 0.0 proximal term.
     proximal_mu = strategy.mu if isinstance(strategy, FedProx) else 0.0
 
-    config = {
-        "strategy": strategy_name(strategy),
-        "model_id": model_id,
-        "dataset": dataset,
-        "rounds": rounds,
-        "num_clients": num_clients,
-        "local_epochs": local_epochs,
-        "batch_size": batch_size,
-        "lr": lr,
-        "seed": seed,
-        "partition": partition,
-        "partition_kwargs": partition_kwargs,
-        "attack": attack,
-        "mode": "real",
-    }
+    config = _real_run_config(
+        strategy,
+        model_id=model_id,
+        dataset=dataset,
+        rounds=rounds,
+        num_clients=num_clients,
+        local_epochs=local_epochs,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+        partition=partition,
+        partition_kwargs=partition_kwargs,
+        attack=attack,
+        mode="real",
+    )
     # num_malicious is part of the attack spec; absent on clean runs so their
     # config fingerprint is unchanged. robustness_delta_leaderboard strips it
     # (with `attack`) to pair an attacked run with its no-attack baseline.

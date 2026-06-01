@@ -319,7 +319,10 @@ rather than the curated, dumped arena CSV the first cut renders.
   **shipped 2026-06-01**, see Completed), `hyperparameter_sage` (given a target config, returns the
   top-k α / μ / f values observed in matched runs, with sample
   count + variance, and flags when sample size is too low to
-  recommend).
+  recommend). `hyperparameter_sage`'s **data prerequisite is now met** — strategy
+  hyperparameters participate in the config fingerprint as of 2026-06-01 (see
+  Completed), so runs differing only in α / μ / f are distinguishable; what
+  remains is the design pass on what "matched" means + the sample thresholds.
 - **Sage guard-rails** — any sage answer must quote sample size and
   variance. "α=0.3 was top-3 over 47 runs on MNIST+shard+no-attack,
   IQR ±0.008 final accuracy" is useful; "use α=0.3" is cargo cult.
@@ -441,6 +444,20 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-06-01 — **Strategy hyperparameters now in the run fingerprint (leaderboard
+  fidelity; unblocks `hyperparameter_sage`).** Both DB producers stored only the
+  strategy *name* (`strategy_name(strat)`), so a strategy's hyperparameters (Krum
+  `f`, FedProx `mu`, TrimmedMean `k`, …) never reached the config — and
+  `config_fingerprint`, despite its docstring, couldn't distinguish them. Krum f=2
+  and f=3 shared a fingerprint, so every per-fingerprint board silently averaged
+  *different* experiments into one row. Added `strategy.strategy_params(strat)`
+  (dataclass fields → dict; `{}` for paramless strategies, so their fingerprints are
+  unchanged) and extracted `mcp_app._real_run_config`, which records both the name
+  (for the `runs.strategy` column) and `strategy_params` so the existing
+  canonical-JSON fingerprint resolves them. Only `run_real_training` carries
+  parameterised strategies (`run_demo`'s string input is paramless-only — no bug, no
+  change). No MCP / CLI surface change. TDD (helper + distinct-fingerprint guard);
+  full suite + lint green. Unblocks the roadmapped `hyperparameter_sage`.
 - 2026-06-01 — **`velocity reproduce` — re-run an archived sweep (closes the loop).**
   The inverse of `velocity archive`: `read_archive` recovers the per-run `RunSpec`s
   (and the original `comparison.json`) straight from the crate zip; `reproduce_archive`

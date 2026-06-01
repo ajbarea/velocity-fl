@@ -19,6 +19,7 @@ from velocity.strategy import (
     complexity_for,
     parse_strategy,
     strategy_name,
+    strategy_params,
 )
 
 
@@ -188,3 +189,15 @@ def test_complexity_for_accepts_name_and_instance():
 def test_complexity_for_unknown_name_raises():
     with pytest.raises(KeyError):
         complexity_for("FedNope")
+
+
+def test_strategy_params_extracts_dataclass_fields():
+    # Paramless strategies → empty dict (so their config fingerprint is unchanged).
+    assert strategy_params(FedAvg()) == {}
+    assert strategy_params(FedMedian()) == {}
+    assert strategy_params(ArKrum()) == {}
+    # Parameterised strategies → their hyperparameters, so the fingerprint resolves them.
+    assert strategy_params(Krum(f=2)) == {"f": 2}
+    assert strategy_params(FedProx(mu=0.1)) == {"mu": 0.1}
+    assert strategy_params(TrimmedMean(k=1)) == {"k": 1}
+    assert strategy_params(MultiKrum(f=1, m=3)) == {"f": 1, "m": 3}
