@@ -30,7 +30,7 @@ where the LLM writes Prefab Python on the fly.
 | Tool | Returns | What it renders |
 | --- | --- | --- |
 | `list_runs` | `ToolResult` wrapping `DataTable` | Sortable, searchable table of recent runs. |
-| `leaderboard` | `ToolResult` wrapping `DataTable` | Experiments ranked along one axis (accuracy / rounds-to-target / wall-clock / comm-cost / robustness / pareto), grouped by config fingerprint. |
+| `leaderboard` | `ToolResult` wrapping `DataTable` | Experiments ranked along one axis (accuracy / rounds-to-target / wall-clock / comm-cost / robustness / pareto / pareto-slices), grouped by config fingerprint. |
 | `complexity_labeller` | `ToolResult` wrapping `DataTable` | Per-round aggregation cost per kernel; a static asymptotic lookup over `AGGREGATION_COMPLEXITY`. |
 | `run_rounds_history` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Per-run convergence curve + raw rounds table. |
 | `compare_runs` | `ToolResult` wrapping `Column[LineChart, DataTable]` | Two-series overlay LineChart of two runs + delta table. |
@@ -62,10 +62,9 @@ return ToolResult(
 The model reads a compact text summary; the user sees the full
 interactive widget rendered through the bundled React renderer. This
 is the explicitly-recommended pattern in the May 2026 FastMCP Apps
-docs — it keeps the model's reasoning context lean (the model does
-not need to parse ~5–10K tokens of nested component JSON to answer a
-question about the run) while preserving the rich rendering for the
-human.
+docs. It keeps the model's reasoning context lean (no need to parse
+~5–10K tokens of nested component JSON to answer a question about the
+run) while preserving the rich rendering for the human.
 
 The text summary's shape varies by tool:
 
@@ -329,7 +328,7 @@ The vFL pattern:
 7. Run `make lint + make test-py`. Update `EXPECTED_SURFACE_HASH` if
    the surface changed.
 
-All six Prefab-returning tools in `python/velocity/mcp_app.py` are
+All eight Prefab-returning tools in `python/velocity/mcp_app.py` are
 working references. `attack_arena()` and `attack_arena_leaderboard()`
 are the most complete examples; `list_runs` is the simplest.
 

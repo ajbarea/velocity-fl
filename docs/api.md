@@ -31,7 +31,7 @@ class VelocityServer(
 
 | Property | Type | Description |
 |---|---|---|
-| `global_weights` | `dict[str, list[float]]` | Current global model weights after the last completed round. |
+| `global_weights` | `dict[str, numpy.ndarray[float32]]` | Current global model weights after the last completed round. One ndarray per layer, sharing the Rust `Vec<f32>` buffer zero-copy via the numpy buffer protocol. |
 | `history` | `list[dict]` | JSON-decoded list of all completed round summaries. |
 
 See [Configuration](configuration.md) for field semantics and defaults.
@@ -153,9 +153,9 @@ Compiled by `maturin develop`. Imported lazily by `velocity.server`; absent in p
 | Symbol | Kind | Description |
 |---|---|---|
 | `Orchestrator` | class | Owns per-experiment round state. Accepts `ClientUpdate[]`, returns `RoundSummary`. |
-| `ClientUpdate` | class | Rust-side update struct. `num_samples: int`, `weights: dict[str, list[float]]`. |
+| `ClientUpdate` | class | Rust-side update struct. `num_samples: int`; constructed with `weights: dict[str, list[float]]`, read back as `dict[str, numpy.ndarray[float32]]`. |
 | `RoundSummary` | class | Round result. `round`, `num_clients`, `global_loss`, `attack_results` (JSON), `selected_client_ids`. |
-| `Strategy` | class | Strategy factory. Constructors: `Strategy.fed_avg()`, `Strategy.fed_prox(mu)`, `Strategy.fed_median()`, `Strategy.trimmed_mean(k)`, `Strategy.krum(f)`, `Strategy.multi_krum(f, m=None)`, `Strategy.bulyan(f, m=None)`. |
+| `Strategy` | class | Strategy factory. Constructors: `Strategy.fed_avg()`, `Strategy.fed_prox(mu)`, `Strategy.fed_median()`, `Strategy.trimmed_mean(k)`, `Strategy.krum(f)`, `Strategy.multi_krum(f, m=None)`, `Strategy.bulyan(f, m=None)`, `Strategy.geometric_median(eps, max_iter)`, `Strategy.ar_krum()`. |
 | `aggregate` | function | Standalone aggregation kernel — useful for testing. |
 | `apply_gaussian_noise` | function | Standalone noise kernel. |
 

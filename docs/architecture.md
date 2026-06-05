@@ -58,7 +58,7 @@ velocity-fl/
 ├── vfl-core/               # Rust crate
 │   ├── src/
 │   │   ├── lib.rs          # PyO3 module definition
-│   │   ├── strategy.rs     # FedAvg / FedProx / FedMedian / TrimmedMean / Krum / MultiKrum / Bulyan / GeometricMedian
+│   │   ├── strategy.rs     # FedAvg / FedProx / FedMedian / TrimmedMean / Krum / MultiKrum / Bulyan / GeometricMedian / ArKrum
 │   │   ├── orchestrator.rs # round state + round-level attack dispatch
 │   │   └── security.rs     # round-level attack kernels (model_poisoning, sybil_nodes, gaussian_noise)
 │   └── Cargo.toml

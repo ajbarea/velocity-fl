@@ -38,19 +38,7 @@ uv run velocity version
 uv run velocity strategies
 ```
 
-Expected output:
-
-```text
-0.1.0
-FedAvg
-FedProx
-FedMedian
-TrimmedMean
-Krum
-MultiKrum
-Bulyan
-GeometricMedian
-```
+`version` prints `0.1.0`. `strategies` prints a cost table of all nine aggregators (FedAvg, FedProx, FedMedian, TrimmedMean, Krum, MultiKrum, Bulyan, GeometricMedian, ArKrum); see the [CLI Reference](cli.md#velocity-strategies) for the full layout.
 
 ## 3. Your first round — Python
 
@@ -132,5 +120,5 @@ Run `make` with no arguments for the full target list.
 - [CLI Reference](cli.md) — every flag, every command.
 - [Architecture](architecture.md) — how Rust, PyO3, and Python fit together.
 - [Configuration](configuration.md) — every field on `VelocityServer`.
-- [Strategies](strategies.md) — when to reach for FedAvg, FedProx, FedMedian, TrimmedMean, Krum, MultiKrum, Bulyan, or GeometricMedian.
+- [Strategies](strategies.md) — when to reach for FedAvg, FedProx, FedMedian, TrimmedMean, Krum, MultiKrum, Bulyan, GeometricMedian, or ArKrum.
 - [Attacks](attacks.md) — adversarial simulations baked into the core.

@@ -71,7 +71,7 @@ for s in summaries:
     for raw in s["attack_results"]:
         result = AttackResult.from_dict(raw)
         print(result)
-# [model_poisoning] Poisoned 2 updates at intensity=0.30 (severity=0.412, clients=2)
+# [model_poisoning] Model poisoning: 1287/4096 parameters corrupted (intensity=0.30) (severity=0.314, clients=1)
 ```
 
 | `AttackResult` field | Type | Description |

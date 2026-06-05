@@ -23,20 +23,25 @@ uv run velocity version
 
 ## `velocity strategies`
 
-Lists supported aggregation strategies. See [Strategies](strategies.md) for when to use each.
+Lists supported aggregation strategies with their per-round server-side cost. See [Strategies](strategies.md) for when to use each.
 
-```bash
-uv run velocity strategies
-# FedAvg
-# FedProx
-# FedMedian
-# TrimmedMean
-# Krum
-# MultiKrum
-# Bulyan
-# GeometricMedian
-# ArKrum
+```text
+$ uv run velocity strategies
+Aggregation strategies — per-round server-side cost (n = clients, d = model dim)
+
+strategy         cost      scaling    dominated by
+FedAvg           O(n·d)    linear     one sample-weighted pass over n d-dimensional updates
+FedProx          O(n·d)    linear     aggregation identical to FedAvg (the proximal term is client-side)
+FedMedian        O(n·d)    linear     introselect median per coordinate (O(n) average) over d coordinates
+TrimmedMean      O(n·d)    linear     two introselect passes per coordinate (O(n) average) over d coordinates
+Krum             O(n²·d)   quadratic  the n²·d pairwise squared-distance matrix
+MultiKrum        O(n²·d)   quadratic  the same pairwise-distance matrix as Krum; averages the top-m
+Bulyan           O(n²·d)   quadratic  one Multi-Krum selection (n²·d) then a selection-based trim (n·d)
+GeometricMedian  O(T·n·d)  linear     T Weiszfeld iterations (max_iter), each a weighted average over n points
+ArKrum           O(n²·d)   quadratic  Krum-style pairwise distances; the median filter + change-point are lower-order
 ```
+
+Cost is descriptive, not a ranking input. Pair it with the [leaderboard](leaderboard.md)'s measured wall-clock for the empirical picture.
 
 ---
 
