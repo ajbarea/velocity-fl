@@ -1,13 +1,17 @@
+<div align="center">
+
+<img src="docs/assets/velocity-hero.png" width="800" alt="Velocity-FL Hero Image">
+
 # ⚡ Velocity-FL (vFL)
 
-![Velocity-FL](docs/assets/velocity-hero.png)
+*A federated learning orchestration project with a Rust core and a Python-first interface.*
 
 [![Tests](https://github.com/ajbarea/velocity-fl/actions/workflows/tests.yml/badge.svg)](https://github.com/ajbarea/velocity-fl/actions/workflows/tests.yml)
 [![Documentation](https://github.com/ajbarea/velocity-fl/actions/workflows/docs.yml/badge.svg)](https://github.com/ajbarea/velocity-fl/actions/workflows/docs.yml)
 [![Codecov](https://codecov.io/gh/ajbarea/velocity-fl/graph/badge.svg?token=rcYwirIHWk)](https://codecov.io/gh/ajbarea/velocity-fl)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/ajbarea/velocity-fl?utm_source=badge)
 
-Velocity-FL is a federated learning orchestration project with a Rust core and a Python-first interface.
+</div>
 
 ---
 
