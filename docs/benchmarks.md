@@ -109,6 +109,28 @@ noise — the kernels dispatch identically, see Findings below). Treat
 the speedup column as directional until CodSpeed lands; the consistent
 finding is "Rust FedAvg dominates at every tier."
 
+### Against an optimized NumPy baseline
+
+Pure-Python is the honest *fallback* number, but a competent practitioner would
+vectorize with NumPy, so that is the baseline a reviewer demands.
+`tests/bench/test_round_speed.py::test_numpy_aggregate` times a float32 BLAS gemv
+(`weights @ stack`, NumPy's best case) over pre-stacked client weights:
+
+| tier | Rust round+readout (median) | NumPy gemv (median) | Rust vs NumPy |
+|---|---|---|---|
+| medium (~1M) | 5.4 ms | 6.3 ms | 1.2× |
+| large (~10M)  | 50 ms  | 64 ms  | 1.3× |
+
+So for FedAvg --- a single weighted mean, NumPy's *best* case --- the Rust kernel
+is roughly at **parity** (marginally ahead, even while paying the current PyFloat
+`global_weights()` readout NumPy does not). The ~100× headline is vs pure-Python
+*only*; the honest FedAvg story is "no hand-vectorization needed," not "we beat
+NumPy." The real kernel advantage is the robust aggregators (Krum is O(n²·d),
+Bulyan composes two such passes) where a clean NumPy vectorization is far harder
+--- benchmarking those against the `strategy_reference.py` oracles is the next
+measurement. (Idle box, load 0.11, `--benchmark-disable-gc`, min-rounds 15;
+medians not means --- the large NumPy mean is outlier-skewed.)
+
 `Orchestrator.run_round` takes a zero-copy fast path when no attacks are
 registered: the PyO3 wrapper passes `&ClientUpdate` slices straight into
 the aggregation kernel, so no f32 weight data is cloned between Python

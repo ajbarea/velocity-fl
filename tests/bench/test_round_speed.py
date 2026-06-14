@@ -169,6 +169,36 @@ def test_python_aggregate(benchmark: Any, tier: str) -> None:
     benchmark(lambda: _python_fed_avg(updates, layer_names))
 
 
+def _numpy_fed_avg(stacks: dict[str, Any], weights: Any) -> dict[str, Any]:
+    """Vectorised NumPy sample-weighted average over pre-stacked client weights.
+
+    The per-layer (n_clients, dim) arrays are materialised in setup (clients send
+    tensors in practice), so this times only the reduction -- NumPy's best case,
+    the conservative baseline a reviewer demands against the Rust kernel: if Rust
+    still wins here, "you just didn't vectorise" is off the table. The reduction is
+    a float32 BLAS gemv (`weights @ stack`) -- the fastest idiomatic NumPy form,
+    no float64 upcast.
+    """
+    return {name: weights @ s for name, s in stacks.items()}
+
+
+@pytest.mark.parametrize("tier", list(TIERS.keys()))
+def test_numpy_aggregate(benchmark: Any, tier: str) -> None:
+    import numpy as np
+
+    updates = _build_python_updates(tier)
+    layer_names = list(TIERS[tier].keys())
+    samples = np.array([u["num_samples"] for u in updates], dtype=np.float32)
+    weights = samples / samples.sum()
+    stacks = {
+        name: np.array([u["weights"][name] for u in updates], dtype=np.float32)
+        for name in layer_names
+    }
+    benchmark.group = f"aggregate/{tier}"
+    benchmark.extra_info.update({"tier": tier, "strategy": "fed_avg", "path": "numpy"})
+    benchmark(lambda: _numpy_fed_avg(stacks, weights))
+
+
 # ----------------------------------------------------------------------------
 # PyO3 marshaling-cost probe
 #
