@@ -54,7 +54,7 @@ torch = [
 # pre-1.0 and patch releases routinely break component APIs; rely on the
 # transitive constraint and you'll get bitten on a Bulyan-scale dep update.
 agent = [
-    "fastmcp[apps]>=3.3.1",
+    "fastmcp[apps]>=3.4.2",
     "prefab-ui>=0.20.2,<0.21",
 ]
 # Differential privacy: Opacus PrivacyEngine for DP-SGD client training.
@@ -79,7 +79,7 @@ dev = [
     "ruff>=0.15.16",
     "ty>=0.0.44,<0.1",
     "zensical",
-    "fastmcp[apps]>=3.3.1",
+    "fastmcp[apps]>=3.4.2",
     "prefab-ui>=0.20.2,<0.21",
     "pytest-codspeed>=5.0.3",
     "opacus>=1.6,<2",
