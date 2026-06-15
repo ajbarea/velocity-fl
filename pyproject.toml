@@ -24,14 +24,14 @@ dependencies = [
     # is negligible; the benefit is O(layers) marshaling instead of
     # O(params). See IMPL.md and docs/benchmarks.md.
     "numpy>=2.4.6",
-    "prefect>=3.7.3",
+    "prefect>=3.7.4",
     "pydantic>=2.13.4",
-    "typer>=0.26.6",
+    "typer>=0.26.7",
 ]
 
 [project.optional-dependencies]
 hf = [
-    "transformers>=5.0",
+    "transformers>=5.10.2",
     "peft>=0.10",
     # datasets 4.x dropped loading-script datasets for Parquet-backed
     # standard formats; vFL loads canonical Parquet mirrors (ylecun/mnist,
@@ -55,7 +55,7 @@ torch = [
 # transitive constraint and you'll get bitten on a Bulyan-scale dep update.
 agent = [
     "fastmcp[apps]>=3.3.1",
-    "prefab-ui>=0.20.1,<0.21",
+    "prefab-ui>=0.20.2,<0.21",
 ]
 # Differential privacy: Opacus PrivacyEngine for DP-SGD client training.
 # research(2026-05): Opacus 1.6 is the canonical PyTorch DP-SGD path (Fed-BioMed
@@ -75,12 +75,12 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-benchmark>=4.0",
     "pytest-cov>=6.0.0",
-    "hypothesis>=6.155.1",
-    "ruff>=0.15.15",
-    "ty>=0.0.42,<0.1",
+    "hypothesis>=6.155.2",
+    "ruff>=0.15.16",
+    "ty>=0.0.44,<0.1",
     "zensical",
     "fastmcp[apps]>=3.3.1",
-    "prefab-ui>=0.20.1,<0.21",
+    "prefab-ui>=0.20.2,<0.21",
     "pytest-codspeed>=5.0.3",
     "opacus>=1.6,<2",
 ]
