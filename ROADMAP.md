@@ -191,6 +191,29 @@ for medical-FL benchmarks specifically.
 
 ## Performance
 
+- **Data-parallel + SIMD aggregation kernel (rayon + portable SIMD)** — the
+  distance-based selectors compute an `O(n² · d)` pairwise squared-Euclidean
+  distance matrix scalar and single-threaded. The matrix fill is embarrassingly
+  parallel (independent per client pair) and the per-pair reduction over `d`
+  floats is the textbook SIMD case, so this is the highest-leverage, most
+  on-thesis perf lever. It is also the fix for the backend gap below: measured
+  2026-06-15 (release, Apple Accelerate), Rust Krum at the medium tier beats the
+  NumPy oracle ~6× at n=10 but the lead *narrows* to ~3× by n=22, because the
+  scalar kernel cannot ride a fast BLAS the way the vectorized oracle does. A
+  rayon-parallel, SIMD distance kernel would keep the kernel ahead of an
+  optimized BLAS and *widen* the margin as n grows instead of shrinking it.
+  Correctness stays guarded by the `strategy_reference` oracles + Hypothesis
+  property tests (parallel fill is deterministic; per-distance reduction order is
+  unchanged). `research(2026-06)`: distance-matrix fill is data-parallel;
+  portable SIMD via `std::simd` (nightly) or the `wide` crate (stable).
+- **Backend-aware benchmarking** — the robust-aggregator speedup is *not*
+  portable: it is dominated by the NumPy oracle's dense `(n,n,d)` tensor ops,
+  which the BLAS backend accelerates and the scalar Rust kernel does not use.
+  `docs/benchmarks.md` reports ~30× for Krum at the medium tier (WSL + OpenBLAS);
+  on Apple Accelerate the same comparison is ~6× (measured 2026-06-15, release).
+  Benchmarks and docs should record the BLAS backend and report the robust
+  speedup as a backend-dependent range, not a single number — the kernel's
+  *absolute* time is backend-independent, only the ratio moves.
 - **FedMedian SIMD quickselect or histogram median** — FedMedian still
   runs ~12× FedAvg at large tier. Coordinate-wise `select_nth_unstable_by`
   is branchy and doesn't vectorise well. Worth revisiting only when
@@ -203,7 +226,12 @@ for medical-FL benchmarks specifically.
   overhead grows and Krum's O(n²) kernel blows up — the regime where
   the Rust lever is largest and is currently not measured. Depends on
   CodSpeed for a noise floor tight enough to see the effect. Listed as
-  a follow-up in `docs/benchmarks.md:130-132`.
+  a follow-up in `docs/benchmarks.md:130-132`. Design note (verified
+  2026-06-15): sweep n at the *medium* tier, not tiny — the Rust advantage
+  is a large-`d` effect, and at the tiny tier (`d`~970) the vectorized
+  `(n,n,d)` oracle wins outright. The dense oracle caps around n=22 at the
+  medium tier (~2 GB tensor) and OOMs by the large tier; past that only the
+  Rust path runs, which is itself a result worth reporting.
 - **Free-threaded Python (3.13t / 3.14t) + pyo3 0.23→0.28 / rust-numpy /
   ndarray 0.16 upgrade** — vfl-core is on `pyo3 0.23.5` + `rust-numpy 0.23`
   + `ndarray 0.15`, the pre-free-threading generation. The ecosystem moved:
