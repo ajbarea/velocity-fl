@@ -37,7 +37,7 @@ hf = [
     # standard formats; vFL loads canonical Parquet mirrors (ylecun/mnist,
     # uoft-cs/cifar10) so the removal doesn't bite. 4.x also rides the
     # huggingface-hub 1.x line that transformers 5 requires.
-    "datasets>=4.0",
+    "datasets>=5.0.0",
     "safetensors>=0.4",
 ]
 torch = [
