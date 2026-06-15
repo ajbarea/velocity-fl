@@ -191,21 +191,6 @@ for medical-FL benchmarks specifically.
 
 ## Performance
 
-- **Data-parallel + SIMD aggregation kernel (rayon + portable SIMD)** — the
-  distance-based selectors compute an `O(n² · d)` pairwise squared-Euclidean
-  distance matrix scalar and single-threaded. The matrix fill is embarrassingly
-  parallel (independent per client pair) and the per-pair reduction over `d`
-  floats is the textbook SIMD case, so this is the highest-leverage, most
-  on-thesis perf lever. It is also the fix for the backend gap below: measured
-  2026-06-15 (release, Apple Accelerate), Rust Krum at the medium tier beats the
-  NumPy oracle ~6× at n=10 but the lead *narrows* to ~3× by n=22, because the
-  scalar kernel cannot ride a fast BLAS the way the vectorized oracle does. A
-  rayon-parallel, SIMD distance kernel would keep the kernel ahead of an
-  optimized BLAS and *widen* the margin as n grows instead of shrinking it.
-  Correctness stays guarded by the `strategy_reference` oracles + Hypothesis
-  property tests (parallel fill is deterministic; per-distance reduction order is
-  unchanged). `research(2026-06)`: distance-matrix fill is data-parallel;
-  portable SIMD via `std::simd` (nightly) or the `wide` crate (stable).
 - **Backend-aware benchmarking** — the robust-aggregator speedup is *not*
   portable: it is dominated by the NumPy oracle's dense `(n,n,d)` tensor ops,
   which the BLAS backend accelerates and the scalar Rust kernel does not use.
@@ -472,6 +457,15 @@ a dash is illegal. Only display/brand prose is "Velocity-FL".
 
 Authoritative records: git history, `docs/benchmarks.md`, `docs/convergence.md`, `docs/strategies.md`. This index is pruned once work is durably shipped.
 
+- 2026-06-15 — **Data-parallel + SIMD aggregation kernel (rayon + `wide`).** The
+  `O(n² · d)` pairwise squared-Euclidean distance matrix shared by Krum,
+  Multi-Krum, Bulyan, and ArKrum was scalar/single-threaded; now `rayon` fills the
+  upper triangle in parallel and a `wide::f64x4` kernel vectorizes the per-pair
+  reduction (f64 accumulation preserved, so results match the NumPy oracles to
+  1e-5 — verified by the Hypothesis parity tests). On this machine (release, Apple
+  Accelerate) Krum at the medium tier dropped 43 ms → 4.3 ms (~10×), flipping the
+  vs-Accelerate-oracle gap from ~6× to ~60×. Remaining: backend-aware benchmarking
+  + a crowd-scale sweep to confirm the margin now *widens* with n (both below).
 - 2026-06-01 — **Strategy hyperparameters now in the run fingerprint (leaderboard
   fidelity; unblocks `hyperparameter_sage`).** Both DB producers stored only the
   strategy *name* (`strategy_name(strat)`), so a strategy's hyperparameters (Krum
