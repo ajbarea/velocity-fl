@@ -29,6 +29,12 @@ import random
 from typing import Any
 
 import pytest
+from strategy_reference import (
+    bulyan_reference,
+    krum_reference,
+    multi_krum_reference,
+    trimmed_mean_reference,
+)
 from velocity import (
     ArKrum,
     Bulyan,
@@ -197,6 +203,33 @@ def test_numpy_aggregate(benchmark: Any, tier: str) -> None:
     benchmark.group = f"aggregate/{tier}"
     benchmark.extra_info.update({"tier": tier, "strategy": "fed_avg", "path": "numpy"})
     benchmark(lambda: _numpy_fed_avg(stacks, weights))
+
+
+# Robust aggregators are where the Rust kernel should actually win: Krum is
+# O(n^2 d) and Bulyan composes two such passes, so a clean NumPy vectorisation is
+# hard. The oracle Krum/Multi-Krum/Bulyan build an (n, n, d) distance tensor, ~8 GB
+# at the large tier (d=10M), so those cap at medium; TrimmedMean has no n^2 blowup
+# and runs at large too.
+_ROBUST_NUMPY_CASES = [
+    ("medium", "krum", lambda u: krum_reference(u, 1)),
+    ("medium", "multi_krum", lambda u: multi_krum_reference(u, 1)),
+    ("medium", "trimmed_mean", lambda u: trimmed_mean_reference(u, 1)),
+    ("medium", "bulyan", lambda u: bulyan_reference(u, 1)),
+    ("large", "trimmed_mean", lambda u: trimmed_mean_reference(u, 1)),
+]
+
+
+@pytest.mark.parametrize(
+    "tier,name,oracle",
+    _ROBUST_NUMPY_CASES,
+    ids=[f"{t}-{n}" for t, n, _ in _ROBUST_NUMPY_CASES],
+)
+def test_numpy_robust(benchmark: Any, tier: str, name: str, oracle: Any) -> None:
+    """NumPy-oracle baselines for the robust aggregators (capped per the note above)."""
+    updates = _build_python_updates(tier)
+    benchmark.group = f"robust/{tier}"
+    benchmark.extra_info.update({"tier": tier, "strategy": name, "path": "numpy_robust"})
+    benchmark(lambda: oracle(updates))
 
 
 # ----------------------------------------------------------------------------

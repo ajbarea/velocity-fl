@@ -125,11 +125,28 @@ So for FedAvg --- a single weighted mean, NumPy's *best* case --- the Rust kerne
 is roughly at **parity** (marginally ahead, even while paying the current PyFloat
 `global_weights()` readout NumPy does not). The ~100× headline is vs pure-Python
 *only*; the honest FedAvg story is "no hand-vectorization needed," not "we beat
-NumPy." The real kernel advantage is the robust aggregators (Krum is O(n²·d),
-Bulyan composes two such passes) where a clean NumPy vectorization is far harder
---- benchmarking those against the `strategy_reference.py` oracles is the next
-measurement. (Idle box, load 0.11, `--benchmark-disable-gc`, min-rounds 15;
-medians not means --- the large NumPy mean is outlier-skewed.)
+NumPy." The real kernel advantage is the robust aggregators (Krum is O(n²·d), Bulyan
+composes two such passes) where a clean NumPy vectorization is far harder.
+`test_numpy_robust` times the `strategy_reference.py` oracles against the same Rust
+strategies:
+
+| strategy | tier | Rust | NumPy oracle | Rust speedup |
+|---|---|---|---|---|
+| Krum (f=1) | medium | 70 ms | 2069 ms | 30× |
+| Multi-Krum (f=1) | medium | 71 ms | 2131 ms | 30× |
+| Bulyan (f=1) | medium | 141 ms | 2561 ms | 18× |
+| Trimmed Mean (k=1) | medium | 98 ms | 316 ms | 3.2× |
+| Trimmed Mean (k=1) | large | 967 ms | 4992 ms | 5.2× |
+
+So the honest speed story is **parity on FedAvg, 3--30× on the robust aggregators**.
+The Krum family wins biggest because its O(n²·d) pairwise-distance step balloons the
+oracle's `(n, n, d)` tensor (~800 MB at medium); a `scipy.spatial.distance`
+implementation would narrow that, though Rust's fused distance + partition-select
+still leads. Trimmed Mean (3--5×) is the conservative floor --- NumPy's sort-based
+version is already near-optimal there. These robust strategies are exactly what a
+Byzantine-robustness arena runs, so this is the speedup that makes the live
+leaderboard practical. (Idle box, load 0.11, `--benchmark-disable-gc`, medians;
+Krum/Multi-Krum/Bulyan cap at medium --- the `(n, n, d)` tensor is ~8 GB at large.)
 
 `Orchestrator.run_round` takes a zero-copy fast path when no attacks are
 registered: the PyO3 wrapper passes `&ClientUpdate` slices straight into
