@@ -29,6 +29,12 @@ import random
 from typing import Any
 
 import pytest
+from strategy_reference import (
+    bulyan_reference,
+    krum_reference,
+    multi_krum_reference,
+    trimmed_mean_reference,
+)
 from velocity import (
     ArKrum,
     Bulyan,
@@ -167,6 +173,63 @@ def test_python_aggregate(benchmark: Any, tier: str) -> None:
     benchmark.group = f"aggregate/{tier}"
     benchmark.extra_info.update({"tier": tier, "strategy": "fed_avg", "path": "python"})
     benchmark(lambda: _python_fed_avg(updates, layer_names))
+
+
+def _numpy_fed_avg(stacks: dict[str, Any], weights: Any) -> dict[str, Any]:
+    """Vectorised NumPy sample-weighted average over pre-stacked client weights.
+
+    The per-layer (n_clients, dim) arrays are materialised in setup (clients send
+    tensors in practice), so this times only the reduction -- NumPy's best case,
+    the conservative baseline a reviewer demands against the Rust kernel: if Rust
+    still wins here, "you just didn't vectorise" is off the table. The reduction is
+    a float32 BLAS gemv (`weights @ stack`) -- the fastest idiomatic NumPy form,
+    no float64 upcast.
+    """
+    return {name: weights @ s for name, s in stacks.items()}
+
+
+@pytest.mark.parametrize("tier", list(TIERS.keys()))
+def test_numpy_aggregate(benchmark: Any, tier: str) -> None:
+    import numpy as np
+
+    updates = _build_python_updates(tier)
+    layer_names = list(TIERS[tier].keys())
+    samples = np.array([u["num_samples"] for u in updates], dtype=np.float32)
+    weights = samples / samples.sum()
+    stacks = {
+        name: np.array([u["weights"][name] for u in updates], dtype=np.float32)
+        for name in layer_names
+    }
+    benchmark.group = f"aggregate/{tier}"
+    benchmark.extra_info.update({"tier": tier, "strategy": "fed_avg", "path": "numpy"})
+    benchmark(lambda: _numpy_fed_avg(stacks, weights))
+
+
+# Robust aggregators are where the Rust kernel should actually win: Krum is
+# O(n^2 d) and Bulyan composes two such passes, so a clean NumPy vectorisation is
+# hard. The oracle Krum/Multi-Krum/Bulyan build an (n, n, d) distance tensor, ~8 GB
+# at the large tier (d=10M), so those cap at medium; TrimmedMean has no n^2 blowup
+# and runs at large too.
+_ROBUST_NUMPY_CASES = [
+    ("medium", "krum", lambda u: krum_reference(u, 1)),
+    ("medium", "multi_krum", lambda u: multi_krum_reference(u, 1)),
+    ("medium", "trimmed_mean", lambda u: trimmed_mean_reference(u, 1)),
+    ("medium", "bulyan", lambda u: bulyan_reference(u, 1)),
+    ("large", "trimmed_mean", lambda u: trimmed_mean_reference(u, 1)),
+]
+
+
+@pytest.mark.parametrize(
+    "tier,name,oracle",
+    _ROBUST_NUMPY_CASES,
+    ids=[f"{t}-{n}" for t, n, _ in _ROBUST_NUMPY_CASES],
+)
+def test_numpy_robust(benchmark: Any, tier: str, name: str, oracle: Any) -> None:
+    """NumPy-oracle baselines for the robust aggregators (capped per the note above)."""
+    updates = _build_python_updates(tier)
+    benchmark.group = f"robust/{tier}"
+    benchmark.extra_info.update({"tier": tier, "strategy": name, "path": "numpy_robust"})
+    benchmark(lambda: oracle(updates))
 
 
 # ----------------------------------------------------------------------------
