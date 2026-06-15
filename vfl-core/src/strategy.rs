@@ -389,6 +389,66 @@ fn trimmed_mean<U: Borrow<ClientUpdate>>(
 ///
 /// `m = Some(1)` reproduces Blanchard's original Krum winner. `m = None`
 /// resolves to `n - f` ("largest non-Byzantine group").
+/// Squared Euclidean distance between two flattened f32 weight vectors, with
+/// f64 accumulation, SIMD-accelerated via `wide::f64x4`. Each f32 is widened to
+/// f64 *before* the subtract-and-square, matching the scalar reference exactly to
+/// f64 precision; only the lane-wise summation reorders the adds (a ~1e-15
+/// relative effect, far inside the 1e-5 oracle-parity tolerance).
+#[inline]
+fn squared_euclidean_f64(a: &[f32], b: &[f32]) -> f64 {
+    use wide::f64x4;
+    const LANES: usize = 4;
+    let chunks = a.len() / LANES;
+    let mut acc = f64x4::splat(0.0);
+    for c in 0..chunks {
+        let o = c * LANES;
+        let av = f64x4::from([
+            a[o] as f64,
+            a[o + 1] as f64,
+            a[o + 2] as f64,
+            a[o + 3] as f64,
+        ]);
+        let bv = f64x4::from([
+            b[o] as f64,
+            b[o + 1] as f64,
+            b[o + 2] as f64,
+            b[o + 3] as f64,
+        ]);
+        let diff = av - bv;
+        acc += diff * diff;
+    }
+    let mut total: f64 = acc.to_array().iter().sum();
+    for i in (chunks * LANES)..a.len() {
+        let d = a[i] as f64 - b[i] as f64;
+        total += d * d;
+    }
+    total
+}
+
+/// Full pairwise squared-Euclidean distance matrix (symmetric, zero diagonal),
+/// computed in parallel over the upper triangle with rayon. The `O(n² · d)`
+/// distance fill is the hot path of every distance-based selector (Krum,
+/// Multi-Krum, Bulyan, ArKrum); the pairs are independent, so the only
+/// synchronisation is the cheap `O(n²)` symmetric scatter afterwards. Result is
+/// identical to the scalar nested-loop fill to f64 precision.
+fn pairwise_sq_dist_matrix(flats: &[Vec<f32>]) -> Vec<Vec<f64>> {
+    use rayon::prelude::*;
+    let n = flats.len();
+    let pairs: Vec<(usize, usize)> = (0..n)
+        .flat_map(|i| ((i + 1)..n).map(move |j| (i, j)))
+        .collect();
+    let computed: Vec<f64> = pairs
+        .par_iter()
+        .map(|&(i, j)| squared_euclidean_f64(&flats[i], &flats[j]))
+        .collect();
+    let mut dist = vec![vec![0.0f64; n]; n];
+    for (k, &(i, j)) in pairs.iter().enumerate() {
+        dist[i][j] = computed[k];
+        dist[j][i] = computed[k];
+    }
+    dist
+}
+
 fn krum_select_indices<U: Borrow<ClientUpdate>>(
     updates: &[U],
     f: usize,
@@ -443,23 +503,10 @@ fn krum_select_indices<U: Borrow<ClientUpdate>>(
         flats.push(flat);
     }
 
-    // Pairwise squared Euclidean distances (symmetric; diagonal = 0). f64
-    // accumulator bounds rounding when d is large (e.g. 10⁶ coords × f32 diffs).
-    let mut dist = vec![vec![0.0f64; n]; n];
-    for i in 0..n {
-        for j in (i + 1)..n {
-            let d: f64 = flats[i]
-                .iter()
-                .zip(flats[j].iter())
-                .map(|(&a, &b)| {
-                    let diff = a as f64 - b as f64;
-                    diff * diff
-                })
-                .sum();
-            dist[i][j] = d;
-            dist[j][i] = d;
-        }
-    }
+    // Pairwise squared Euclidean distances (symmetric; diagonal = 0), filled in
+    // parallel with an f64-accumulating SIMD kernel. f64 bounds rounding when d
+    // is large (e.g. 10⁶ coords × f32 diffs).
+    let dist = pairwise_sq_dist_matrix(&flats);
 
     // Krum score: sum of the `n - f - 2` smallest distances to *other* clients.
     // The `n >= 2f + 3` check above guarantees `k_terms >= f + 1 >= 1`.
@@ -854,23 +901,9 @@ fn ar_krum<U: Borrow<ClientUpdate>>(updates: &[U]) -> Result<Aggregation, String
         flats.push(flat);
     }
 
-    // Pairwise squared Euclidean distances (symmetric, diagonal = 0). f64
-    // accumulator bounds rounding on large coord counts.
-    let mut dist = vec![vec![0.0f64; n]; n];
-    for i in 0..n {
-        for j in (i + 1)..n {
-            let d: f64 = flats[i]
-                .iter()
-                .zip(flats[j].iter())
-                .map(|(&a, &b)| {
-                    let diff = a as f64 - b as f64;
-                    diff * diff
-                })
-                .sum();
-            dist[i][j] = d;
-            dist[j][i] = d;
-        }
-    }
+    // Pairwise squared Euclidean distances (symmetric, diagonal = 0), filled in
+    // parallel with an f64-accumulating SIMD kernel.
+    let dist = pairwise_sq_dist_matrix(&flats);
 
     // Per-client: sort other-client distances ascending, filter extremes,
     // estimate f̂_i, compute Krum score with k = n − f̂_i − 2 terms.
