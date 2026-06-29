@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.13.3,<2.0"]
+requires = ["maturin>=1.14.1,<2.0"]
 build-backend = "maturin"
 
 [project]
@@ -23,25 +23,25 @@ dependencies = [
     # Python float lists. Float wheels are ~15 MB so the footprint cost
     # is negligible; the benefit is O(layers) marshaling instead of
     # O(params). See IMPL.md and docs/benchmarks.md.
-    "numpy>=2.4.6",
-    "prefect>=3.7.4",
+    "numpy>=2.5.0",
+    "prefect>=3.7.5",
     "pydantic>=2.13.4",
     "typer>=0.26.7",
 ]
 
 [project.optional-dependencies]
 hf = [
-    "transformers>=5.10.2",
+    "transformers>=5.12.1",
     "peft>=0.10",
     # datasets 4.x dropped loading-script datasets for Parquet-backed
     # standard formats; vFL loads canonical Parquet mirrors (ylecun/mnist,
     # uoft-cs/cifar10) so the removal doesn't bite. 4.x also rides the
     # huggingface-hub 1.x line that transformers 5 requires.
     "datasets>=5.0.0",
-    "safetensors>=0.4",
+    "safetensors>=0.8.0",
 ]
 torch = [
-    "torch>=2.12.0",
+    "torch>=2.12.1",
     "torchvision>=0.15",
 ]
 # Agentic surface: FastMCP server exposing vFL tools over MCP.
@@ -70,14 +70,14 @@ all = [
 
 [dependency-groups]
 dev = [
-    "maturin>=1.13.3,<2.0",
-    "pytest>=9.0.3",
+    "maturin>=1.14.1,<2.0",
+    "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-benchmark>=4.0",
     "pytest-cov>=6.0.0",
-    "hypothesis>=6.155.2",
-    "ruff>=0.15.16",
-    "ty>=0.0.44,<0.1",
+    "hypothesis>=6.155.7",
+    "ruff>=0.15.18",
+    "ty>=0.0.51,<0.1",
     "zensical",
     "fastmcp[apps]>=3.4.2",
     "prefab-ui>=0.20.2,<0.21",
