@@ -24,14 +24,14 @@ dependencies = [
     # is negligible; the benefit is O(layers) marshaling instead of
     # O(params). See IMPL.md and docs/benchmarks.md.
     "numpy>=2.5.1",
-    "prefect>=3.7.7",
+    "prefect>=3.8.0",
     "pydantic>=2.13.4",
-    "typer>=0.26.8",
+    "typer>=0.27.0",
 ]
 
 [project.optional-dependencies]
 hf = [
-    "transformers>=5.13.0",
+    "transformers>=5.14.1",
     "peft>=0.10",
     # datasets 4.x dropped loading-script datasets for Parquet-backed
     # standard formats; vFL loads canonical Parquet mirrors (ylecun/mnist,
@@ -41,7 +41,7 @@ hf = [
     "safetensors>=0.4",
 ]
 torch = [
-    "torch>=2.12.1",
+    "torch>=2.13.0",
     "torchvision>=0.15",
 ]
 # Agentic surface: FastMCP server exposing vFL tools over MCP.
@@ -75,9 +75,9 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-benchmark>=4.0",
     "pytest-cov>=6.0.0",
-    "hypothesis>=6.156.1",
-    "ruff>=0.15.20",
-    "ty>=0.0.56,<0.1",
+    "hypothesis>=6.161.6",
+    "ruff>=0.16.0",
+    "ty>=0.0.63,<0.1",
     "zensical",
     "fastmcp[apps]>=3.4.4",
     "prefab-ui>=0.20.2,<0.21",
