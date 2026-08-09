@@ -29,9 +29,9 @@ When you don't pass `layer_shapes`, Velocity-FL uses a tiny two-layer demo net â
 ```python
 {
     "fc1.weight": 128,
-    "fc1.bias":   16,
+    "fc1.bias": 16,
     "fc2.weight": 256,
-    "fc2.bias":   10,
+    "fc2.bias": 10,
 }
 ```
 

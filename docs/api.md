@@ -44,35 +44,59 @@ Sum type over nine frozen dataclasses — parameters live on the instance, not o
 
 ```python
 Strategy = (
-    FedAvg | FedProx | FedMedian | TrimmedMean
-    | Krum | MultiKrum | Bulyan | GeometricMedian | ArKrum
+    FedAvg
+    | FedProx
+    | FedMedian
+    | TrimmedMean
+    | Krum
+    | MultiKrum
+    | Bulyan
+    | GeometricMedian
+    | ArKrum
 )
+
 
 @dataclass(frozen=True)
 class FedAvg: ...
+
+
 @dataclass(frozen=True)
 class FedProx:
     mu: float = 0.01
+
+
 @dataclass(frozen=True)
 class FedMedian: ...
+
+
 @dataclass(frozen=True)
 class TrimmedMean:
     k: int
+
+
 @dataclass(frozen=True)
 class Krum:
     f: int
+
+
 @dataclass(frozen=True)
 class MultiKrum:
     f: int
     m: int | None = None
+
+
 @dataclass(frozen=True)
 class Bulyan:
     f: int
     m: int | None = None
+
+
 @dataclass(frozen=True)
 class GeometricMedian:
     eps: float = 1e-6
     max_iter: int = 3
+
+
 @dataclass(frozen=True)
 class ArKrum: ...
 ```
@@ -81,16 +105,21 @@ All nine are frozen, hashable, and compare by value. `ALL_STRATEGIES` is a tuple
 
 ```python
 from velocity import (
-    FedAvg, FedProx, Krum, MultiKrum, Bulyan, GeometricMedian,
+    FedAvg,
+    FedProx,
+    Krum,
+    MultiKrum,
+    Bulyan,
+    GeometricMedian,
     parse_strategy,
 )
 
-parse_strategy("FedAvg")                                == FedAvg()
-parse_strategy("FedProx")                               == FedProx()
-parse_strategy({"type": "Krum", "f": 2})                == Krum(f=2)
-parse_strategy({"type": "MultiKrum", "f": 1})           == MultiKrum(f=1, m=None)
-parse_strategy({"type": "Bulyan", "f": 1})              == Bulyan(f=1, m=None)
-parse_strategy("GeometricMedian")                       == GeometricMedian()
+parse_strategy("FedAvg") == FedAvg()
+parse_strategy("FedProx") == FedProx()
+parse_strategy({"type": "Krum", "f": 2}) == Krum(f=2)
+parse_strategy({"type": "MultiKrum", "f": 1}) == MultiKrum(f=1, m=None)
+parse_strategy({"type": "Bulyan", "f": 1}) == Bulyan(f=1, m=None)
+parse_strategy("GeometricMedian") == GeometricMedian()
 ```
 
 See [Strategies](strategies.md) for semantics and decision guide.
@@ -122,11 +151,13 @@ by the Rust orchestrator). Data-pipeline attacks live in
 `velocity.data_attacks.DATA_ATTACK_TYPES`.
 
 ```python
-VALID_ATTACKS: frozenset[str] = frozenset({
-    "model_poisoning",
-    "sybil_nodes",
-    "gaussian_noise",
-})
+VALID_ATTACKS: frozenset[str] = frozenset(
+    {
+        "model_poisoning",
+        "sybil_nodes",
+        "gaussian_noise",
+    }
+)
 ```
 
 ### `velocity.data_attacks.DATA_ATTACK_TYPES`
@@ -135,10 +166,12 @@ Frozen set of recognized data-pipeline attack identifiers, applied
 client-side via the `label_attack` callback in `local_train`.
 
 ```python
-DATA_ATTACK_TYPES: frozenset[str] = frozenset({
-    "label_flipping",
-    "targeted_label_flipping",
-})
+DATA_ATTACK_TYPES: frozenset[str] = frozenset(
+    {
+        "label_flipping",
+        "targeted_label_flipping",
+    }
+)
 ```
 
 See `velocity.data_attacks.make_label_flip_callback` for the closure
