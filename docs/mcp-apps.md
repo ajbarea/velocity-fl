@@ -55,7 +55,7 @@ than a bare Prefab component:
 ```python
 return ToolResult(
     content="ArKrum tops the worst-case ranking at 96.0% ...",  # ~100 tokens for the model
-    structured_content=tree.to_json(),                          # full widget for the renderer
+    structured_content=tree.to_json(),  # full widget for the renderer
 )
 ```
 
@@ -190,8 +190,16 @@ A canonical generative call looks like:
 ```python
 from prefab_ui.app import PrefabApp
 from prefab_ui.components import (
-    Card, CardHeader, CardTitle, CardContent,
-    Grid, Column, Heading, Metric, Badge, Muted,
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+    Grid,
+    Column,
+    Heading,
+    Metric,
+    Badge,
+    Muted,
 )
 from prefab_ui.components.charts import Sparkline
 
@@ -205,8 +213,13 @@ with PrefabApp() as app:
                         CardTitle(f"#{rank + 1}  {row['strategy']}")
                     with CardContent():
                         Metric(label="Worst-case", value=f"{row['worst']:.1%}")
-                        Sparkline(data=row["curve"], variant="success",
-                                  curve="smooth", fill=True, height=60)
+                        Sparkline(
+                            data=row["curve"],
+                            variant="success",
+                            curve="smooth",
+                            fill=True,
+                            height=60,
+                        )
 ```
 
 `PrefabApp` is the streaming wrapper. Components are nested via context

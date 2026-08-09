@@ -21,12 +21,19 @@ All nine are value objects: compare with `==`, safe to hash, safe to share betwe
 
 ```python
 from velocity import (
-    FedAvg, FedProx, FedMedian, TrimmedMean,
-    Krum, MultiKrum, Bulyan, GeometricMedian, ArKrum,
+    FedAvg,
+    FedProx,
+    FedMedian,
+    TrimmedMean,
+    Krum,
+    MultiKrum,
+    Bulyan,
+    GeometricMedian,
+    ArKrum,
 )
 
-FedAvg() == FedAvg()                  # True
-FedProx(mu=0.01) != FedProx(mu=0.1)   # True
+FedAvg() == FedAvg()  # True
+FedProx(mu=0.01) != FedProx(mu=0.1)  # True
 ```
 
 ---
@@ -67,6 +74,7 @@ w_{t+1} = Σ_k (n_k / n) · w_{t+1}^k
 
 ```python
 from velocity import VelocityServer, FedAvg
+
 server = VelocityServer(model_id=..., dataset=..., strategy=FedAvg())
 ```
 
@@ -88,6 +96,7 @@ minimize over w:   F_k(w) + (μ/2) · ‖w - w_t‖²
 
 ```python
 from velocity import VelocityServer, FedProx
+
 server = VelocityServer(model_id=..., dataset=..., strategy=FedProx(mu=0.05))
 ```
 
@@ -105,6 +114,7 @@ w_{t+1}[i] = median( w_{t+1}^k[i]  for k = 1..K )
 
 ```python
 from velocity import VelocityServer, FedMedian
+
 server = VelocityServer(model_id=..., dataset=..., strategy=FedMedian())
 ```
 
@@ -130,6 +140,7 @@ For each coordinate i:
 
 ```python
 from velocity import VelocityServer, TrimmedMean
+
 server = VelocityServer(model_id=..., dataset=..., strategy=TrimmedMean(k=1))
 # Tolerates 1 Byzantine client per coordinate; needs at least 3 clients per round.
 ```
@@ -157,6 +168,7 @@ w_{t+1}  = w_{argmin_i score(i)}
 
 ```python
 from velocity import VelocityServer, Krum
+
 server = VelocityServer(model_id=..., dataset=..., strategy=Krum(f=2))
 # Needs at least 2*2 + 3 = 7 clients per round.
 ```
@@ -165,7 +177,7 @@ The round summary exposes the winner's index so you can audit selections:
 
 ```python
 summaries = server.run(min_clients=7, rounds=1)
-summaries[0]["selected_client_ids"]   # e.g. [3]
+summaries[0]["selected_client_ids"]  # e.g. [3]
 ```
 
 > **Breakdown point** — Krum provably converges when strictly fewer than `n − 2f − 2` of the `n` clients are Byzantine. Falling below that threshold (too many attackers, or too few honest clients) silently degrades robustness; keep `n ≫ 2f + 3` in practice.
@@ -191,6 +203,7 @@ w_{t+1}  = (1/m) · Σ_{i ∈ S} w_i
 
 ```python
 from velocity import VelocityServer, MultiKrum
+
 server = VelocityServer(model_id=..., dataset=..., strategy=MultiKrum(f=2, m=5))
 ```
 
@@ -218,6 +231,7 @@ Phase 2:  for each coordinate i:
 
 ```python
 from velocity import VelocityServer, Bulyan
+
 server = VelocityServer(model_id=..., dataset=..., strategy=Bulyan(f=1, m=None))
 # Needs at least 4*1 + 3 = 7 clients per round.
 ```
@@ -246,6 +260,7 @@ Stop:        ‖y_{k+1} − y_k‖ < eps  OR  k ≥ max_iter
 
 ```python
 from velocity import VelocityServer, GeometricMedian
+
 server = VelocityServer(model_id=..., dataset=..., strategy=GeometricMedian())
 # Defaults to eps=1e-6, max_iter=3 — matches the RFA paper's recommendation.
 ```
@@ -272,6 +287,7 @@ Pick u* with the lowest ScoreKrum.
 
 ```python
 from velocity import VelocityServer, ArKrum
+
 server = VelocityServer(model_id=..., dataset=..., strategy=ArKrum())
 ```
 
