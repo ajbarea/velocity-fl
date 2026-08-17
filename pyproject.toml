@@ -23,10 +23,10 @@ dependencies = [
     # Python float lists. Float wheels are ~15 MB so the footprint cost
     # is negligible; the benefit is O(layers) marshaling instead of
     # O(params). See IMPL.md and docs/benchmarks.md.
-    "numpy>=2.5.1",
-    "prefect>=3.8.1",
+    "numpy>=2.5.2",
+    "prefect>=3.8.2",
     "pydantic>=2.13.4",
-    "typer>=0.27.0",
+    "typer>=0.27.1",
 ]
 
 [project.optional-dependencies]
@@ -75,9 +75,9 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-benchmark>=4.0",
     "pytest-cov>=6.0.0",
-    "hypothesis>=6.165.0",
-    "ruff>=0.16.1",
-    "ty>=0.0.65,<0.1",
+    "hypothesis>=6.165.2",
+    "ruff>=0.16.2",
+    "ty>=0.0.69,<0.1",
     "zensical",
     "fastmcp[apps]>=3.4.5",
     "prefab-ui>=0.20.2,<0.21",
