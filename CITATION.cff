@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: If you use velocity-fl, please cite it as below.
+title: "velocity-fl: a Rust core for federated learning aggregation and attack simulation"
+abstract: >-
+  A federated learning library whose aggregation strategies and attack
+  simulation run in a Rust core, exposed through a Python API that works with
+  Hugging Face, PEFT and PyTorch models.
+type: software
+authors:
+  - given-names: Arnaldo
+    family-names: Barea
+    orcid: "https://orcid.org/0009-0001-7938-2376"
+repository-code: "https://github.com/ajbarea/velocity-fl"
+url: "https://ajbarea.github.io/velocity-fl/"
+license: MIT
+keywords:
+  - federated learning
+  - byzantine robustness
+  - rust
+  - pytorch
+  - parameter-efficient fine-tuning
