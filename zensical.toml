@@ -85,6 +85,8 @@ logo = "material/scatter-plot"
 
 [project.extra]
 generator = false
+og_image = "assets/velocity-og.png"
+brand_mark = "assets/brand.png"
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
