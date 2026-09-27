@@ -322,7 +322,7 @@ velocity run  --strategy ArKrum               --model-id demo/m --dataset demo/d
 velocity sweep --strategies FedAvg,Krum:f=1  --rounds 5
 ```
 
-Sweep TOML files accept either the string form or a dict form — see [Sweep spec](sweep-spec.md).
+Sweep TOML files accept either the string form or a dict form — see [Sweeps](sweeps.md).
 
 ---
 

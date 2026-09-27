@@ -129,7 +129,7 @@ uv run velocity leaderboard --json
 
 ## `velocity sweep`
 
-Runs a strategy × attack matrix across seeds and writes a comparison report. Drive it from a TOML experiment file or ad-hoc flags. Full spec: [Sweep spec](sweep-spec.md).
+Runs a strategy × attack matrix across seeds and writes a comparison report. Drive it from a TOML experiment file or ad-hoc flags. Full reference: [Sweeps](sweeps.md).
 
 ```bash
 # From a TOML experiment file
