@@ -729,3 +729,273 @@ body.hero-page .md-content__inner {
 [data-md-color-scheme="default"] .md-copyright .brand-mark {
   filter: none;
 }
+
+/* The permalink mark belongs on reference headings, not on the hero title. */
+.md-typeset .hero h1 .headerlink {
+  display: none;
+}
+
+/* Sections are separated by their own padding; a heading's top margin doubled the gap. */
+.md-typeset .landing-section .section-title {
+  margin-top: 0;
+}
+
+.landing-section {
+  padding: 4.5rem 2rem;
+}
+
+/* Benchmark figures, read at a glance. */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.2rem;
+  margin: 2.2rem auto 1.4rem;
+  max-width: 900px;
+}
+
+.stat {
+  padding: 1.4rem 1rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vfl-ink) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vfl-violet-light) 18%, transparent);
+}
+
+.stat-value {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--vfl-violet-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-vs {
+  display: block;
+  font-size: 0.5em;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-top: 0.3rem;
+  color: var(--vfl-text-muted, rgba(245, 243, 255, 0.55));
+}
+
+.stat-label {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--vfl-text-soft, rgba(245, 243, 255, 0.72));
+}
+
+.md-typeset .stat-label code {
+  font-size: 0.85em;
+}
+
+.stat-note {
+  font-size: 0.85rem;
+  margin: 0 auto;
+  color: var(--vfl-text-muted, rgba(245, 243, 255, 0.55));
+}
+
+.md-typeset .stat-note a {
+  color: var(--vfl-violet-light);
+}
+
+/* ==========================================================================
+   Light mode
+
+   The landing page was drawn dark. In the light scheme the same rules read on a
+   lavender-white surface: the surface variables are redefined, the hero uses the
+   light rendition of the paper plane, and every colour written for light-on-dark
+   text is redefined for dark-on-light.
+   ========================================================================== */
+[data-md-color-scheme="default"] {
+  --hero-bg-image: url('assets/velocity-hero-light.jpg');
+  --vfl-obsidian: #faf8ff;
+  --vfl-graphite: #f3effc;
+  --vfl-ink: #ffffff;
+  --vfl-mist: rgba(91, 33, 182, 0.12);
+  --vfl-text: #1e1537;
+  --vfl-text-soft: rgba(30, 21, 55, 0.78);
+  --vfl-text-muted: rgba(30, 21, 55, 0.6);
+  --md-accent-fg-color: #6d28d9;
+}
+
+/* The page behind the hero, so its bleed margins show the surface, not white. */
+body.hero-page[data-md-color-scheme="default"] {
+  --md-default-bg-color: var(--vfl-obsidian);
+  background-color: var(--vfl-obsidian);
+}
+
+/* The dark hero vignettes the art on every side; on a light surface that greys
+   the plane, so light mode keeps only the fade behind the text and the bottom edge. */
+@media (min-width: 961px) {
+  [data-md-color-scheme="default"] .md-typeset .hero {
+    background:
+      linear-gradient(to right,
+        var(--vfl-obsidian) 0%,
+        color-mix(in srgb, var(--vfl-obsidian) 88%, transparent) 30%,
+        color-mix(in srgb, var(--vfl-obsidian) 25%, transparent) 58%,
+        transparent 78%),
+      linear-gradient(to bottom,
+        transparent 0%,
+        transparent 72%,
+        var(--vfl-obsidian) 100%),
+      var(--hero-bg-image) right center / cover no-repeat,
+      var(--vfl-obsidian);
+  }
+}
+
+[data-md-color-scheme="default"] .md-typeset .hero::before {
+  background: radial-gradient(ellipse at center,
+      color-mix(in srgb, var(--vfl-violet) 10%, transparent) 0%,
+      transparent 60%);
+}
+
+[data-md-color-scheme="default"] .md-typeset .hero h1 {
+  background: linear-gradient(135deg, #2e1065 0%, #4c1d95 40%, var(--vfl-violet) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  filter: drop-shadow(0 2px 14px rgba(124, 58, 237, 0.16));
+}
+
+[data-md-color-scheme="default"] .md-typeset .hero .hero-subtitle {
+  color: var(--vfl-text);
+  opacity: 0.9;
+  text-shadow: none;
+}
+
+[data-md-color-scheme="default"] .hero-modes {
+  color: var(--vfl-violet-deep);
+  opacity: 0.85;
+}
+
+[data-md-color-scheme="default"] .hero-modes a {
+  border-bottom-color: color-mix(in srgb, var(--vfl-violet-deep) 45%, transparent);
+}
+
+[data-md-color-scheme="default"] .hero-modes a:hover {
+  color: var(--vfl-violet);
+}
+
+[data-md-color-scheme="default"] .hero-buttons .md-button:not(.md-button--primary) {
+  border-color: rgba(91, 33, 182, 0.35) !important;
+  color: var(--vfl-violet-deep) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-md-color-scheme="default"] .hero-buttons .md-button:not(.md-button--primary):hover {
+  color: #fff !important;
+  background: var(--vfl-violet) !important;
+}
+
+[data-md-color-scheme="default"] .scroll-chevron {
+  border-color: var(--vfl-violet);
+}
+
+[data-md-color-scheme="default"] .section-title,
+[data-md-color-scheme="default"] .feature-name {
+  color: var(--vfl-text);
+}
+
+[data-md-color-scheme="default"] .section-lead,
+[data-md-color-scheme="default"] .feature-card p,
+[data-md-color-scheme="default"] .tech-item {
+  color: var(--vfl-text-soft);
+}
+
+[data-md-color-scheme="default"] .section-lead strong,
+[data-md-color-scheme="default"] .pipeline-caption,
+[data-md-color-scheme="default"] .cta-lead {
+  color: var(--vfl-violet-deep);
+}
+
+[data-md-color-scheme="default"] .stat-value,
+[data-md-color-scheme="default"] .tech-item strong,
+[data-md-color-scheme="default"] .md-typeset .stat-note a {
+  color: var(--vfl-violet);
+}
+
+[data-md-color-scheme="default"] .pipeline-step {
+  background: #ffffff;
+  border-color: rgba(91, 33, 182, 0.18);
+  color: var(--vfl-text);
+  box-shadow: 0 1px 3px rgba(30, 21, 55, 0.05);
+}
+
+[data-md-color-scheme="default"] .step-icon {
+  color: var(--vfl-violet);
+}
+
+[data-md-color-scheme="default"] .feature-card,
+[data-md-color-scheme="default"] .stat,
+[data-md-color-scheme="default"] .tech-item {
+  border-color: rgba(91, 33, 182, 0.14);
+  box-shadow: 0 1px 3px rgba(30, 21, 55, 0.06);
+}
+
+[data-md-color-scheme="default"] .feature-card {
+  border-left-color: var(--card-accent, var(--vfl-violet));
+}
+
+[data-md-color-scheme="default"] .feature-card--flat {
+  border-left-color: rgba(91, 33, 182, 0.14);
+}
+
+[data-md-color-scheme="default"] .feature-card:hover {
+  box-shadow: 0 10px 28px rgba(30, 21, 55, 0.12), 0 0 0 1px color-mix(in srgb, var(--card-accent, var(--vfl-violet)) 30%, transparent);
+}
+
+[data-md-color-scheme="default"] .feature-card code {
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--vfl-violet-deep);
+}
+
+[data-md-color-scheme="default"] .landing-footer {
+  color: var(--vfl-text-muted);
+}
+
+[data-md-color-scheme="default"] .landing-footer a {
+  color: var(--vfl-violet-deep);
+}
+
+[data-md-color-scheme="default"] .landing-footer .brand-mark {
+  filter: none;
+}
+
+[data-md-color-scheme="default"] .md-header {
+  box-shadow: 0 1px 0 rgba(91, 33, 182, 0.1);
+}
+
+/* Full-bleed hero, so no gutter strip shows beside the art in either scheme. */
+.md-typeset .hero {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+.landing-section {
+  padding: 3.75rem 2rem;
+}
+
+.feature-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.tech-stack {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+  .tech-stack {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .scroll-hint {
+    margin-top: -1.2rem;
+  }
+
+  .stat {
+    padding: 1rem;
+  }
+}
