@@ -140,7 +140,7 @@ velocity reproduce run.crate.zip --check            # re-run it elsewhere and ve
 - `velocity strategies` — list available strategies
 - `velocity run ...` — run rounds and print JSON summaries
 - `velocity simulate-attack ...` — register one attack and run a round
-- `velocity sweep ...` — run a strategy × attack matrix across seeds (see [`docs/sweep-spec.md`](docs/sweep-spec.md))
+- `velocity sweep ...` — run a strategy × attack matrix across seeds (see [`docs/sweeps.md`](docs/sweeps.md))
 - `velocity leaderboard ...` — rank stored runs (accuracy / rounds-to-target / wall-clock / comm-cost / pareto / pareto-slices / robustness)
 - `velocity archive ...` — package a sweep output into a single-file reproducibility archive (RO-Crate)
 - `velocity reproduce ...` — re-run an archived sweep (`--check` verifies results within tolerance)
