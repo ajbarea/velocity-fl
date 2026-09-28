@@ -20,11 +20,10 @@ hide:
 
 </div>
 
-<div class="hero-tagline" markdown>
-
-:octicons-cpu-24: Rust Core | :octicons-code-24: Python API | :octicons-graph-24: [Faster Aggregation](benchmarks.md)
-{ .hero-modes }
-
+<div class="hero-chips" markdown>
+  <span class="chip" markdown="span">:octicons-cpu-24: Rust core</span>
+  <span class="chip" markdown="span">:octicons-code-24: Python API</span>
+  <a class="chip chip--link" href="benchmarks/" markdown="span">:octicons-graph-24: Up to 138&times; faster FedAvg</a>
 </div>
 
 </div>
@@ -35,130 +34,107 @@ hide:
 
 <section class="landing-section landing-section--intro">
   <div class="section-inner">
-    <h2 class="section-title">What Is Velocity-FL?</h2>
-    <p class="section-lead">Velocity-FL is a federated learning orchestration framework with a <strong>Rust core</strong> for hot-path aggregation and attack simulation, wrapped in a <strong>Python-first API</strong> for researchers using Hugging Face, PEFT, and PyTorch. Configure a server, run rounds, inspect metrics &mdash; every hot loop runs in compiled code.</p>
+    <h2 class="section-title">What is Velocity-FL?</h2>
+    <p class="section-lead">Federated learning where the round's hot path, aggregation and attack simulation, runs in <strong>Rust</strong>, and everything you touch stays <strong>Python</strong>: Hugging Face, PEFT and PyTorch.</p>
   </div>
 </section>
 
 <section class="landing-section landing-section--promise">
   <div class="section-inner">
-    <h2 class="section-title">Rust core, Python surface</h2>
-    <p class="section-lead">A PyO3 extension runs the aggregation math; a Typer CLI and a thin Python API keep experimentation friction low. Prefect wraps each round so you get flow-level visibility without custom logging glue. The Rust aggregation kernel runs <a href="benchmarks/">far faster</a> than the pure-Python fallback (<code>FedAvg</code>: 42.2 ms vs 5.82 s at 10M params, ~138× on the latest idle-box snapshot). The measured claim is on aggregation only, not end-to-end training; see the benchmarks page for full methodology and per-tier numbers.</p>
-  </div>
-</section>
-
-<section class="landing-section">
-  <div class="section-inner">
-    <h2 class="section-title">One API, Full Pipeline</h2>
-    <div class="pipeline-flow">
-      <div class="pipeline-step">
-        <span class="step-icon material-symbols-outlined">settings</span>
-        <span class="step-label">Config</span>
+    <h2 class="section-title">Aggregation in compiled code</h2>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-value">4.0 ms <span class="stat-vs">vs 545 ms</span></div>
+        <div class="stat-label"><code>FedAvg</code> at 1M params</div>
       </div>
-      <div class="pipeline-step">
-        <span class="step-icon material-symbols-outlined">group</span>
-        <span class="step-label">Clients</span>
+      <div class="stat">
+        <div class="stat-value">42.2 ms <span class="stat-vs">vs 5.82 s</span></div>
+        <div class="stat-label"><code>FedAvg</code> at 10M params</div>
       </div>
-      <div class="pipeline-step">
-        <span class="step-icon material-symbols-outlined">memory</span>
-        <span class="step-label">Rust Core</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-icon material-symbols-outlined">scatter_plot</span>
-        <span class="step-label">Aggregate</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-icon material-symbols-outlined">bug_report</span>
-        <span class="step-label">Attack Sim</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-icon material-symbols-outlined">trending_up</span>
-        <span class="step-label">Metrics</span>
+      <div class="stat">
+        <div class="stat-value">~138&times;</div>
+        <div class="stat-label">faster than the pure-Python fallback</div>
       </div>
     </div>
-    <p class="pipeline-caption">Python config &rarr; federated clients &rarr; Rust aggregation &rarr; Prefect-tracked round summaries</p>
+    <p class="stat-note">Aggregation only, not end-to-end training, on the latest idle-box snapshot. <a href="benchmarks/">Methodology and every tier</a></p>
   </div>
 </section>
 
 <section class="landing-section">
   <div class="section-inner">
-    <h2 class="section-title">Explore the Docs</h2>
+    <h2 class="section-title">One round, end to end</h2>
+    <ol class="round-flow">
+      <li class="round-step">
+        <span class="step-icon material-symbols-outlined">tune</span>
+        <span class="step-label">Configure</span>
+        <span class="step-text">A server, a strategy and a round count, in Python or TOML.</span>
+      </li>
+      <li class="round-step">
+        <span class="step-icon material-symbols-outlined">group</span>
+        <span class="step-label">Collect</span>
+        <span class="step-text">Client updates cross into Rust, zero-copy where possible.</span>
+      </li>
+      <li class="round-step">
+        <span class="step-icon material-symbols-outlined">memory</span>
+        <span class="step-label">Aggregate</span>
+        <span class="step-text">Nine strategies, all in Rust, from FedAvg to Bulyan.</span>
+      </li>
+      <li class="round-step">
+        <span class="step-icon material-symbols-outlined">shield</span>
+        <span class="step-label">Attack and record</span>
+        <span class="step-text">Byzantine attacks run in the core; Prefect records every round.</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="landing-section">
+  <div class="section-inner">
+    <h2 class="section-title">Explore the docs</h2>
     <div class="feature-grid">
       <a href="getting-started/" class="feature-card" style="--card-accent: #7c3aed">
         <span class="feature-icon material-symbols-outlined">rocket_launch</span>
         <div class="feature-name">Getting Started</div>
-        <p>Install with <code>maturin develop</code>, run your first round in minutes.</p>
+        <p>Install and run your first round.</p>
       </a>
       <a href="cli/" class="feature-card" style="--card-accent: #8b5cf6">
         <span class="feature-icon material-symbols-outlined">terminal</span>
         <div class="feature-name">CLI Reference</div>
-        <p>Every <code>velocity</code> command &mdash; <code>run</code>, <code>simulate-attack</code>, <code>strategies</code>.</p>
+        <p>Every <code>velocity</code> command.</p>
       </a>
-      <a href="architecture/" class="feature-card" style="--card-accent: #a855f7">
+      <a href="architecture/" class="feature-card" style="--card-accent: #9333ea">
         <span class="feature-icon material-symbols-outlined">account_tree</span>
         <div class="feature-name">Architecture</div>
-        <p>How the Rust crate, PyO3 bindings, and Python orchestrator fit together.</p>
+        <p>The Rust crate, PyO3 bindings and Python layer.</p>
       </a>
-      <a href="configuration/" class="feature-card" style="--card-accent: #c084fc">
-        <span class="feature-icon material-symbols-outlined">tune</span>
+      <a href="configuration/" class="feature-card" style="--card-accent: #a855f7">
+        <span class="feature-icon material-symbols-outlined">settings</span>
         <div class="feature-name">Configuration</div>
-        <p>Server options, strategy knobs, and attack parameters &mdash; every field explained.</p>
+        <p>Every server, strategy and attack field.</p>
       </a>
-      <a href="strategies/" class="feature-card" style="--card-accent: #d8b4fe">
+      <a href="strategies/" class="feature-card" style="--card-accent: #c026d3">
         <span class="feature-icon material-symbols-outlined">hub</span>
         <div class="feature-name">Strategies</div>
-        <p>FedAvg, FedProx, FedMedian, TrimmedMean, Krum, Multi-Krum, Bulyan, GeometricMedian, ArKrum &mdash; and where to add your own.</p>
+        <p>The nine aggregators, and which to pick.</p>
       </a>
-      <a href="attacks/" class="feature-card" style="--card-accent: #e9d5ff">
+      <a href="attacks/" class="feature-card" style="--card-accent: #db2777">
         <span class="feature-icon material-symbols-outlined">bug_report</span>
         <div class="feature-name">Attacks</div>
-        <p>Model poisoning, Sybil nodes, Gaussian noise, label flipping.</p>
+        <p>Poisoning, Sybils, noise, label flipping.</p>
       </a>
-      <a href="api/" class="feature-card" style="--card-accent: #a855f7">
+      <a href="api/" class="feature-card" style="--card-accent: #6366f1">
         <span class="feature-icon material-symbols-outlined">api</span>
         <div class="feature-name">API Reference</div>
-        <p>Python surface: <code>VelocityServer</code>, <code>Strategy</code>, <code>ClientUpdate</code>.</p>
+        <p><code>VelocityServer</code>, <code>Strategy</code>, <code>ClientUpdate</code>.</p>
+      </a>
+      <a href="benchmarks/" class="feature-card" style="--card-accent: #4f46e5">
+        <span class="feature-icon material-symbols-outlined">speed</span>
+        <div class="feature-name">Benchmarks</div>
+        <p>Rust against Python, tier by tier.</p>
       </a>
     </div>
-  </div>
-</section>
-
-<section class="landing-section">
-  <div class="section-inner">
-    <h2 class="section-title">Key Features</h2>
-    <div class="feature-grid feature-grid--compact">
-      <div class="feature-card feature-card--flat">
-        <div class="feature-name"><span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px;">bolt</span> Rust Hot Path</div>
-        <p>Aggregation, median, Krum/Multi-Krum, and attack simulation compiled to Rust via PyO3. <a href="benchmarks/">Far faster</a> aggregation than the pure-Python fallback, widening with parameter count (<code>FedAvg</code>: 4.0 ms vs 545 ms at 1M params, 42.2 ms vs 5.82 s at 10M); the numpy buffer-protocol return path closed the former PyO3 marshaling overhead.</p>
-      </div>
-      <div class="feature-card feature-card--flat">
-        <div class="feature-name"><span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px;">science</span> Research-Friendly</div>
-        <p>Python API designed around Hugging Face model IDs, PEFT adapters, and PyTorch tensors. Pure-Python fallback when the Rust extension is unavailable.</p>
-      </div>
-      <div class="feature-card feature-card--flat">
-        <div class="feature-name"><span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px;">visibility</span> Observable by Default</div>
-        <p>Prefect-native flows expose round metrics, client updates, and attack results as first-class events &mdash; no custom logging glue needed.</p>
-      </div>
-      <div class="feature-card feature-card--flat">
-        <div class="feature-name"><span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px;">shield</span> Resilience Testing</div>
-        <p>Register Byzantine attacks alongside your strategy and watch how aggregation holds up, round by round.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="landing-section">
-  <div class="section-inner">
-    <h2 class="section-title">Technology Stack</h2>
-    <div class="tech-stack">
-      <div class="tech-item"><strong>Core</strong> Rust + PyO3</div>
-      <div class="tech-item"><strong>API</strong> Python</div>
-      <div class="tech-item"><strong>Build</strong> maturin + uv</div>
-      <div class="tech-item"><strong>Orchestration</strong> Prefect</div>
-      <div class="tech-item"><strong>CLI</strong> Typer</div>
-      <div class="tech-item"><strong>Validation</strong> Pydantic</div>
-      <div class="tech-item"><strong>ML</strong> HuggingFace + PEFT + Torch</div>
-      <div class="tech-item"><strong>Docs</strong> Zensical</div>
+    <div class="stack-chips" aria-label="Built with">
+      <span>Rust + PyO3</span><span>maturin + uv</span><span>Prefect</span><span>Typer</span><span>Pydantic</span><span>Hugging Face</span><span>PEFT</span><span>PyTorch</span>
     </div>
   </div>
 </section>
