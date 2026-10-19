@@ -7,7 +7,7 @@ abstract: >-
   Hugging Face, PEFT and PyTorch models.
 type: software
 authors:
-  - given-names: Arnaldo
+  - given-names: AJ
     family-names: Barea
     orcid: "https://orcid.org/0009-0001-7938-2376"
 repository-code: "https://github.com/ajbarea/velocity-fl"
